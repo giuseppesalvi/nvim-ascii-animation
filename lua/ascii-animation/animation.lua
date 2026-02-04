@@ -147,6 +147,170 @@ local function matrix_line(line, reveal_ratio, line_idx, total_lines)
   return table.concat(result)
 end
 
+-- Special glitch characters for cyberpunk aesthetic
+local glitch_chars = "█▓▒░▀▄▌▐▊▋▍▎▏┃┆┇┊┋╎╏│║▕▐▌"
+local tear_chars = "▌▐█▓▒░"
+
+-- Highlight groups for color glitches (using built-in Neovim highlights)
+local glitch_highlights = { "ErrorMsg", "WarningMsg", "DiffDelete", "DiffChange", "Special" }
+
+-- Create glitch reveal effect (cyberpunk-style with corruption)
+-- Returns: string (normal) or table of {text, highlight} segments (color_glitch enabled)
+local function glitch_line(line, reveal_ratio, line_idx, total_lines)
+  local opts = config.options.animation.effect_options.glitch
+  local chaos_chars_str = config.options.chaos_chars
+  local chars = vim.fn.split(line, "\\zs")
+  local result = {}
+  local segments = {}  -- For color glitch mode: {text, highlight} pairs
+
+  -- Calculate effective glitch intensity (decreases as reveal progresses)
+  local resolve_factor = reveal_ratio ^ (1 / opts.resolve_speed)
+  local effective_intensity = opts.intensity * (1 - resolve_factor)
+
+  -- Determine if this line has a horizontal tear effect
+  local has_tear = math.random() < opts.tear_chance * (1 - resolve_factor)
+  local tear_offset = 0
+  local tear_start = 0
+  local tear_end = 0
+
+  if has_tear and #chars > 0 then
+    -- Create a horizontal offset for part of the line (tear effect)
+    tear_offset = math.random(-3, 3)
+    tear_start = math.random(1, math.max(1, #chars - 5))
+    tear_end = math.min(#chars, tear_start + math.random(3, 10))
+  end
+
+  -- Determine if there's a block glitch on this line
+  local has_block = math.random() < opts.block_chance * (1 - resolve_factor)
+  local block_start = 0
+  local block_end = 0
+
+  if has_block and #chars > 0 then
+    block_start = math.random(1, #chars)
+    block_end = math.min(#chars, block_start + math.random(1, opts.block_size))
+  end
+
+  -- Track current segment for color glitch mode
+  local current_text = ""
+  local current_is_glitch = false
+
+  local function flush_segment(base_highlight)
+    if #current_text > 0 then
+      if opts.color_glitch and current_is_glitch then
+        local hl = glitch_highlights[math.random(1, #glitch_highlights)]
+        table.insert(segments, { current_text, hl })
+      else
+        table.insert(segments, { current_text, base_highlight })
+      end
+      current_text = ""
+    end
+  end
+
+  for idx, char in ipairs(chars) do
+    local output_char = char
+    local is_glitched = false
+
+    if char == " " or char == "" then
+      -- Handle spaces with tear offset
+      if has_tear and idx >= tear_start and idx <= tear_end then
+        if tear_offset > 0 then
+          -- Add extra spaces (shift right)
+          if idx == tear_start then
+            for _ = 1, tear_offset do
+              table.insert(result, " ")
+              current_text = current_text .. " "
+            end
+          end
+          table.insert(result, char)
+          current_text = current_text .. char
+        elseif tear_offset < 0 then
+          -- Skip spaces (shift left)
+          if idx >= tear_start - tear_offset then
+            table.insert(result, char)
+            current_text = current_text .. char
+          end
+        else
+          table.insert(result, char)
+          current_text = current_text .. char
+        end
+      else
+        table.insert(result, char)
+        current_text = current_text .. char
+      end
+    else
+      -- Non-space character processing
+      local is_revealed = math.random() < resolve_factor
+
+      if is_revealed then
+        output_char = char
+        is_glitched = false
+      else
+        -- Apply various glitch effects
+        local effect_roll = math.random()
+
+        if has_block and idx >= block_start and idx <= block_end then
+          -- Block glitch: replace with block characters
+          local block_idx = math.random(1, #glitch_chars)
+          output_char = glitch_chars:sub(block_idx, block_idx)
+          is_glitched = true
+        elseif effect_roll < effective_intensity * 0.6 then
+          -- Primary glitch: use glitch block characters
+          local glitch_idx = math.random(1, #glitch_chars)
+          output_char = glitch_chars:sub(glitch_idx, glitch_idx)
+          is_glitched = true
+        elseif effect_roll < effective_intensity then
+          -- Secondary glitch: use standard chaos characters
+          local chaos_idx = math.random(1, #chaos_chars_str)
+          output_char = chaos_chars_str:sub(chaos_idx, chaos_idx)
+          is_glitched = true
+        else
+          -- Slight corruption: sometimes show correct char
+          output_char = char
+          is_glitched = false
+        end
+      end
+
+      -- Apply tear offset to non-space characters
+      if has_tear and idx >= tear_start and idx <= tear_end then
+        if tear_offset > 0 and idx == tear_start then
+          -- Add tear visual indicator
+          local tear_idx = math.random(1, #tear_chars)
+          local tear_char = tear_chars:sub(tear_idx, tear_idx)
+          for _ = 1, tear_offset do
+            table.insert(result, tear_char)
+            -- Flush current segment and add tear as glitched
+            if opts.color_glitch then
+              flush_segment(nil)
+              current_text = string.rep(tear_char, tear_offset)
+              current_is_glitch = true
+              flush_segment(nil)
+            end
+          end
+        end
+      end
+
+      -- Handle segment transitions for color glitch mode
+      if opts.color_glitch and is_glitched ~= current_is_glitch then
+        flush_segment(nil)
+        current_is_glitch = is_glitched
+      end
+
+      table.insert(result, output_char)
+      current_text = current_text .. output_char
+    end
+  end
+
+  -- If color glitch is enabled, return segments for multi-highlight rendering
+  if opts.color_glitch then
+    flush_segment(nil)
+    if #segments > 0 then
+      return { is_segments = true, segments = segments }
+    end
+  end
+
+  return table.concat(result)
+end
+
 -- Effect dispatch table
 local effects = {
   chaos = chaos_line,
@@ -154,10 +318,11 @@ local effects = {
   diagonal = diagonal_line,
   lines = lines_line,
   matrix = matrix_line,
+  glitch = glitch_line,
 }
 
 -- List of effect names for random selection
-local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix" }
+local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix", "glitch" }
 
 -- Pick a random effect
 local function get_random_effect()
@@ -353,6 +518,10 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
   elseif effect == "matrix" then
     reveal_ratio = actual_step / total_steps
     frame_delay = config.options.animation.min_delay
+  elseif effect == "glitch" then
+    -- Glitch uses linear progression with fast updates for flickering effect
+    reveal_ratio = actual_step / total_steps
+    frame_delay = config.options.animation.min_delay
   else  -- chaos (default)
     reveal_ratio = ease_in_out(actual_step / total_steps)
     frame_delay = get_frame_delay(actual_step, total_steps)
@@ -364,8 +533,23 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
     local line = lines[i]
     if line and #line > 0 then
       local transformed = effect_fn(line, reveal_ratio, i, header_end)
+
+      -- Handle segmented output (for color glitch effects)
+      local virt_text
+      if type(transformed) == "table" and transformed.is_segments then
+        -- Build virt_text from segments, applying base highlight to non-glitch segments
+        virt_text = {}
+        for _, seg in ipairs(transformed.segments) do
+          local text, hl = seg[1], seg[2]
+          table.insert(virt_text, { text, hl or highlight or "Normal" })
+        end
+      else
+        -- Simple string output
+        virt_text = { { transformed, highlight or "Normal" } }
+      end
+
       pcall(vim.api.nvim_buf_set_extmark, buf, M.ns_id, i - 1, 0, {
-        virt_text = { { transformed, highlight or "Normal" } },
+        virt_text = virt_text,
         virt_text_pos = "overlay",
         hl_mode = "combine",
       })

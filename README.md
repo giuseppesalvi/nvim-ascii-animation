@@ -16,7 +16,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 
 ## Features
 
-- Six **animation effects**: chaos, typewriter, diagonal, lines, matrix, and random
+- Seven **animation effects**: chaos, typewriter, diagonal, lines, matrix, glitch, and random
 - **Loop mode**: continuous animation replay with optional reverse
 - **Ambient effects**: subtle glitch or shimmer after animation completes
 - **Ease-in-out** timing: slow start → fast middle → slow finish
@@ -48,7 +48,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
   opts = {
     animation = {
       enabled = true,
-      effect = "chaos",  -- "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "random"
+      effect = "chaos",  -- "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "glitch" | "random"
       steps = 40,        -- Total animation steps
       min_delay = 20,    -- Fastest frame delay (ms)
       max_delay = 120,   -- Slowest frame delay (ms)
@@ -414,7 +414,7 @@ animation = {
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `animation.enabled` | boolean | `true` | Enable/disable animation |
-| `animation.effect` | string | `"chaos"` | Animation effect: `"chaos"`, `"typewriter"`, `"diagonal"`, `"lines"`, `"matrix"`, or `"random"` |
+| `animation.effect` | string | `"chaos"` | Animation effect: `"chaos"`, `"typewriter"`, `"diagonal"`, `"lines"`, `"matrix"`, `"glitch"`, or `"random"` |
 | `animation.steps` | number | `40` | Total animation steps (more = smoother) |
 | `animation.min_delay` | number | `20` | Fastest frame delay in ms (middle of animation) |
 | `animation.max_delay` | number | `120` | Slowest frame delay in ms (start/end) |
@@ -426,6 +426,12 @@ animation = {
 | `animation.auto_fit` | boolean | `false` | Skip arts wider than terminal width |
 | `animation.min_width` | number | `60` | Minimum terminal width for animation |
 | `animation.fallback` | string | `"tagline"` | Fallback when terminal too narrow: `"tagline"`, `"none"`, or art ID |
+| `animation.effect_options.glitch.intensity` | number | `0.5` | Glitch amount (0.0-1.0) |
+| `animation.effect_options.glitch.tear_chance` | number | `0.3` | Probability of horizontal tear effect |
+| `animation.effect_options.glitch.color_glitch` | boolean | `true` | Include color/highlight glitches |
+| `animation.effect_options.glitch.resolve_speed` | number | `1.0` | Speed of glitch resolution (higher = faster) |
+| `animation.effect_options.glitch.block_chance` | number | `0.2` | Probability of block-based glitching |
+| `animation.effect_options.glitch.block_size` | number | `5` | Maximum size of glitch blocks |
 | `chaos_chars` | string | `"@#$%&*..."` | Characters used for chaos/typewriter effect |
 | `header.padding` | number | `3` | Extra lines to include after header |
 
@@ -570,8 +576,31 @@ local delay = animation.get_frame_delay(10, 40)  -- Frame 10 of 40
 2. **Staggered**: Each character has unique timing based on position
 3. **Chaos**: Falling characters display random matrix-style symbols
 
+### Glitch Effect
+1. **Corruption**: Characters display with intentional visual glitches (block characters, wrong symbols)
+2. **Horizontal tears**: Random lines shift horizontally, simulating screen tearing
+3. **Color glitches**: Glitched characters flash with different highlight colors
+4. **Block glitching**: Rectangular regions corrupt together
+5. **Resolution**: Glitches gradually resolve to reveal the final art
+
+```lua
+animation = {
+  effect = "glitch",
+  effect_options = {
+    glitch = {
+      intensity = 0.5,       -- 0.0-1.0, amount of glitching
+      tear_chance = 0.3,     -- probability of horizontal tear effect
+      color_glitch = true,   -- include color/highlight glitches
+      resolve_speed = 1.0,   -- speed of resolution (higher = faster)
+      block_chance = 0.2,    -- probability of block-based glitching
+      block_size = 5,        -- max size of glitch blocks
+    },
+  },
+}
+```
+
 ### Random Effect
-1. **Variety**: Randomly selects one of the five effects each time animation starts
+1. **Variety**: Randomly selects one of the six effects each time animation starts
 2. **Loop variety**: When looping, picks a new random effect for each cycle
 
 All effects use Neovim's extmarks with virtual text overlay, preserving your original buffer content and highlights.

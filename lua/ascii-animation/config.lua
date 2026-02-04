@@ -8,7 +8,7 @@ M.defaults = {
   -- Animation settings
   animation = {
     enabled = true,
-    -- Animation effect: "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "random"
+    -- Animation effect: "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "glitch" | "random"
     effect = "chaos",
     -- Total steps in the animation
     steps = 40,
@@ -26,6 +26,18 @@ M.defaults = {
     auto_fit = false,       -- Skip arts wider than terminal
     min_width = 60,         -- Minimum terminal width for animation
     fallback = "tagline",   -- "tagline" | "none" | art_id
+    -- Effect-specific options
+    effect_options = {
+      -- Glitch effect options
+      glitch = {
+        intensity = 0.5,       -- 0.0-1.0, amount of glitching
+        tear_chance = 0.3,     -- probability of horizontal tear effect per line
+        color_glitch = true,   -- include color/highlight glitches
+        resolve_speed = 1.0,   -- speed at which glitches resolve (higher = faster)
+        block_chance = 0.2,    -- probability of block-based glitching
+        block_size = 5,        -- max size of glitch blocks
+      },
+    },
   },
 
   -- Content selection settings
