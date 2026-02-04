@@ -19,6 +19,10 @@ M.defaults = {
     -- Ambient effect (when not looping)
     ambient = "none",       -- "none" | "glitch" | "shimmer"
     ambient_interval = 2000, -- How often ambient effect triggers (ms)
+    -- Terminal width handling
+    auto_fit = false,       -- Skip arts wider than terminal
+    min_width = 60,         -- Minimum terminal width for animation
+    fallback = "tagline",   -- "tagline" | "none" | art_id
   },
 
   -- Chaos characters used during animation
@@ -52,6 +56,22 @@ M.defaults = {
     -- Style filter (nil = all styles)
     -- Available: "blocks", "gradient", "isometric"
     styles = nil,
+
+    -- Randomization mode: "always" | "daily" | "session"
+    -- "always": New random art each time (default, current behavior)
+    -- "daily": Same art all day (based on date seed)
+    -- "session": Same art within Neovim session, different on restart
+    random = "always",
+
+    -- Favorites system
+    favorites = {},              -- List of art IDs for higher selection probability
+    favorite_weight = 2,         -- Multiplier for favorites in selection pool
+
+    -- No-repeat: false | true | number
+    -- false: No filtering (default)
+    -- true: Don't repeat the last shown art
+    -- number N: Don't repeat any of the last N shown arts
+    no_repeat = false,
   },
 }
 
