@@ -5,6 +5,7 @@ local config = require("ascii-animation.config")
 local animation = require("ascii-animation.animation")
 local time = require("ascii-animation.time")
 local content = require("ascii-animation.content")
+local placeholders = require("ascii-animation.placeholders")
 
 local M = {}
 
@@ -203,5 +204,6 @@ end
 M.content = content
 M.time = time
 M.state = require("ascii-animation.state")
+M.placeholders = placeholders
 
 return M
