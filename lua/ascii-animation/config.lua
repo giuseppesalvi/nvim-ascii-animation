@@ -8,7 +8,7 @@ M.defaults = {
   -- Animation settings
   animation = {
     enabled = true,
-    -- Animation effect: "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "wave" | "random"
+    -- Animation effect: "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "wave" | "fade" | "random"
     effect = "chaos",
     -- Effect-specific options (used by wave effect)
     effect_options = {
