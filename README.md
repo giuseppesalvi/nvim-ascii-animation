@@ -2,7 +2,17 @@
 
 Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize from chaos with a smooth ease-in-out animation effect.
 
-![Demo](https://github.com/giuseppesalvi/nvim-ascii-animation/assets/demo.gif)
+<p align="center">
+  <img src="assets/demo.gif" alt="Demo" width="600">
+</p>
+
+<details>
+<summary>More examples</summary>
+<p align="center">
+  <img src="assets/demo_2.gif" alt="Demo 2" width="600">
+  <img src="assets/demo_3.gif" alt="Demo 3" width="600">
+</p>
+</details>
 
 ## Features
 
