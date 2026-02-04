@@ -114,6 +114,37 @@ fix: resolve animation timing issue
 docs: update installation instructions
 ```
 
+### Branch Naming
+
+**Format:** `<type>/<issue-number>-<short-description>`
+
+**Rules:**
+- Use lowercase and hyphens (no spaces, underscores, or special characters)
+- Match type to commit types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`
+- Include issue number when working on a tracked issue
+- Keep descriptions short (2-4 words)
+
+**Examples:**
+```
+feat/4-user-commands
+fix/12-animation-flicker
+refactor/cleanup-config
+docs/update-readme
+chore/ci-workflow
+```
+
+**Creating branches:**
+```bash
+# For issue-based work
+git checkout -b feat/4-user-commands
+
+# For general work (no issue)
+git checkout -b fix/typo-in-config
+
+# With git worktrees (parallel development)
+git worktree add ../nvim-anim-issue-4 -b feat/4-user-commands
+```
+
 ### GitHub Issues
 
 **Always use issue templates** when creating issues via `gh issue create`.
