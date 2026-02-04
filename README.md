@@ -16,7 +16,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 
 ## Features
 
-- Two **animation effects**: chaos (random reveal) and typewriter (left-to-right)
+- Five **animation effects**: chaos, typewriter, diagonal, lines, and matrix
 - **Ease-in-out** timing: slow start → fast middle → slow finish
 - **60+ built-in ASCII arts** in 3 styles: blocks, gradient, isometric
 - **Time-aware content**: morning, afternoon, evening, night, weekend themes
@@ -40,7 +40,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
   opts = {
     animation = {
       enabled = true,
-      effect = "chaos",  -- "chaos" or "typewriter"
+      effect = "chaos",  -- "chaos" | "typewriter" | "diagonal" | "lines" | "matrix"
       steps = 40,        -- Total animation steps
       min_delay = 20,    -- Fastest frame delay (ms)
       max_delay = 120,   -- Slowest frame delay (ms)
@@ -250,7 +250,7 @@ require("ascii-animation").setup({
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `animation.enabled` | boolean | `true` | Enable/disable animation |
-| `animation.effect` | string | `"chaos"` | Animation effect: `"chaos"` (random reveal) or `"typewriter"` (left-to-right with cursor) |
+| `animation.effect` | string | `"chaos"` | Animation effect: `"chaos"`, `"typewriter"`, `"diagonal"`, `"lines"`, or `"matrix"` |
 | `animation.steps` | number | `40` | Total animation steps (more = smoother) |
 | `animation.min_delay` | number | `20` | Fastest frame delay in ms (middle of animation) |
 | `animation.max_delay` | number | `120` | Slowest frame delay in ms (start/end) |
@@ -347,7 +347,22 @@ local delay = animation.get_frame_delay(10, 40)  -- Frame 10 of 40
 2. **Cursor**: A cursor (`▌`) shows the current typing position
 3. **Unrevealed**: Characters not yet typed are hidden
 
-Both effects use Neovim's extmarks with virtual text overlay, preserving your original buffer content and highlights.
+### Diagonal Effect
+1. **Sweep**: Reveal spreads from top-left corner to bottom-right
+2. **Wave**: Top lines reveal before bottom lines, creating a diagonal wave
+3. **Timing**: Linear progression with fast frame delays
+
+### Lines Effect
+1. **Sequential**: Each line reveals one at a time from top to bottom
+2. **Transition**: Current line uses chaos effect while revealing
+3. **Timing**: Ease-in-out with moderate frame delays
+
+### Matrix Effect
+1. **Rain**: Characters "fall" and settle into place like the Matrix
+2. **Staggered**: Each character has unique timing based on position
+3. **Chaos**: Falling characters display random matrix-style symbols
+
+All effects use Neovim's extmarks with virtual text overlay, preserving your original buffer content and highlights.
 
 ## Credits
 
