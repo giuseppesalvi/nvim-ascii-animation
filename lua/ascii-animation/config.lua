@@ -20,6 +20,30 @@ M.defaults = {
     -- Extra lines to include after header (for tagline, date, etc.)
     padding = 3,
   },
+
+  -- Content system settings
+  content = {
+    enabled = true,              -- Enable content management
+    builtin_arts = true,         -- Use built-in ASCII art collection
+    builtin_messages = true,     -- Use built-in taglines
+
+    -- User additions (merged with built-in)
+    custom_arts = {},            -- User-defined arts by period
+    custom_messages = {},        -- User-defined messages by period
+
+    -- Time configuration
+    time_periods = {
+      morning   = { start = 5,  stop = 12 },
+      afternoon = { start = 12, stop = 17 },
+      evening   = { start = 17, stop = 21 },
+      night     = { start = 21, stop = 5 },
+    },
+    weekend_override = true,     -- Use weekend content on Sat/Sun
+
+    -- Style filter (nil = all styles)
+    -- Available: "blocks", "gradient", "isometric"
+    styles = nil,
+  },
 }
 
 M.options = {}
