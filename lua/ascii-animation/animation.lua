@@ -5,6 +5,18 @@ local M = {}
 
 M.ns_id = vim.api.nvim_create_namespace("ascii_animation")
 
+-- Timer for ambient effects
+local ambient_timer = nil
+
+-- State for tracking current animation
+local animation_state = {
+  running = false,
+  buf = nil,
+  header_end = nil,
+  highlight = nil,
+  effect = nil,  -- Resolved effect (for "random" mode)
+}
+
 -- Ease-in-out cubic function for smooth acceleration/deceleration
 local function ease_in_out(t)
   if t < 0.5 then
@@ -45,6 +57,7 @@ end
 
 -- Create typewriter version of a line (left-to-right reveal with cursor)
 local function typewriter_line(line, reveal_ratio, line_idx, total_lines)
+  local chaos_chars = config.options.chaos_chars
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
   local cursor_pos = math.floor(#chars * reveal_ratio)
@@ -57,7 +70,9 @@ local function typewriter_line(line, reveal_ratio, line_idx, total_lines)
     elseif idx < cursor_pos then
       table.insert(result, char)  -- Revealed
     else
-      table.insert(result, " ")  -- Hidden: blank
+      -- Hidden: show chaos char
+      local rand_idx = math.random(1, #chaos_chars)
+      table.insert(result, chaos_chars:sub(rand_idx, rand_idx))
     end
   end
 
@@ -66,6 +81,7 @@ end
 
 -- Create diagonal sweep version (top-left to bottom-right)
 local function diagonal_line(line, reveal_ratio, line_idx, total_lines)
+  local chaos_chars = config.options.chaos_chars
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
   -- Offset reveal based on line position (top lines reveal first)
@@ -80,7 +96,9 @@ local function diagonal_line(line, reveal_ratio, line_idx, total_lines)
       if char_ratio < adjusted_ratio then
         table.insert(result, char)
       else
-        table.insert(result, " ")
+        -- Not yet revealed: show chaos char
+        local rand_idx = math.random(1, #chaos_chars)
+        table.insert(result, chaos_chars:sub(rand_idx, rand_idx))
       end
     end
   end
@@ -98,13 +116,8 @@ local function lines_line(line, reveal_ratio, line_idx, total_lines)
     local sub_ratio = (reveal_ratio * total_lines) % 1
     return chaos_line(line, sub_ratio, line_idx, total_lines)
   else
-    -- Not yet revealed: blank (preserve spaces for alignment)
-    local chars = vim.fn.split(line, "\\zs")
-    local result = {}
-    for _, char in ipairs(chars) do
-      table.insert(result, " ")
-    end
-    return table.concat(result)
+    -- Not yet revealed: show as chaos
+    return chaos_line(line, 0, line_idx, total_lines)
   end
 end
 
@@ -124,12 +137,10 @@ local function matrix_line(line, reveal_ratio, line_idx, total_lines)
 
       if char_progress >= 0.8 then
         table.insert(result, char)  -- Settled
-      elseif char_progress >= 0.3 then
-        -- Falling: show random matrix character
+      else
+        -- Falling or waiting: show random matrix character
         local rand_idx = math.random(1, #chaos_chars)
         table.insert(result, chaos_chars:sub(rand_idx, rand_idx))
-      else
-        table.insert(result, " ")  -- Not started falling
       end
     end
   end
@@ -144,6 +155,108 @@ local effects = {
   lines = lines_line,
   matrix = matrix_line,
 }
+
+-- List of effect names for random selection
+local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix" }
+
+-- Pick a random effect
+local function get_random_effect()
+  return effect_names[math.random(1, #effect_names)]
+end
+
+-- Apply glitch effect: randomly replace a few characters with chaos chars
+local function apply_glitch(line, intensity)
+  local chaos_chars = config.options.chaos_chars
+  local chars = vim.fn.split(line, "\\zs")
+  local result = {}
+
+  for _, char in ipairs(chars) do
+    if char ~= " " and char ~= "" and math.random() < intensity then
+      local idx = math.random(1, #chaos_chars)
+      table.insert(result, chaos_chars:sub(idx, idx))
+    else
+      table.insert(result, char)
+    end
+  end
+  return table.concat(result)
+end
+
+-- Apply shimmer effect: one random character shows chaos
+local function apply_shimmer(line, char_index)
+  local chaos_chars = config.options.chaos_chars
+  local chars = vim.fn.split(line, "\\zs")
+
+  if char_index <= #chars and chars[char_index] ~= " " and chars[char_index] ~= "" then
+    local idx = math.random(1, #chaos_chars)
+    chars[char_index] = chaos_chars:sub(idx, idx)
+  end
+  return table.concat(chars)
+end
+
+-- Stop ambient effects timer
+local function stop_ambient()
+  if ambient_timer then
+    ambient_timer:stop()
+    ambient_timer:close()
+    ambient_timer = nil
+  end
+end
+
+-- Start ambient effects after animation completes
+local function start_ambient(buf, header_end, highlight)
+  local opts = config.options.animation
+  if opts.ambient == "none" then return end
+
+  stop_ambient()
+
+  local function run_ambient()
+    if not vim.api.nvim_buf_is_valid(buf) then
+      stop_ambient()
+      return
+    end
+
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+
+    if opts.ambient == "glitch" then
+      -- Apply glitch to random lines briefly
+      for i = 1, header_end do
+        local line = lines[i]
+        if line and #line > 0 and math.random() < 0.3 then
+          local transformed = apply_glitch(line, 0.05)
+          pcall(vim.api.nvim_buf_set_extmark, buf, M.ns_id, i - 1, 0, {
+            virt_text = { { transformed, highlight or "Normal" } },
+            virt_text_pos = "overlay",
+            hl_mode = "combine",
+          })
+        end
+      end
+    elseif opts.ambient == "shimmer" then
+      -- Shimmer one random character
+      local line_idx = math.random(1, header_end)
+      local line = lines[line_idx]
+      if line and #line > 0 then
+        local chars = vim.fn.split(line, "\\zs")
+        local char_idx = math.random(1, #chars)
+        local transformed = apply_shimmer(line, char_idx)
+        pcall(vim.api.nvim_buf_set_extmark, buf, M.ns_id, line_idx - 1, 0, {
+          virt_text = { { transformed, highlight or "Normal" } },
+          virt_text_pos = "overlay",
+          hl_mode = "combine",
+        })
+      end
+    end
+
+    -- Clear effect after brief display
+    vim.defer_fn(function()
+      if vim.api.nvim_buf_is_valid(buf) then
+        vim.api.nvim_buf_clear_namespace(buf, M.ns_id, 0, -1)
+      end
+    end, 100)
+  end
+
+  ambient_timer = vim.uv.new_timer()
+  ambient_timer:start(opts.ambient_interval, opts.ambient_interval, vim.schedule_wrap(run_ambient))
+end
 
 -- Detect where header ends (before menu items)
 -- Menu items are detected as lines starting with multi-byte icons after a gap
@@ -176,32 +289,73 @@ local function find_header_end(lines, max_lines)
 end
 
 -- Main animation function using extmarks overlay
-local function animate(buf, win, step, total_steps, highlight, header_end)
-  if not vim.api.nvim_buf_is_valid(buf) then return end
-  if not vim.api.nvim_win_is_valid(win) then return end
+local function animate(buf, win, step, total_steps, highlight, header_end, reverse)
+  if not vim.api.nvim_buf_is_valid(buf) then
+    animation_state.running = false
+    return
+  end
+  if not vim.api.nvim_win_is_valid(win) then
+    animation_state.running = false
+    return
+  end
 
+  -- Check if animation is complete
+  local animation_done = (not reverse and step > total_steps) or (reverse and step < 0)
+
+  if animation_done then
+    local opts = config.options.animation
+
+    if opts.loop then
+      -- Loop mode: keep last frame visible during delay, then restart
+      vim.defer_fn(function()
+        if not vim.api.nvim_buf_is_valid(buf) then
+          animation_state.running = false
+          return
+        end
+        if opts.loop_reverse and not reverse then
+          -- Play reverse first (keep same effect)
+          animate(buf, win, total_steps, total_steps, highlight, header_end, true)
+        else
+          -- Restart forward: pick new random effect if in random mode
+          if config.options.animation.effect == "random" then
+            animation_state.effect = get_random_effect()
+          end
+          animate(buf, win, 0, total_steps, highlight, header_end, false)
+        end
+      end, opts.loop_delay)
+    else
+      -- Not looping: animation finished, clear and start ambient effects
+      vim.api.nvim_buf_clear_namespace(buf, M.ns_id, 0, -1)
+      animation_state.running = false
+      start_ambient(buf, header_end, highlight)
+    end
+    return
+  end
+
+  -- Clear previous frame before rendering new one
   vim.api.nvim_buf_clear_namespace(buf, M.ns_id, 0, -1)
 
-  if step > total_steps then return end
-
-  local effect = config.options.animation.effect
+  local effect = animation_state.effect
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
 
-  -- Timing varies per effect
+  -- Calculate reveal_ratio (same for both directions)
+  local actual_step = step
   local reveal_ratio
   local frame_delay
+
+  -- Timing varies per effect
   if effect == "typewriter" or effect == "diagonal" then
-    reveal_ratio = step / total_steps
+    reveal_ratio = actual_step / total_steps
     frame_delay = config.options.animation.min_delay
   elseif effect == "lines" then
-    reveal_ratio = ease_in_out(step / total_steps)
+    reveal_ratio = ease_in_out(actual_step / total_steps)
     frame_delay = config.options.animation.max_delay / 2
   elseif effect == "matrix" then
-    reveal_ratio = step / total_steps
+    reveal_ratio = actual_step / total_steps
     frame_delay = config.options.animation.min_delay
   else  -- chaos (default)
-    reveal_ratio = ease_in_out(step / total_steps)
-    frame_delay = get_frame_delay(step, total_steps)
+    reveal_ratio = ease_in_out(actual_step / total_steps)
+    frame_delay = get_frame_delay(actual_step, total_steps)
   end
 
   local effect_fn = effects[effect] or effects.chaos
@@ -218,14 +372,28 @@ local function animate(buf, win, step, total_steps, highlight, header_end)
     end
   end
 
+  -- Schedule next frame
+  local next_step = reverse and (step - 1) or (step + 1)
   vim.defer_fn(function()
-    animate(buf, win, step + 1, total_steps, highlight, header_end)
+    animate(buf, win, next_step, total_steps, highlight, header_end, reverse)
   end, frame_delay)
+end
+
+-- Stop any running animation and ambient effects
+function M.stop()
+  stop_ambient()
+  animation_state.running = false
+  if animation_state.buf and vim.api.nvim_buf_is_valid(animation_state.buf) then
+    vim.api.nvim_buf_clear_namespace(animation_state.buf, M.ns_id, 0, -1)
+  end
 end
 
 -- Start animation on a buffer
 function M.start(buf, header_lines, highlight)
   if not config.options.animation.enabled then return end
+
+  -- Stop any existing animation/ambient
+  M.stop()
 
   local win = vim.api.nvim_get_current_win()
   if not vim.api.nvim_buf_is_valid(buf) then return end
@@ -233,7 +401,20 @@ function M.start(buf, header_lines, highlight)
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   local header_end = find_header_end(lines, header_lines)
 
-  animate(buf, win, 0, config.options.animation.steps, highlight, header_end)
+  -- Resolve effect (pick random if "random")
+  local effect = config.options.animation.effect
+  if effect == "random" then
+    effect = get_random_effect()
+  end
+
+  -- Store state for potential stop
+  animation_state.running = true
+  animation_state.buf = buf
+  animation_state.header_end = header_end
+  animation_state.highlight = highlight
+  animation_state.effect = effect
+
+  animate(buf, win, 0, config.options.animation.steps, highlight, header_end, false)
 end
 
 return M

@@ -16,7 +16,9 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 
 ## Features
 
-- Five **animation effects**: chaos, typewriter, diagonal, lines, and matrix
+- Six **animation effects**: chaos, typewriter, diagonal, lines, matrix, and random
+- **Loop mode**: continuous animation replay with optional reverse
+- **Ambient effects**: subtle glitch or shimmer after animation completes
 - **Ease-in-out** timing: slow start → fast middle → slow finish
 - **60+ built-in ASCII arts** in 3 styles: blocks, gradient, isometric
 - **Time-aware content**: morning, afternoon, evening, night, weekend themes
@@ -40,10 +42,17 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
   opts = {
     animation = {
       enabled = true,
-      effect = "chaos",  -- "chaos" | "typewriter" | "diagonal" | "lines" | "matrix"
+      effect = "chaos",  -- "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "random"
       steps = 40,        -- Total animation steps
       min_delay = 20,    -- Fastest frame delay (ms)
       max_delay = 120,   -- Slowest frame delay (ms)
+      -- Loop settings
+      loop = false,          -- Enable loop mode
+      loop_delay = 2000,     -- Delay between loops (ms)
+      loop_reverse = false,  -- Play reverse before next loop
+      -- Ambient effect (when not looping)
+      ambient = "none",      -- "none" | "glitch" | "shimmer"
+      ambient_interval = 2000,
     },
     chaos_chars = "@#$%&*+=-:;!?/\\|[]{}()<>~`'^",
   },
@@ -250,10 +259,15 @@ require("ascii-animation").setup({
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `animation.enabled` | boolean | `true` | Enable/disable animation |
-| `animation.effect` | string | `"chaos"` | Animation effect: `"chaos"`, `"typewriter"`, `"diagonal"`, `"lines"`, or `"matrix"` |
+| `animation.effect` | string | `"chaos"` | Animation effect: `"chaos"`, `"typewriter"`, `"diagonal"`, `"lines"`, `"matrix"`, or `"random"` |
 | `animation.steps` | number | `40` | Total animation steps (more = smoother) |
 | `animation.min_delay` | number | `20` | Fastest frame delay in ms (middle of animation) |
 | `animation.max_delay` | number | `120` | Slowest frame delay in ms (start/end) |
+| `animation.loop` | boolean | `false` | Enable loop mode (animation replays continuously) |
+| `animation.loop_delay` | number | `2000` | Delay between loops in ms |
+| `animation.loop_reverse` | boolean | `false` | Play animation in reverse before next loop |
+| `animation.ambient` | string | `"none"` | Ambient effect after animation: `"none"`, `"glitch"`, or `"shimmer"` |
+| `animation.ambient_interval` | number | `2000` | How often ambient effect triggers in ms |
 | `chaos_chars` | string | `"@#$%&*..."` | Characters used for chaos/typewriter effect |
 | `header.padding` | number | `3` | Extra lines to include after header |
 
@@ -362,7 +376,39 @@ local delay = animation.get_frame_delay(10, 40)  -- Frame 10 of 40
 2. **Staggered**: Each character has unique timing based on position
 3. **Chaos**: Falling characters display random matrix-style symbols
 
+### Random Effect
+1. **Variety**: Randomly selects one of the five effects each time animation starts
+2. **Loop variety**: When looping, picks a new random effect for each cycle
+
 All effects use Neovim's extmarks with virtual text overlay, preserving your original buffer content and highlights.
+
+### Loop Mode
+
+When `loop` is enabled, the animation replays continuously after a configurable delay:
+
+```lua
+animation = {
+  loop = true,           -- Enable loop mode
+  loop_delay = 2000,     -- Wait 2 seconds between loops
+  loop_reverse = true,   -- Play in reverse before looping (optional)
+}
+```
+
+With `loop_reverse`, the animation will: forward → pause → reverse → pause → forward → ...
+
+### Ambient Effects
+
+Ambient effects add subtle ongoing visual interest after the animation completes (only when not looping):
+
+- **`"glitch"`**: Random characters briefly flicker to chaos characters
+- **`"shimmer"`**: Single random characters briefly flash
+
+```lua
+animation = {
+  ambient = "glitch",      -- "none" | "glitch" | "shimmer"
+  ambient_interval = 2000, -- Trigger every 2 seconds
+}
+```
 
 ## Credits
 

@@ -5,13 +5,20 @@ M.defaults = {
   -- Animation settings
   animation = {
     enabled = true,
-    -- Animation effect: "chaos" (random reveal) or "typewriter" (left-to-right)
+    -- Animation effect: "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "random"
     effect = "chaos",
     -- Total steps in the animation
     steps = 40,
     -- Frame delay range (ms)
     min_delay = 20,   -- Fastest (middle of animation)
     max_delay = 120,  -- Slowest (start/end of animation)
+    -- Loop settings
+    loop = false,           -- Enable loop mode
+    loop_delay = 2000,      -- Delay between loops (ms)
+    loop_reverse = false,   -- Play reverse before next loop
+    -- Ambient effect (when not looping)
+    ambient = "none",       -- "none" | "glitch" | "shimmer"
+    ambient_interval = 2000, -- How often ambient effect triggers (ms)
   },
 
   -- Chaos characters used during animation
