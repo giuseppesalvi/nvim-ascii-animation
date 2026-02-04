@@ -1,0 +1,134 @@
+# CLAUDE.md - Project Development Guidelines
+
+> **Purpose**: Quick reference for AI assistants and developers to understand project conventions, best practices, and development workflow.
+
+---
+
+## Core Principles
+
+- **Simplicity First**: Make every change as simple as possible. Impact minimal code.
+- **No Laziness**: Find root causes. No temporary fixes. Senior developer standards.
+- **Minimal Impact**: Changes should only touch what's necessary. Avoid introducing bugs.
+
+---
+
+## Project Overview
+
+**nvim-ascii-animation** - Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize from chaos with a smooth ease-in-out animation effect.
+
+### Key Technologies
+
+- **Lua** - Neovim plugin language
+- **Neovim API** - Buffer manipulation, extmarks, timers
+- **lazy.nvim** - Plugin manager compatibility
+
+### Project Structure
+
+```
+nvim-ascii-animation/
+├── lua/
+│   └── ascii-animation/
+│       ├── init.lua          # Main entry point
+│       ├── animation.lua     # Animation logic
+│       └── config.lua        # Configuration
+├── README.md
+├── LICENSE
+└── CLAUDE.md
+```
+
+---
+
+## Essential Commands
+
+### Testing Locally
+
+```bash
+# Symlink to Neovim plugins directory for testing
+ln -s $(pwd) ~/.local/share/nvim/lazy/nvim-ascii-animation
+
+# Or add to lazy.nvim config:
+{ dir = "~/Documents/Projects/nvim-ascii-animation" }
+```
+
+### Git Commands
+
+```bash
+git status                    # Check status
+git add -A && git commit -m "message"  # Commit
+git push origin main          # Push to remote
+```
+
+---
+
+## Coding Standards
+
+### Lua-Specific
+
+- **Use local variables** - avoid polluting global namespace
+- **Module pattern**: Return a table `M` with public functions
+- **Naming**: `snake_case` for functions/variables, `PascalCase` only for classes
+- **Use `vim.api`** for Neovim API calls
+- **Error handling**: Use `pcall` for operations that may fail
+- **Check validity**: Always check `vim.api.nvim_buf_is_valid()` before buffer operations
+
+### File Organization
+
+```lua
+-- Module structure
+local M = {}
+
+-- Private functions (local, not in M)
+local function private_helper()
+end
+
+-- Public functions (in M)
+function M.public_function()
+end
+
+return M
+```
+
+---
+
+## Git Conventions
+
+### Commit Message Format
+
+**Keep commits short — prefer one-liners.**
+
+```
+<type>: <short description>
+```
+
+**Types:** `feat`, `fix`, `refactor`, `docs`, `test`, `chore`
+
+**Examples:**
+```
+feat: add support for alpha-nvim
+fix: resolve animation timing issue
+docs: update installation instructions
+```
+
+---
+
+## Quick Reference
+
+| Task                | Command                    |
+| ------------------- | -------------------------- |
+| Test in Neovim      | `:Lazy reload ascii-animation` |
+| Check for errors    | `:messages`                |
+| Inspect module      | `:lua print(vim.inspect(require('ascii-animation')))` |
+
+---
+
+## Evolving This Document
+
+This CLAUDE.md is a **living document**. Update it when:
+
+- After any correction — add it as a rule
+- When discovering undocumented patterns
+- When a workaround becomes standard
+
+---
+
+**Last Updated**: 2025-02-04

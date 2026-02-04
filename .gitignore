@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# Neovim
+*.swp
+*.swo
+*~
+
+# Tags
+tags
+
+# Local development
+.local/
