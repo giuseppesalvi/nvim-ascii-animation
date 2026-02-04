@@ -8,8 +8,14 @@ M.defaults = {
   -- Animation settings
   animation = {
     enabled = true,
-    -- Animation effect: "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "random"
+    -- Animation effect: "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "spiral" | "random"
     effect = "chaos",
+    -- Effect-specific options (for spiral effect)
+    effect_options = {
+      direction = "outward",    -- "outward" (center to edges), "inward" (edges to center)
+      rotation = "clockwise",   -- "clockwise", "counter-clockwise"
+      tightness = 1.0,          -- spiral tightness multiplier (higher = tighter spiral)
+    },
     -- Total steps in the animation
     steps = 40,
     -- Frame delay range (ms)

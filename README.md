@@ -16,7 +16,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 
 ## Features
 
-- Six **animation effects**: chaos, typewriter, diagonal, lines, matrix, and random
+- Seven **animation effects**: chaos, typewriter, diagonal, lines, matrix, spiral, and random
 - **Loop mode**: continuous animation replay with optional reverse
 - **Ambient effects**: subtle glitch or shimmer after animation completes
 - **Ease-in-out** timing: slow start → fast middle → slow finish
@@ -48,7 +48,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
   opts = {
     animation = {
       enabled = true,
-      effect = "chaos",  -- "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "random"
+      effect = "chaos",  -- "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "spiral" | "random"
       steps = 40,        -- Total animation steps
       min_delay = 20,    -- Fastest frame delay (ms)
       max_delay = 120,   -- Slowest frame delay (ms)
@@ -414,7 +414,10 @@ animation = {
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `animation.enabled` | boolean | `true` | Enable/disable animation |
-| `animation.effect` | string | `"chaos"` | Animation effect: `"chaos"`, `"typewriter"`, `"diagonal"`, `"lines"`, `"matrix"`, or `"random"` |
+| `animation.effect` | string | `"chaos"` | Animation effect: `"chaos"`, `"typewriter"`, `"diagonal"`, `"lines"`, `"matrix"`, `"spiral"`, or `"random"` |
+| `animation.effect_options.direction` | string | `"outward"` | Spiral direction: `"outward"` (center to edges) or `"inward"` (edges to center) |
+| `animation.effect_options.rotation` | string | `"clockwise"` | Spiral rotation: `"clockwise"` or `"counter-clockwise"` |
+| `animation.effect_options.tightness` | number | `1.0` | Spiral tightness multiplier (higher = tighter spiral) |
 | `animation.steps` | number | `40` | Total animation steps (more = smoother) |
 | `animation.min_delay` | number | `20` | Fastest frame delay in ms (middle of animation) |
 | `animation.max_delay` | number | `120` | Slowest frame delay in ms (start/end) |
@@ -570,8 +573,26 @@ local delay = animation.get_frame_delay(10, 40)  -- Frame 10 of 40
 2. **Staggered**: Each character has unique timing based on position
 3. **Chaos**: Falling characters display random matrix-style symbols
 
+### Spiral Effect
+1. **Spiral pattern**: Characters reveal following a spiral path from center outward (or inward)
+2. **Direction**: `"outward"` reveals from center to edges, `"inward"` reveals from edges to center
+3. **Rotation**: `"clockwise"` or `"counter-clockwise"` spiral direction
+4. **Tightness**: Controls how tight the spiral winds (higher = more rotations)
+
+```lua
+-- Example: Inward counter-clockwise spiral
+animation = {
+  effect = "spiral",
+  effect_options = {
+    direction = "inward",
+    rotation = "counter-clockwise",
+    tightness = 1.5,
+  },
+}
+```
+
 ### Random Effect
-1. **Variety**: Randomly selects one of the five effects each time animation starts
+1. **Variety**: Randomly selects one of the six effects each time animation starts
 2. **Loop variety**: When looping, picks a new random effect for each cycle
 
 All effects use Neovim's extmarks with virtual text overlay, preserving your original buffer content and highlights.

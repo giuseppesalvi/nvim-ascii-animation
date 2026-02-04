@@ -147,6 +147,114 @@ local function matrix_line(line, reveal_ratio, line_idx, total_lines)
   return table.concat(result)
 end
 
+-- State for spiral effect (calculated once per animation)
+local spiral_state = {
+  max_width = 0,
+  center_x = 0,
+  center_y = 0,
+  max_spiral_dist = 0,
+}
+
+-- Calculate spiral distance for a position
+-- Uses Archimedean spiral: distance based on angle + radius
+local function get_spiral_distance(x, y, center_x, center_y, clockwise, tightness)
+  local dx = x - center_x
+  local dy = (y - center_y) * 2  -- Aspect ratio: chars are ~2x taller than wide
+  local radius = math.sqrt(dx * dx + dy * dy)
+  local angle = math.atan2(dy, dx)
+
+  -- Normalize angle to [0, 2π]
+  if angle < 0 then
+    angle = angle + 2 * math.pi
+  end
+
+  -- Reverse angle for counter-clockwise
+  if not clockwise then
+    angle = 2 * math.pi - angle
+  end
+
+  -- Spiral distance: combines radius and angle
+  -- tightness controls how much angle contributes vs radius
+  return radius + (angle / (2 * math.pi)) * tightness
+end
+
+-- Create spiral reveal effect
+local function spiral_line(line, reveal_ratio, line_idx, total_lines)
+  local chaos_chars = config.options.chaos_chars
+  local chars = vim.fn.split(line, "\\zs")
+  local result = {}
+
+  -- Get effect options with defaults
+  local effect_opts = config.options.animation.effect_options or {}
+  local direction = effect_opts.direction or "outward"
+  local rotation = effect_opts.rotation or "clockwise"
+  local tightness = (effect_opts.tightness or 1.0) * 3  -- Scale for better visual
+
+  local clockwise = rotation == "clockwise"
+  local center_x = spiral_state.center_x
+  local center_y = spiral_state.center_y
+  local max_dist = spiral_state.max_spiral_dist
+
+  for idx, char in ipairs(chars) do
+    if char == " " or char == "" then
+      table.insert(result, char)
+    else
+      local spiral_dist = get_spiral_distance(idx, line_idx, center_x, center_y, clockwise, tightness)
+      local normalized_dist = spiral_dist / max_dist
+
+      -- For inward: invert the distance
+      if direction == "inward" then
+        normalized_dist = 1 - normalized_dist
+      end
+
+      if normalized_dist <= reveal_ratio then
+        table.insert(result, char)
+      else
+        local rand_idx = math.random(1, #chaos_chars)
+        table.insert(result, chaos_chars:sub(rand_idx, rand_idx))
+      end
+    end
+  end
+
+  return table.concat(result)
+end
+
+-- Initialize spiral state for a new animation
+local function init_spiral_state(lines, header_end)
+  local max_width = 0
+  for i = 1, header_end do
+    local line = lines[i]
+    if line then
+      local chars = vim.fn.split(line, "\\zs")
+      max_width = math.max(max_width, #chars)
+    end
+  end
+
+  spiral_state.max_width = max_width
+  spiral_state.center_x = max_width / 2
+  spiral_state.center_y = header_end / 2
+
+  -- Get effect options
+  local effect_opts = config.options.animation.effect_options or {}
+  local rotation = effect_opts.rotation or "clockwise"
+  local tightness = (effect_opts.tightness or 1.0) * 3
+  local clockwise = rotation == "clockwise"
+
+  -- Calculate max spiral distance for normalization
+  local max_dist = 0
+  local corners = {
+    { 1, 1 },
+    { max_width, 1 },
+    { 1, header_end },
+    { max_width, header_end },
+  }
+  for _, corner in ipairs(corners) do
+    local dist = get_spiral_distance(corner[1], corner[2], spiral_state.center_x, spiral_state.center_y, clockwise, tightness)
+    max_dist = math.max(max_dist, dist)
+  end
+  spiral_state.max_spiral_dist = max_dist
+end
+
 -- Effect dispatch table
 local effects = {
   chaos = chaos_line,
@@ -154,10 +262,11 @@ local effects = {
   diagonal = diagonal_line,
   lines = lines_line,
   matrix = matrix_line,
+  spiral = spiral_line,
 }
 
 -- List of effect names for random selection
-local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix" }
+local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix", "spiral" }
 
 -- Pick a random effect
 local function get_random_effect()
@@ -353,6 +462,9 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
   elseif effect == "matrix" then
     reveal_ratio = actual_step / total_steps
     frame_delay = config.options.animation.min_delay
+  elseif effect == "spiral" then
+    reveal_ratio = ease_in_out(actual_step / total_steps)
+    frame_delay = config.options.animation.min_delay
   else  -- chaos (default)
     reveal_ratio = ease_in_out(actual_step / total_steps)
     frame_delay = get_frame_delay(actual_step, total_steps)
@@ -413,6 +525,11 @@ function M.start(buf, header_lines, highlight)
   animation_state.header_end = header_end
   animation_state.highlight = highlight
   animation_state.effect = effect
+
+  -- Initialize spiral state if needed
+  if effect == "spiral" then
+    init_spiral_state(lines, header_end)
+  end
 
   animate(buf, win, 0, config.options.animation.steps, highlight, header_end, false)
 end
