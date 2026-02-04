@@ -1,5 +1,5 @@
 -- ascii-animation: Cinematic text animation for Neovim dashboards
--- https://github.com/yourusername/nvim-ascii-animation
+-- https://github.com/giuseppesalvi/nvim-ascii-animation
 
 local config = require("ascii-animation.config")
 local animation = require("ascii-animation.animation")
@@ -51,6 +51,22 @@ function M.setup_dashboard(dashboard_opts)
 
   vim.api.nvim_create_autocmd("FileType", {
     pattern = "dashboard",
+    callback = function()
+      local buf = vim.api.nvim_get_current_buf()
+      vim.defer_fn(function()
+        animation.start(buf, header_lines, highlight)
+      end, 10)
+    end,
+  })
+end
+
+-- Setup for lazy.nvim starter screen integration
+function M.setup_lazy(lazy_opts)
+  local header_lines = lazy_opts.header_lines or 20
+  local highlight = lazy_opts.highlight or "LazyH1"
+
+  vim.api.nvim_create_autocmd("FileType", {
+    pattern = "lazy",
     callback = function()
       local buf = vim.api.nvim_get_current_buf()
       vim.defer_fn(function()

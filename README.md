@@ -2,7 +2,7 @@
 
 Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize from chaos with a smooth ease-in-out animation effect.
 
-![Demo](https://github.com/yourusername/nvim-ascii-animation/assets/demo.gif)
+![Demo](https://github.com/giuseppesalvi/nvim-ascii-animation/assets/demo.gif)
 
 ## Features
 
@@ -12,6 +12,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
   - [snacks.nvim](https://github.com/folke/snacks.nvim)
   - [alpha-nvim](https://github.com/goolord/alpha-nvim)
   - [dashboard-nvim](https://github.com/nvimdev/dashboard-nvim)
+  - [lazy.nvim](https://github.com/folke/lazy.nvim) starter screen
 - Fully configurable animation speed, characters, and timing
 - Respects your colorscheme and dashboard highlights
 
@@ -21,7 +22,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 
 ```lua
 {
-  "yourusername/nvim-ascii-animation",
+  "giuseppesalvi/nvim-ascii-animation",
   event = "VimEnter",
   opts = {
     animation = {
@@ -41,7 +42,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 
 ```lua
 {
-  "yourusername/nvim-ascii-animation",
+  "giuseppesalvi/nvim-ascii-animation",
   event = "VimEnter",
   config = function()
     require("ascii-animation").setup({
@@ -64,7 +65,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 
 ```lua
 {
-  "yourusername/nvim-ascii-animation",
+  "giuseppesalvi/nvim-ascii-animation",
   event = "VimEnter",
   config = function()
     require("ascii-animation").setup({
@@ -85,7 +86,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 
 ```lua
 {
-  "yourusername/nvim-ascii-animation",
+  "giuseppesalvi/nvim-ascii-animation",
   event = "VimEnter",
   config = function()
     require("ascii-animation").setup({
@@ -97,6 +98,27 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
     require("ascii-animation").setup_dashboard({
       header_lines = 15,
       highlight = "DashboardHeader",
+    })
+  end,
+}
+```
+
+### With lazy.nvim starter screen
+
+```lua
+{
+  "giuseppesalvi/nvim-ascii-animation",
+  event = "VimEnter",
+  config = function()
+    require("ascii-animation").setup({
+      animation = {
+        enabled = true,
+        steps = 40,
+      },
+    })
+    require("ascii-animation").setup_lazy({
+      header_lines = 15,
+      highlight = "LazyH1",
     })
   end,
 }
