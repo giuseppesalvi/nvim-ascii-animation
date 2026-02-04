@@ -8,14 +8,20 @@ M.defaults = {
   -- Animation settings
   animation = {
     enabled = true,
-    -- Animation effect: "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "wave" | "fade" | "scramble" | "rain" | "spiral" | "explode" | "implode" | "random"
+    -- Animation effect: "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "wave" | "fade" | "scramble" | "rain" | "spiral" | "explode" | "implode" | "glitch" | "random"
     effect = "chaos",
-    -- Effect-specific options (used by wave effect)
+    -- Effect-specific options
     effect_options = {
-      -- Wave effect origin: "center" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "top" | "bottom" | "left" | "right"
-      origin = "center",
-      -- Wave propagation speed multiplier (1.0 = normal, >1 = faster, <1 = slower)
-      speed = 1.0,
+      -- Wave effect options
+      origin = "center",  -- "center" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "top" | "bottom" | "left" | "right"
+      speed = 1.0,        -- Wave propagation speed multiplier
+      -- Glitch effect options
+      glitch = {
+        intensity = 0.5,       -- Glitch amount (0.0-1.0)
+        block_chance = 0.2,    -- Probability of block-based glitching
+        block_size = 5,        -- Maximum size of glitch blocks
+        resolve_speed = 1.0,   -- Speed of glitch resolution (higher = faster)
+      },
     },
     -- Total steps in the animation
     steps = 40,

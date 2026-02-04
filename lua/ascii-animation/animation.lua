@@ -14,6 +14,10 @@ local fade_state = {
   base_highlight = nil,     -- Track which highlight was used to create groups
 }
 
+-- Glitch effect constants
+local glitch_chars = "█▓▒░▀▄▌▐▊▋▍▎▏┃┆┇┊┋╎╏│║▕▐▌"
+local glitch_highlights = { "ErrorMsg", "WarningMsg", "DiffDelete", "DiffChange", "Special" }
+
 -- State for tracking current animation
 local animation_state = {
   running = false,
@@ -467,6 +471,100 @@ local function implode_line(line, reveal_ratio, line_idx, total_lines)
   return table.concat(result)
 end
 
+-- Create glitch reveal effect (cyberpunk-style with corruption)
+local function glitch_line(line, reveal_ratio, line_idx, total_lines)
+  local opts = config.options.animation.effect_options.glitch or {}
+  local intensity = opts.intensity or 0.5
+  local block_chance = opts.block_chance or 0.2
+  local block_size = opts.block_size or 5
+  local resolve_speed = opts.resolve_speed or 1.0
+
+  local chaos_chars_str = config.options.chaos_chars
+  local chars = vim.fn.split(line, "\\zs")
+  local result = {}
+  local segments = {}
+
+  -- Calculate effective glitch intensity (decreases as reveal progresses)
+  local resolve_factor = reveal_ratio ^ (1 / resolve_speed)
+  local effective_intensity = intensity * (1 - resolve_factor)
+
+  -- Determine if there's a block glitch on this line
+  local has_block = math.random() < block_chance * (1 - resolve_factor)
+  local block_start, block_end = 0, 0
+  if has_block and #chars > 0 then
+    block_start = math.random(1, #chars)
+    block_end = math.min(#chars, block_start + math.random(1, block_size))
+  end
+
+  -- Track segments for multi-highlight rendering
+  local current_text = ""
+  local current_is_glitch = false
+
+  local function flush_segment()
+    if #current_text > 0 then
+      if current_is_glitch then
+        local hl = glitch_highlights[math.random(1, #glitch_highlights)]
+        table.insert(segments, { current_text, hl })
+      else
+        table.insert(segments, { current_text, nil })
+      end
+      current_text = ""
+    end
+  end
+
+  for idx, char in ipairs(chars) do
+    local output_char = char
+    local is_glitched = false
+
+    if char == " " or char == "" then
+      table.insert(result, char)
+      current_text = current_text .. char
+    else
+      local is_revealed = math.random() < resolve_factor
+
+      if is_revealed then
+        output_char = char
+        is_glitched = false
+      else
+        local effect_roll = math.random()
+        if has_block and idx >= block_start and idx <= block_end then
+          local block_idx = math.random(1, #glitch_chars)
+          output_char = glitch_chars:sub(block_idx, block_idx)
+          is_glitched = true
+        elseif effect_roll < effective_intensity * 0.6 then
+          local glitch_idx = math.random(1, #glitch_chars)
+          output_char = glitch_chars:sub(glitch_idx, glitch_idx)
+          is_glitched = true
+        elseif effect_roll < effective_intensity then
+          local chaos_idx = math.random(1, #chaos_chars_str)
+          output_char = chaos_chars_str:sub(chaos_idx, chaos_idx)
+          is_glitched = true
+        else
+          output_char = char
+          is_glitched = false
+        end
+      end
+
+      -- Handle segment transitions
+      if is_glitched ~= current_is_glitch then
+        flush_segment()
+        current_is_glitch = is_glitched
+      end
+
+      table.insert(result, output_char)
+      current_text = current_text .. output_char
+    end
+  end
+
+  flush_segment()
+
+  -- Return segments for multi-highlight rendering
+  if #segments > 0 then
+    return { is_segments = true, segments = segments }
+  end
+  return table.concat(result)
+end
+
 -- Effect dispatch table
 local effects = {
   chaos = chaos_line,
@@ -481,10 +579,11 @@ local effects = {
   spiral = spiral_line,
   explode = explode_line,
   implode = implode_line,
+  glitch = glitch_line,
 }
 
 -- List of effect names for random selection
-local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix", "wave", "fade", "scramble", "rain", "spiral", "explode", "implode" }
+local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix", "wave", "fade", "scramble", "rain", "spiral", "explode", "implode", "glitch" }
 
 -- Pick a random effect
 local function get_random_effect()
@@ -690,6 +789,9 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
   elseif effect == "fade" then
     reveal_ratio = ease_in_out(actual_step / total_steps)
     frame_delay = config.options.animation.max_delay / 2
+  elseif effect == "glitch" then
+    reveal_ratio = actual_step / total_steps
+    frame_delay = config.options.animation.min_delay
   else  -- chaos (default)
     reveal_ratio = ease_in_out(actual_step / total_steps)
     frame_delay = get_frame_delay(actual_step, total_steps)
@@ -708,8 +810,19 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
         line_highlight = get_fade_highlight(brightness)
       end
 
+      -- Handle segment-based output (glitch effect with multi-highlight)
+      local virt_text
+      if type(transformed) == "table" and transformed.is_segments then
+        virt_text = {}
+        for _, seg in ipairs(transformed.segments) do
+          table.insert(virt_text, { seg[1], seg[2] or line_highlight })
+        end
+      else
+        virt_text = { { transformed, line_highlight } }
+      end
+
       pcall(vim.api.nvim_buf_set_extmark, buf, M.ns_id, i - 1, 0, {
-        virt_text = { { transformed, line_highlight } },
+        virt_text = virt_text,
         virt_text_pos = "overlay",
         hl_mode = "combine",
       })
