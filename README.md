@@ -35,6 +35,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
   - [lazy.nvim](https://github.com/folke/lazy.nvim) starter screen
 - Fully configurable animation speed, characters, and timing
 - Respects your colorscheme and dashboard highlights
+- **User commands**: `:AsciiPreview`, `:AsciiSettings`, `:AsciiRefresh`
 
 ## Installation
 
@@ -274,6 +275,63 @@ require("ascii-animation").setup({
 })
 ```
 
+## Commands
+
+The plugin provides user commands for browsing and previewing ASCII arts:
+
+### `:AsciiPreview [name]`
+
+Opens a floating window with an animated preview of an ASCII art.
+
+```vim
+:AsciiPreview                  " Preview random art for current time period
+:AsciiPreview morning_blocks_1 " Preview specific art by ID
+:AsciiPreview gradient         " Fuzzy match on art ID
+```
+
+Interactive keybindings:
+- `n`/`p` or `j`/`k`: next/previous art
+- `1`-`5`: filter by period (morning, afternoon, evening, night, weekend)
+- `0`: show all arts
+- `f`: toggle favorite (starred arts appear more often)
+- `F`: show favorites only
+- `r`: replay animation
+- `q`: close
+
+### `:AsciiSettings`
+
+Opens an interactive settings panel:
+
+```vim
+:AsciiSettings
+```
+
+Features:
+- View library stats (arts, taglines, styles)
+- Change animation effect, ambient effect, loop mode, steps
+- Settings are automatically saved and persist across sessions
+- Press `R` to reset to defaults
+
+Keybindings:
+- `e`/`E`: cycle effect
+- `a`/`A`: cycle ambient
+- `l`: toggle loop
+- `s`/`S`: adjust steps
+- `m`/`M`: cycle random mode (always/daily/session)
+- `n`: toggle no-repeat
+- `w`/`W`: adjust favorites weight
+- `r`: refresh dashboard
+- `R`: reset to defaults
+- `p`: open preview
+
+### `:AsciiRefresh`
+
+Re-runs the animation on the current buffer. Useful after returning to your dashboard.
+
+```vim
+:AsciiRefresh
+```
+
 ### Personalization Placeholders
 
 Taglines support placeholder tokens that get replaced at render time:
@@ -440,6 +498,12 @@ ascii.list_arts()                        -- All art IDs
 ascii.list_arts_for_period("morning")    -- Art IDs for period
 ascii.get_art_by_id("morning_blocks_1")  -- Specific art by ID
 ascii.get_styles()                       -- {"blocks", "gradient", "isometric"}
+
+-- Commands (programmatic access)
+ascii.preview("morning_blocks_1")        -- Preview art in floating window
+ascii.settings()                         -- Open settings panel
+ascii.refresh()                          -- Re-run animation on current buffer
+ascii.stop()                             -- Stop any running animation
 ```
 
 ### Placeholders API

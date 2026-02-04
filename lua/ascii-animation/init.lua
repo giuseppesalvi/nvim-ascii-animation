@@ -5,6 +5,7 @@ local config = require("ascii-animation.config")
 local animation = require("ascii-animation.animation")
 local time = require("ascii-animation.time")
 local content = require("ascii-animation.content")
+local commands = require("ascii-animation.commands")
 local placeholders = require("ascii-animation.placeholders")
 
 local M = {}
@@ -12,6 +13,9 @@ local M = {}
 -- Setup function to configure the plugin
 function M.setup(opts)
   config.setup(opts)
+
+  -- Register user commands
+  commands.register_commands()
 
   -- Create autocommand for snacks.nvim dashboard
   if opts and opts.snacks then
@@ -205,5 +209,34 @@ M.content = content
 M.time = time
 M.state = require("ascii-animation.state")
 M.placeholders = placeholders
+
+-- ============================================
+-- User Commands API
+-- ============================================
+
+-- Preview an ASCII art in a floating window
+-- @param name (optional) Art ID or partial match; if nil, shows random art
+function M.preview(name)
+  commands.preview(name)
+end
+
+-- Open settings panel
+-- @return table with stats (arts, taglines, styles, effect, period, animation)
+function M.settings()
+  return commands.stats()
+end
+
+-- Refresh animation on current buffer
+function M.refresh()
+  commands.refresh()
+end
+
+-- Stop any running animation
+function M.stop()
+  animation.stop()
+end
+
+-- Expose commands module
+M.commands = commands
 
 return M
