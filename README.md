@@ -23,6 +23,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 - **60+ built-in ASCII arts** in 3 styles: blocks, gradient, isometric
 - **Time-aware content**: morning, afternoon, evening, night, weekend themes
 - **200+ motivational taglines** that match the time of day
+- **Personalization placeholders**: `{name}`, `{project}`, `{time}`, `{date}`, `{version}`, `{plugin_count}`
 - Works with popular dashboard plugins:
   - [snacks.nvim](https://github.com/folke/snacks.nvim)
   - [alpha-nvim](https://github.com/goolord/alpha-nvim)
@@ -239,6 +240,13 @@ require("ascii-animation").setup({
     },
     weekend_override = true,      -- Use weekend content on Sat/Sun
 
+    -- Personalization placeholders
+    placeholders = {
+      name = "Developer",         -- Override auto-detected git user.name
+      -- project = "my-project",  -- Override auto-detected project name
+      -- date_format = "%B %d, %Y", -- Custom date format
+    },
+
     -- Add your own content (merged with built-in)
     custom_arts = {
       morning = {
@@ -247,6 +255,47 @@ require("ascii-animation").setup({
     },
     custom_messages = {
       morning = { "My custom message!", "Another one" },
+    },
+  },
+})
+```
+
+### Personalization Placeholders
+
+Taglines support placeholder tokens that get replaced at render time:
+
+| Placeholder | Description | Auto-detected |
+|-------------|-------------|---------------|
+| `{name}` | User's name | From `git config user.name` |
+| `{project}` | Current project/directory name | From `cwd` |
+| `{time}` | Time-based greeting | morning/afternoon/evening/night/weekend |
+| `{date}` | Current date | Formatted date |
+| `{version}` | Neovim version | e.g., `v0.10.0` |
+| `{plugin_count}` | Number of loaded plugins | From lazy.nvim/packer |
+
+#### Example Taglines with Placeholders
+
+```lua
+-- Built-in examples
+"Good {time}, {name}!"           -- "Good morning, John!"
+"Welcome back to {project}."     -- "Welcome back to my-project."
+"Neovim {version} • {plugin_count} plugins loaded."  -- "Neovim v0.10.0 • 42 plugins loaded."
+"{date} — Make it count."        -- "February 04, 2026 — Make it count."
+```
+
+#### Custom Messages with Placeholders
+
+```lua
+require("ascii-animation").setup({
+  content = {
+    placeholders = {
+      name = "Developer",  -- Override auto-detected name
+    },
+    custom_messages = {
+      morning = {
+        "Rise and shine, {name}!",
+        "Ready to build {project}?",
+      },
     },
   },
 })
@@ -280,6 +329,10 @@ require("ascii-animation").setup({
 | `content.builtin_messages` | boolean | `true` | Use built-in taglines |
 | `content.styles` | table/nil | `nil` | Filter styles: `{"blocks", "gradient", "isometric"}` |
 | `content.weekend_override` | boolean | `true` | Use weekend content on Sat/Sun |
+| `content.placeholders` | table | `{}` | Override auto-detected placeholder values |
+| `content.placeholders.name` | string | auto | User's name (auto: git user.name) |
+| `content.placeholders.project` | string | auto | Project name (auto: cwd basename) |
+| `content.placeholders.date_format` | string | `"%B %d, %Y"` | Date format string |
 | `content.custom_arts` | table | `{}` | User-defined arts by period |
 | `content.custom_messages` | table | `{}` | User-defined messages by period |
 
@@ -332,6 +385,28 @@ ascii.list_arts()                        -- All art IDs
 ascii.list_arts_for_period("morning")    -- Art IDs for period
 ascii.get_art_by_id("morning_blocks_1")  -- Specific art by ID
 ascii.get_styles()                       -- {"blocks", "gradient", "isometric"}
+```
+
+### Placeholders API
+
+```lua
+local placeholders = require("ascii-animation").placeholders
+
+-- Process a string with placeholders
+local text = placeholders.process("Hello, {name}! Working on {project}?")
+-- Returns: "Hello, John! Working on my-project?"
+
+-- Resolve a single placeholder
+placeholders.resolve("name")     -- "John"
+placeholders.resolve("project")  -- "my-project"
+placeholders.resolve("time")     -- "morning"
+placeholders.resolve("version")  -- "v0.10.0"
+
+-- List available placeholders
+placeholders.list_placeholders() -- {"name", "project", "time", "date", "version", "plugin_count"}
+
+-- Clear cached values (useful for testing)
+placeholders.clear_cache()
 ```
 
 ### Advanced Usage

@@ -18,6 +18,10 @@ M.messages = {
     "New beginnings.",
     "Dawn of ideas.",
     "Wake up & code.",
+    -- Personalized (with placeholders)
+    "Good {time}, {name}!",
+    "Welcome back to {project}.",
+    "Ready to build {project}?",
     -- Philosophical
     "Today writes tomorrow's history.",
     "The void awaits your creation.",
@@ -68,6 +72,10 @@ M.messages = {
     "Push through.",
     "Stay sharp.",
     "Full steam ahead.",
+    -- Personalized (with placeholders)
+    "Good {time}, {name}!",
+    "{project} awaits your code.",
+    "Neovim {version} at your service.",
     -- Philosophical
     "The middle path leads to completion.",
     "Progress over perfection.",
@@ -118,6 +126,10 @@ M.messages = {
     "Wrap it up.",
     "Twilight coding.",
     "Calm focus.",
+    -- Personalized (with placeholders)
+    "Good {time}, {name}!",
+    "Wrapping up {project}.",
+    "{date} — Make it count.",
     -- Philosophical
     "Dusk teaches us to release.",
     "Tomorrow inherits today's work.",
@@ -169,6 +181,10 @@ M.messages = {
     "Night owl vibes.",
     "Darkness, creativity.",
     "3am thoughts.",
+    -- Personalized (with placeholders)
+    "Late {time}, {name}.",
+    "Neovim {version} • {plugin_count} plugins loaded.",
+    "The night belongs to {project}.",
     -- Philosophical
     "In darkness, we see clearly.",
     "The void speaks in functions.",
@@ -222,6 +238,10 @@ M.messages = {
     "Explore & learn.",
     "No deadlines.",
     "Pure joy.",
+    -- Personalized (with placeholders)
+    "Happy {time}, {name}!",
+    "Weekend vibes in {project}.",
+    "{date} — Your time to create.",
     -- Philosophical
     "Freedom is the root of creation.",
     "Play is the highest form of research.",

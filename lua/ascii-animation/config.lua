@@ -40,6 +40,14 @@ M.defaults = {
     custom_arts = {},            -- User-defined arts by period
     custom_messages = {},        -- User-defined messages by period
 
+    -- Personalization placeholders
+    -- Supported: {name}, {project}, {time}, {date}, {version}, {plugin_count}
+    placeholders = {
+      -- name = "Developer",     -- Override auto-detected git user.name
+      -- project = nil,          -- Override auto-detected project name
+      -- date_format = "%B %d, %Y",  -- Custom date format
+    },
+
     -- Time configuration
     time_periods = {
       morning   = { start = 5,  stop = 12 },
