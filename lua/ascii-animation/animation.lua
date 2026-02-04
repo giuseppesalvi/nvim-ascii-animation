@@ -147,6 +147,80 @@ local function matrix_line(line, reveal_ratio, line_idx, total_lines)
   return table.concat(result)
 end
 
+-- Create wave effect (ripple reveal from origin point)
+local function wave_line(line, reveal_ratio, line_idx, total_lines)
+  local chaos_chars = config.options.chaos_chars
+  local chars = vim.fn.split(line, "\\zs")
+  local result = {}
+
+  -- Get wave options with defaults
+  local effect_opts = config.options.animation.effect_options or {}
+  local origin = effect_opts.origin or "center"
+  local speed = effect_opts.speed or 1.0
+
+  local line_count = total_lines
+  local line_width = #chars
+
+  -- Normalize line position (0-1 range)
+  local norm_y = line_count > 1 and (line_idx - 1) / (line_count - 1) or 0.5
+
+  -- Determine origin coordinates (normalized 0-1)
+  local origin_x, origin_y
+  if origin == "center" then
+    origin_x, origin_y = 0.5, 0.5
+  elseif origin == "top-left" then
+    origin_x, origin_y = 0, 0
+  elseif origin == "top-right" then
+    origin_x, origin_y = 1, 0
+  elseif origin == "bottom-left" then
+    origin_x, origin_y = 0, 1
+  elseif origin == "bottom-right" then
+    origin_x, origin_y = 1, 1
+  elseif origin == "top" then
+    origin_x, origin_y = 0.5, 0
+  elseif origin == "bottom" then
+    origin_x, origin_y = 0.5, 1
+  elseif origin == "left" then
+    origin_x, origin_y = 0, 0.5
+  elseif origin == "right" then
+    origin_x, origin_y = 1, 0.5
+  else
+    origin_x, origin_y = 0.5, 0.5  -- Default to center
+  end
+
+  -- Max distance for normalization (diagonal of unit square)
+  local max_dist = math.sqrt(2)
+
+  -- Wave front radius based on reveal_ratio with speed multiplier
+  -- Extra margin (1.2) ensures complete coverage
+  local wave_radius = reveal_ratio * max_dist * speed * 1.2
+
+  for idx, char in ipairs(chars) do
+    if char == " " or char == "" then
+      table.insert(result, char)
+    else
+      -- Normalize x position
+      local norm_x = line_width > 1 and (idx - 1) / (line_width - 1) or 0.5
+
+      -- Calculate euclidean distance from origin
+      local dx = norm_x - origin_x
+      local dy = norm_y - origin_y
+      local dist = math.sqrt(dx * dx + dy * dy)
+
+      -- Reveal if within wave radius
+      if dist <= wave_radius then
+        table.insert(result, char)
+      else
+        -- Show chaos char
+        local rand_idx = math.random(1, #chaos_chars)
+        table.insert(result, chaos_chars:sub(rand_idx, rand_idx))
+      end
+    end
+  end
+
+  return table.concat(result)
+end
+
 -- Effect dispatch table
 local effects = {
   chaos = chaos_line,
@@ -154,10 +228,11 @@ local effects = {
   diagonal = diagonal_line,
   lines = lines_line,
   matrix = matrix_line,
+  wave = wave_line,
 }
 
 -- List of effect names for random selection
-local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix" }
+local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix", "wave" }
 
 -- Pick a random effect
 local function get_random_effect()
@@ -352,6 +427,9 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
     frame_delay = config.options.animation.max_delay / 2
   elseif effect == "matrix" then
     reveal_ratio = actual_step / total_steps
+    frame_delay = config.options.animation.min_delay
+  elseif effect == "wave" then
+    reveal_ratio = ease_in_out(actual_step / total_steps)
     frame_delay = config.options.animation.min_delay
   else  -- chaos (default)
     reveal_ratio = ease_in_out(actual_step / total_steps)

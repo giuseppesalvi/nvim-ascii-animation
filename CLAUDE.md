@@ -242,7 +242,7 @@ end
 **Current settings in :AsciiSettings:**
 
 Animation:
-- `effect` - Animation effect (chaos, typewriter, diagonal, lines, matrix, random)
+- `effect` - Animation effect (chaos, typewriter, diagonal, lines, matrix, wave, random)
 - `ambient` - Ambient effect (none, glitch, shimmer)
 - `loop` - Loop mode toggle
 - `steps` - Animation steps (10-100)
