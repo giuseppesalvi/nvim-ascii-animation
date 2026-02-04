@@ -5,6 +5,8 @@ M.defaults = {
   -- Animation settings
   animation = {
     enabled = true,
+    -- Animation effect: "chaos" (random reveal) or "typewriter" (left-to-right)
+    effect = "chaos",
     -- Total steps in the animation
     steps = 40,
     -- Frame delay range (ms)

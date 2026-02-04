@@ -43,6 +43,27 @@ local function chaos_line(line, reveal_ratio)
   return table.concat(result)
 end
 
+-- Create typewriter version of a line (left-to-right reveal with cursor)
+local function typewriter_line(line, reveal_ratio)
+  local chars = vim.fn.split(line, "\\zs")
+  local result = {}
+  local cursor_pos = math.floor(#chars * reveal_ratio)
+
+  for idx, char in ipairs(chars) do
+    if char == " " or char == "" then
+      table.insert(result, char)
+    elseif idx == cursor_pos then
+      table.insert(result, "▌")  -- Cursor at typing position
+    elseif idx < cursor_pos then
+      table.insert(result, char)  -- Revealed
+    else
+      table.insert(result, " ")  -- Hidden: blank
+    end
+  end
+
+  return table.concat(result)
+end
+
 -- Detect where header ends (before menu items)
 -- Menu items are detected as lines starting with multi-byte icons after a gap
 local function find_header_end(lines, max_lines)
@@ -82,15 +103,31 @@ local function animate(buf, win, step, total_steps, highlight, header_end)
 
   if step > total_steps then return end
 
-  local reveal_ratio = ease_in_out(step / total_steps)
+  local effect = config.options.animation.effect
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+
+  -- Typewriter uses linear timing, chaos uses ease-in-out
+  local reveal_ratio
+  local frame_delay
+  if effect == "typewriter" then
+    reveal_ratio = step / total_steps
+    frame_delay = config.options.animation.min_delay
+  else
+    reveal_ratio = ease_in_out(step / total_steps)
+    frame_delay = get_frame_delay(step, total_steps)
+  end
 
   for i = 1, header_end do
     local line = lines[i]
     if line and #line > 0 then
-      local chaotic = chaos_line(line, reveal_ratio)
+      local transformed
+      if effect == "typewriter" then
+        transformed = typewriter_line(line, reveal_ratio)
+      else
+        transformed = chaos_line(line, reveal_ratio)
+      end
       pcall(vim.api.nvim_buf_set_extmark, buf, M.ns_id, i - 1, 0, {
-        virt_text = { { chaotic, highlight or "Normal" } },
+        virt_text = { { transformed, highlight or "Normal" } },
         virt_text_pos = "overlay",
         hl_mode = "combine",
       })
@@ -99,7 +136,7 @@ local function animate(buf, win, step, total_steps, highlight, header_end)
 
   vim.defer_fn(function()
     animate(buf, win, step + 1, total_steps, highlight, header_end)
-  end, get_frame_delay(step, total_steps))
+  end, frame_delay)
 end
 
 -- Start animation on a buffer

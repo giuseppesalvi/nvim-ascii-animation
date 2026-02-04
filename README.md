@@ -16,7 +16,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 
 ## Features
 
-- Smooth **chaos-to-reveal** animation effect
+- Two **animation effects**: chaos (random reveal) and typewriter (left-to-right)
 - **Ease-in-out** timing: slow start → fast middle → slow finish
 - **60+ built-in ASCII arts** in 3 styles: blocks, gradient, isometric
 - **Time-aware content**: morning, afternoon, evening, night, weekend themes
@@ -40,6 +40,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
   opts = {
     animation = {
       enabled = true,
+      effect = "chaos",  -- "chaos" or "typewriter"
       steps = 40,        -- Total animation steps
       min_delay = 20,    -- Fastest frame delay (ms)
       max_delay = 120,   -- Slowest frame delay (ms)
@@ -249,10 +250,11 @@ require("ascii-animation").setup({
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `animation.enabled` | boolean | `true` | Enable/disable animation |
+| `animation.effect` | string | `"chaos"` | Animation effect: `"chaos"` (random reveal) or `"typewriter"` (left-to-right with cursor) |
 | `animation.steps` | number | `40` | Total animation steps (more = smoother) |
 | `animation.min_delay` | number | `20` | Fastest frame delay in ms (middle of animation) |
 | `animation.max_delay` | number | `120` | Slowest frame delay in ms (start/end) |
-| `chaos_chars` | string | `"@#$%&*..."` | Characters used for chaos effect |
+| `chaos_chars` | string | `"@#$%&*..."` | Characters used for chaos/typewriter effect |
 | `header.padding` | number | `3` | Extra lines to include after header |
 
 ### Content Options
@@ -335,11 +337,17 @@ local delay = animation.get_frame_delay(10, 40)  -- Frame 10 of 40
 
 ## How It Works
 
+### Chaos Effect (default)
 1. **Chaos Phase**: Text starts as random characters from the `chaos_chars` pool
-2. **Reveal Phase**: Characters progressively reveal using an ease-in-out curve
+2. **Reveal Phase**: Characters progressively reveal randomly using an ease-in-out curve
 3. **Timing**: Frame delays vary from slow (edges) to fast (middle) for cinematic effect
 
-The animation uses Neovim's extmarks with virtual text overlay, preserving your original buffer content and highlights.
+### Typewriter Effect
+1. **Left-to-right**: Characters reveal sequentially from left to right
+2. **Cursor**: A cursor (`▌`) shows the current typing position
+3. **Unrevealed**: Characters not yet typed are hidden
+
+Both effects use Neovim's extmarks with virtual text overlay, preserving your original buffer content and highlights.
 
 ## Credits
 
