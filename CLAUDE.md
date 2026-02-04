@@ -152,6 +152,13 @@ gh issue create --title "feat: add new effect" --label "enhancement,animation" -
 gh issue create --title "bug: animation flickers" --label "bug" --body "..."
 ```
 
+### Post-Implementation Checklist
+
+After completing a feature or fix:
+
+1. **Update README.md** - Keep documentation current. Add any new config options, effects, or API changes.
+2. **Propose follow-up issues** - If you identify improvements or related features during implementation, propose creating new issues to track them.
+
 ---
 
 ## Quick Reference
