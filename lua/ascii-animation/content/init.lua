@@ -5,6 +5,7 @@ local config = require("ascii-animation.config")
 local time = require("ascii-animation.time")
 local arts = require("ascii-animation.content.arts")
 local messages = require("ascii-animation.content.messages")
+local placeholders = require("ascii-animation.placeholders")
 
 local M = {}
 
@@ -91,7 +92,9 @@ function M.get_message_for_period(period)
     return nil
   end
 
-  return all_messages[math.random(#all_messages)]
+  local message = all_messages[math.random(#all_messages)]
+  -- Process placeholders at render time
+  return placeholders.process(message)
 end
 
 -- Get a complete header (art + message) for the current time period
