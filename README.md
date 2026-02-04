@@ -16,7 +16,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 
 ## Features
 
-- Six **animation effects**: chaos, typewriter, diagonal, lines, matrix, and random
+- Seven **animation effects**: chaos, typewriter, diagonal, lines, matrix, fade, and random
 - **Loop mode**: continuous animation replay with optional reverse
 - **Ambient effects**: subtle glitch or shimmer after animation completes
 - **Ease-in-out** timing: slow start → fast middle → slow finish
@@ -48,7 +48,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
   opts = {
     animation = {
       enabled = true,
-      effect = "chaos",  -- "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "random"
+      effect = "chaos",  -- "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "fade" | "random"
       steps = 40,        -- Total animation steps
       min_delay = 20,    -- Fastest frame delay (ms)
       max_delay = 120,   -- Slowest frame delay (ms)
@@ -414,7 +414,7 @@ animation = {
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `animation.enabled` | boolean | `true` | Enable/disable animation |
-| `animation.effect` | string | `"chaos"` | Animation effect: `"chaos"`, `"typewriter"`, `"diagonal"`, `"lines"`, `"matrix"`, or `"random"` |
+| `animation.effect` | string | `"chaos"` | Animation effect: `"chaos"`, `"typewriter"`, `"diagonal"`, `"lines"`, `"matrix"`, `"fade"`, or `"random"` |
 | `animation.steps` | number | `40` | Total animation steps (more = smoother) |
 | `animation.min_delay` | number | `20` | Fastest frame delay in ms (middle of animation) |
 | `animation.max_delay` | number | `120` | Slowest frame delay in ms (start/end) |
@@ -570,8 +570,13 @@ local delay = animation.get_frame_delay(10, 40)  -- Frame 10 of 40
 2. **Staggered**: Each character has unique timing based on position
 3. **Chaos**: Falling characters display random matrix-style symbols
 
+### Fade Effect
+1. **Brightness**: Text fades in from dim to bright using dynamic highlight groups
+2. **Stagger**: Top lines fade in first, creating a cascading brightness wave
+3. **Smooth**: Uses ease-in-out timing for a cinematic feel
+
 ### Random Effect
-1. **Variety**: Randomly selects one of the five effects each time animation starts
+1. **Variety**: Randomly selects one of the six effects each time animation starts
 2. **Loop variety**: When looping, picks a new random effect for each cycle
 
 All effects use Neovim's extmarks with virtual text overlay, preserving your original buffer content and highlights.

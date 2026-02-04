@@ -8,6 +8,12 @@ M.ns_id = vim.api.nvim_create_namespace("ascii_animation")
 -- Timer for ambient effects
 local ambient_timer = nil
 
+-- Fade effect state
+local fade_state = {
+  highlight_count = 10,     -- Number of brightness levels
+  base_highlight = nil,     -- Track which highlight was used to create groups
+}
+
 -- State for tracking current animation
 local animation_state = {
   running = false,
@@ -147,6 +153,66 @@ local function matrix_line(line, reveal_ratio, line_idx, total_lines)
   return table.concat(result)
 end
 
+-- Create fade highlight groups with varying brightness
+local function create_fade_highlights(base_highlight)
+  -- Check if we need to recreate (different base highlight)
+  if fade_state.base_highlight == base_highlight then
+    return
+  end
+
+  -- Get the base highlight's foreground color
+  local hl_name = base_highlight or "Normal"
+  local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = hl_name, link = false })
+  local base_fg = ok and hl.fg
+
+  if not base_fg then
+    -- Try to get Normal highlight as fallback
+    ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = "Normal", link = false })
+    base_fg = ok and hl.fg
+  end
+
+  if not base_fg then
+    -- Ultimate fallback: use white
+    base_fg = 0xFFFFFF
+  end
+
+  -- Extract RGB components using math operations (avoids bit library dependency)
+  local base_r = math.floor(base_fg / 0x10000) % 0x100
+  local base_g = math.floor(base_fg / 0x100) % 0x100
+  local base_b = base_fg % 0x100
+
+  -- Create highlights with increasing brightness (1 = dimmest, N = brightest)
+  for i = 1, fade_state.highlight_count do
+    local brightness = i / fade_state.highlight_count
+    local r = math.floor(base_r * brightness)
+    local g = math.floor(base_g * brightness)
+    local b = math.floor(base_b * brightness)
+    local dimmed_color = r * 0x10000 + g * 0x100 + b
+
+    vim.api.nvim_set_hl(0, "AsciiFade" .. i, { fg = dimmed_color })
+  end
+
+  fade_state.base_highlight = base_highlight
+end
+
+-- Get fade highlight for a given brightness level (0-1)
+local function get_fade_highlight(brightness)
+  local level = math.ceil(brightness * fade_state.highlight_count)
+  level = math.max(1, math.min(fade_state.highlight_count, level))
+  return "AsciiFade" .. level
+end
+
+-- Fade effect: returns original line (brightness controlled via highlight groups)
+local function fade_line(line, reveal_ratio, line_idx, total_lines)
+  -- Fade effect doesn't modify the text, only the highlight
+  -- Line stagger: top lines fade in first
+  local line_offset = (line_idx - 1) / total_lines * 0.3
+  local adjusted_ratio = math.max(0, (reveal_ratio - line_offset) / 0.7)
+
+  -- Return original line - brightness handled in render loop
+  return line, adjusted_ratio
+end
+
 -- Effect dispatch table
 local effects = {
   chaos = chaos_line,
@@ -154,10 +220,11 @@ local effects = {
   diagonal = diagonal_line,
   lines = lines_line,
   matrix = matrix_line,
+  fade = fade_line,
 }
 
 -- List of effect names for random selection
-local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix" }
+local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix", "fade" }
 
 -- Pick a random effect
 local function get_random_effect()
@@ -319,6 +386,10 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
           -- Restart forward: pick new random effect if in random mode
           if config.options.animation.effect == "random" then
             animation_state.effect = get_random_effect()
+            -- Create fade highlights if random selected fade
+            if animation_state.effect == "fade" then
+              create_fade_highlights(highlight)
+            end
           end
           animate(buf, win, 0, total_steps, highlight, header_end, false)
         end
@@ -353,6 +424,9 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
   elseif effect == "matrix" then
     reveal_ratio = actual_step / total_steps
     frame_delay = config.options.animation.min_delay
+  elseif effect == "fade" then
+    reveal_ratio = ease_in_out(actual_step / total_steps)
+    frame_delay = config.options.animation.max_delay / 2
   else  -- chaos (default)
     reveal_ratio = ease_in_out(actual_step / total_steps)
     frame_delay = get_frame_delay(actual_step, total_steps)
@@ -363,9 +437,16 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
   for i = 1, header_end do
     local line = lines[i]
     if line and #line > 0 then
-      local transformed = effect_fn(line, reveal_ratio, i, header_end)
+      local transformed, brightness = effect_fn(line, reveal_ratio, i, header_end)
+      local line_highlight = highlight or "Normal"
+
+      -- Fade effect uses dynamic highlight groups based on brightness
+      if effect == "fade" and brightness then
+        line_highlight = get_fade_highlight(brightness)
+      end
+
       pcall(vim.api.nvim_buf_set_extmark, buf, M.ns_id, i - 1, 0, {
-        virt_text = { { transformed, highlight or "Normal" } },
+        virt_text = { { transformed, line_highlight } },
         virt_text_pos = "overlay",
         hl_mode = "combine",
       })
@@ -405,6 +486,11 @@ function M.start(buf, header_lines, highlight)
   local effect = config.options.animation.effect
   if effect == "random" then
     effect = get_random_effect()
+  end
+
+  -- Create fade highlight groups if needed
+  if effect == "fade" then
+    create_fade_highlights(highlight)
   end
 
   -- Store state for potential stop
