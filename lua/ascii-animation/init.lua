@@ -6,6 +6,7 @@ local animation = require("ascii-animation.animation")
 local time = require("ascii-animation.time")
 local content = require("ascii-animation.content")
 local commands = require("ascii-animation.commands")
+local placeholders = require("ascii-animation.placeholders")
 
 local M = {}
 
@@ -106,6 +107,54 @@ end
 -- Get a complete header (art + message) for current period
 -- Returns: { art = lines[], message = string, period = string, art_id = string, art_name = string }
 function M.get_header()
+  local anim_opts = config.options.animation or {}
+  local min_width = anim_opts.min_width or 60
+  local fallback = anim_opts.fallback or "tagline"
+
+  -- Check if terminal is wide enough
+  if vim.o.columns < min_width then
+    local period = time.get_current_period()
+    local message = content.get_message()
+
+    if fallback == "none" then
+      return {
+        art = {},
+        message = "",
+        period = period,
+        art_id = nil,
+        art_name = nil,
+      }
+    elseif fallback == "tagline" then
+      return {
+        art = {},
+        message = message or "",
+        period = period,
+        art_id = nil,
+        art_name = nil,
+      }
+    else
+      -- fallback is an art_id
+      local art = content.get_art_by_id(fallback)
+      if art then
+        return {
+          art = art.lines or {},
+          message = message or "",
+          period = period,
+          art_id = art.id,
+          art_name = art.name,
+        }
+      end
+      -- Art not found, fall back to tagline
+      return {
+        art = {},
+        message = message or "",
+        period = period,
+        art_id = nil,
+        art_name = nil,
+      }
+    end
+  end
+
   return content.get_header()
 end
 
@@ -155,9 +204,11 @@ function M.get_styles()
   return content.get_styles()
 end
 
--- Expose content module for advanced usage
+-- Expose modules for advanced usage
 M.content = content
 M.time = time
+M.state = require("ascii-animation.state")
+M.placeholders = placeholders
 
 -- ============================================
 -- User Commands API

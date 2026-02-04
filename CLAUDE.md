@@ -58,6 +58,21 @@ ln -s $(pwd) ~/.local/share/nvim/lazy/nvim-ascii-animation
 { dir = "~/Documents/Projects/nvim-ascii-animation" }
 ```
 
+### Testing with Worktrees
+
+When working in a git worktree (e.g., `nvim-anim-issue-3`), update lazy.nvim config to point to the worktree:
+
+```lua
+-- In ~/.config/nvim/lua/plugins/dashboard.lua
+dir = "~/Documents/Projects/nvim-anim-issue-3",  -- Point to worktree
+```
+
+**Important:** Restore to main project path after merging/cleanup:
+
+```lua
+dir = "~/Documents/Projects/nvim-ascii-animation",  -- Restore to main
+```
+
 ### Git Commands
 
 ```bash

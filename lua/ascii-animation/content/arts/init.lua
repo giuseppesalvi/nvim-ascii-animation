@@ -83,4 +83,20 @@ function M.get_styles()
   return { "blocks", "gradient", "isometric" }
 end
 
+-- Calculate the display width of an art
+function M.get_art_width(art)
+  if not art or not art.lines then
+    return 0
+  end
+
+  local max_width = 0
+  for _, line in ipairs(art.lines) do
+    local width = vim.fn.strdisplaywidth(line)
+    if width > max_width then
+      max_width = width
+    end
+  end
+  return max_width
+end
+
 return M
