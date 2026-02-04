@@ -16,7 +16,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 
 ## Features
 
-- Six **animation effects**: chaos, typewriter, diagonal, lines, matrix, and random
+- Seven **animation effects**: chaos, typewriter, diagonal, lines, matrix, wave, and random
 - **Loop mode**: continuous animation replay with optional reverse
 - **Ambient effects**: subtle glitch or shimmer after animation completes
 - **Ease-in-out** timing: slow start → fast middle → slow finish
@@ -48,7 +48,11 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
   opts = {
     animation = {
       enabled = true,
-      effect = "chaos",  -- "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "random"
+      effect = "chaos",  -- "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "wave" | "random"
+      effect_options = {
+        origin = "center",  -- Wave origin: "center" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "top" | "bottom" | "left" | "right"
+        speed = 1.0,        -- Wave propagation speed multiplier
+      },
       steps = 40,        -- Total animation steps
       min_delay = 20,    -- Fastest frame delay (ms)
       max_delay = 120,   -- Slowest frame delay (ms)
@@ -414,7 +418,9 @@ animation = {
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `animation.enabled` | boolean | `true` | Enable/disable animation |
-| `animation.effect` | string | `"chaos"` | Animation effect: `"chaos"`, `"typewriter"`, `"diagonal"`, `"lines"`, `"matrix"`, or `"random"` |
+| `animation.effect` | string | `"chaos"` | Animation effect: `"chaos"`, `"typewriter"`, `"diagonal"`, `"lines"`, `"matrix"`, `"wave"`, or `"random"` |
+| `animation.effect_options.origin` | string | `"center"` | Wave effect origin point (see Wave Effect below) |
+| `animation.effect_options.speed` | number | `1.0` | Wave propagation speed multiplier |
 | `animation.steps` | number | `40` | Total animation steps (more = smoother) |
 | `animation.min_delay` | number | `20` | Fastest frame delay in ms (middle of animation) |
 | `animation.max_delay` | number | `120` | Slowest frame delay in ms (start/end) |
@@ -570,8 +576,28 @@ local delay = animation.get_frame_delay(10, 40)  -- Frame 10 of 40
 2. **Staggered**: Each character has unique timing based on position
 3. **Chaos**: Falling characters display random matrix-style symbols
 
+### Wave Effect
+1. **Ripple**: Characters reveal in an expanding circular pattern from an origin point
+2. **Origin**: Configurable starting point - center, corners, or edges
+3. **Organic**: Creates water-like ripple reveal pattern using euclidean distance
+
+**Origin Options:**
+- `"center"` (default) - Ripple expands from the center
+- `"top-left"`, `"top-right"`, `"bottom-left"`, `"bottom-right"` - Corner origins
+- `"top"`, `"bottom"`, `"left"`, `"right"` - Edge origins
+
+```lua
+animation = {
+  effect = "wave",
+  effect_options = {
+    origin = "center",  -- Starting point for the wave
+    speed = 1.0,        -- 1.0 = normal, >1 = faster, <1 = slower
+  },
+}
+```
+
 ### Random Effect
-1. **Variety**: Randomly selects one of the five effects each time animation starts
+1. **Variety**: Randomly selects one of the six effects each time animation starts
 2. **Loop variety**: When looping, picks a new random effect for each cycle
 
 All effects use Neovim's extmarks with virtual text overlay, preserving your original buffer content and highlights.

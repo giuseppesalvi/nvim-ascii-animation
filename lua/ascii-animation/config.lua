@@ -8,8 +8,15 @@ M.defaults = {
   -- Animation settings
   animation = {
     enabled = true,
-    -- Animation effect: "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "random"
+    -- Animation effect: "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "wave" | "random"
     effect = "chaos",
+    -- Effect-specific options (used by wave effect)
+    effect_options = {
+      -- Wave effect origin: "center" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "top" | "bottom" | "left" | "right"
+      origin = "center",
+      -- Wave propagation speed multiplier (1.0 = normal, >1 = faster, <1 = slower)
+      speed = 1.0,
+    },
     -- Total steps in the animation
     steps = 40,
     -- Frame delay range (ms)
