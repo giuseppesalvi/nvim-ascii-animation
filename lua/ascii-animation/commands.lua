@@ -398,7 +398,7 @@ local function update_stats_content()
   local fav_count = #config.favorites
 
   -- Effect options for display
-  local effects = { "chaos", "typewriter", "diagonal", "lines", "matrix", "random" }
+  local effects = { "chaos", "typewriter", "diagonal", "lines", "matrix", "explode", "implode", "random" }
   local effect_idx = 1
   for i, e in ipairs(effects) do
     if e == effect then effect_idx = i break end
@@ -453,7 +453,7 @@ end
 
 -- Cycle through effect options
 local function cycle_effect(delta)
-  local effects = { "chaos", "typewriter", "diagonal", "lines", "matrix", "random" }
+  local effects = { "chaos", "typewriter", "diagonal", "lines", "matrix", "explode", "implode", "random" }
   local current = config.options.animation.effect
   local idx = 1
   for i, e in ipairs(effects) do
@@ -558,7 +558,7 @@ function M.stats()
   local period = time.get_current_period()
   local fav_count = #config.favorites
 
-  local effects = { "chaos", "typewriter", "diagonal", "lines", "matrix", "random" }
+  local effects = { "chaos", "typewriter", "diagonal", "lines", "matrix", "explode", "implode", "random" }
   local effect_idx = 1
   for i, e in ipairs(effects) do
     if e == effect then effect_idx = i break end

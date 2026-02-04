@@ -147,6 +147,85 @@ local function matrix_line(line, reveal_ratio, line_idx, total_lines)
   return table.concat(result)
 end
 
+-- Create explode effect (center-outward reveal with scatter)
+local function explode_line(line, reveal_ratio, line_idx, total_lines)
+  local chaos_chars = config.options.chaos_chars
+  local chars = vim.fn.split(line, "\\zs")
+  local result = {}
+  local len = #chars
+  local center = len / 2
+
+  -- Add line offset for staggered effect (center lines reveal first)
+  local line_center = total_lines / 2
+  local line_dist = math.abs(line_idx - line_center) / total_lines
+  local line_offset = line_dist * 0.2
+
+  for idx, char in ipairs(chars) do
+    if char == " " or char == "" then
+      table.insert(result, char)
+    else
+      -- Distance from center (0 = center, 1 = edge)
+      local dist_from_center = math.abs(idx - center) / (len / 2 + 0.001)
+      -- Characters closer to center reveal first
+      local threshold = dist_from_center + line_offset
+
+      -- Snap phase: last 20% reveals everything quickly
+      local adjusted_ratio = reveal_ratio < 0.8 and reveal_ratio * 1.1 or (0.88 + (reveal_ratio - 0.8) * 0.6)
+
+      if adjusted_ratio > threshold then
+        table.insert(result, char)
+      else
+        -- Scatter effect: chaos chars with position-based seed
+        local seed = (line_idx * 17 + idx * 31) % #chaos_chars + 1
+        local rand_offset = math.floor(reveal_ratio * 10) % #chaos_chars
+        local chaos_idx = ((seed + rand_offset - 1) % #chaos_chars) + 1
+        table.insert(result, chaos_chars:sub(chaos_idx, chaos_idx))
+      end
+    end
+  end
+  return table.concat(result)
+end
+
+-- Create implode effect (edge-inward reveal with converge)
+local function implode_line(line, reveal_ratio, line_idx, total_lines)
+  local chaos_chars = config.options.chaos_chars
+  local chars = vim.fn.split(line, "\\zs")
+  local result = {}
+  local len = #chars
+  local center = len / 2
+
+  -- Add line offset for staggered effect (edge lines reveal first)
+  local line_center = total_lines / 2
+  local line_dist = 1 - math.abs(line_idx - line_center) / total_lines
+  local line_offset = line_dist * 0.2
+
+  for idx, char in ipairs(chars) do
+    if char == " " or char == "" then
+      table.insert(result, char)
+    else
+      -- Distance from edge (0 = edge, 1 = center)
+      local dist_from_center = math.abs(idx - center) / (len / 2 + 0.001)
+      local dist_from_edge = 1 - dist_from_center
+      -- Characters closer to edge reveal first (converging inward)
+      local threshold = dist_from_edge + line_offset
+
+      -- Snap phase: last 20% converges everything quickly to center
+      local adjusted_ratio = reveal_ratio < 0.8 and reveal_ratio * 1.1 or (0.88 + (reveal_ratio - 0.8) * 0.6)
+
+      if adjusted_ratio > threshold then
+        table.insert(result, char)
+      else
+        -- Scatter effect: chaos chars with position-based seed
+        local seed = (line_idx * 17 + idx * 31) % #chaos_chars + 1
+        local rand_offset = math.floor(reveal_ratio * 10) % #chaos_chars
+        local chaos_idx = ((seed + rand_offset - 1) % #chaos_chars) + 1
+        table.insert(result, chaos_chars:sub(chaos_idx, chaos_idx))
+      end
+    end
+  end
+  return table.concat(result)
+end
+
 -- Effect dispatch table
 local effects = {
   chaos = chaos_line,
@@ -154,10 +233,12 @@ local effects = {
   diagonal = diagonal_line,
   lines = lines_line,
   matrix = matrix_line,
+  explode = explode_line,
+  implode = implode_line,
 }
 
 -- List of effect names for random selection
-local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix" }
+local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix", "explode", "implode" }
 
 -- Pick a random effect
 local function get_random_effect()
@@ -351,6 +432,10 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
     reveal_ratio = ease_in_out(actual_step / total_steps)
     frame_delay = config.options.animation.max_delay / 2
   elseif effect == "matrix" then
+    reveal_ratio = actual_step / total_steps
+    frame_delay = config.options.animation.min_delay
+  elseif effect == "explode" or effect == "implode" then
+    -- Fast timing for dramatic scatter/converge effect
     reveal_ratio = actual_step / total_steps
     frame_delay = config.options.animation.min_delay
   else  -- chaos (default)
