@@ -13,6 +13,15 @@ local function ensure_random_seed()
   math.randomseed(os.time() + math.floor(os.clock() * 1000))
 end
 
+-- Check if should pick from favorites based on weight
+local function should_pick_favorite()
+  if #config.favorites == 0 then
+    return false
+  end
+  ensure_random_seed()
+  return math.random(100) <= config.favorites_weight
+end
+
 -- Get style filter from config
 local function get_style_filter()
   local opts = config.options.content or {}
@@ -20,8 +29,18 @@ local function get_style_filter()
 end
 
 -- Get a random art for the current time period
+-- Considers favorites weight setting
 function M.get_art()
   ensure_random_seed()
+
+  -- Check if we should pick from favorites
+  if should_pick_favorite() then
+    local fav_art = arts.get_art_by_id(config.favorites[math.random(#config.favorites)])
+    if fav_art then
+      return fav_art
+    end
+  end
+
   local period = time.get_current_period()
   return M.get_art_for_period(period)
 end

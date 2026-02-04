@@ -30,12 +30,15 @@ nvim-ascii-animation/
 │   └── ISSUE_TEMPLATE/       # Issue templates (bug, feature)
 ├── lua/
 │   └── ascii-animation/
-│       ├── init.lua          # Main entry point
-│       ├── animation.lua     # Animation logic
-│       ├── config.lua        # Configuration
-│       ├── content.lua       # Built-in ASCII arts & taglines
+│       ├── init.lua          # Main entry point & public API
+│       ├── animation.lua     # Animation logic & effects
+│       ├── commands.lua      # User commands (:AsciiPreview, :AsciiSettings, etc.)
+│       ├── config.lua        # Configuration & persistence
 │       ├── time.lua          # Time period detection
-│       └── effects/          # Animation effects (future)
+│       └── content/          # Content system
+│           ├── init.lua      # Content manager
+│           ├── arts/         # ASCII art by style (blocks, gradient, isometric)
+│           └── messages/     # Taglines by period
 ├── README.md
 ├── LICENSE
 └── CLAUDE.md
@@ -189,6 +192,44 @@ After completing a feature or fix:
 
 1. **Update README.md** - Keep documentation current. Add any new config options, effects, or API changes.
 2. **Propose follow-up issues** - If you identify improvements or related features during implementation, propose creating new issues to track them.
+
+---
+
+## Adding New Settings
+
+When adding a new user-configurable setting to `:AsciiSettings`:
+
+1. **config.lua** - Add the setting variable and include it in `save()` and `load_saved()`
+2. **commands.lua** - Add to `update_stats_content()` display, create adjustment function, add keybinding
+3. **README.md** - Document the new setting
+
+**Settings persistence pattern:**
+```lua
+-- In config.lua
+M.my_setting = default_value  -- Add variable
+
+function M.save()
+  local to_save = {
+    -- ...existing settings...
+    my_setting = M.my_setting,  -- Add to save
+  }
+end
+
+function M.setup(opts)
+  local saved = M.load_saved()
+  -- ...
+  if saved.my_setting then
+    M.my_setting = saved.my_setting  -- Load saved value
+  end
+end
+```
+
+**Current settings in :AsciiSettings:**
+- `effect` - Animation effect (chaos, typewriter, diagonal, lines, matrix, random)
+- `ambient` - Ambient effect (none, glitch, shimmer)
+- `loop` - Loop mode toggle
+- `steps` - Animation steps (10-100)
+- `favorites_weight` - Probability of picking favorite art (0-100%)
 
 ---
 

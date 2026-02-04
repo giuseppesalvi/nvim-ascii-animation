@@ -1,6 +1,9 @@
 -- Default configuration for ascii-animation
 local M = {}
 
+-- Path for persistent settings
+local data_path = vim.fn.stdpath("data") .. "/ascii-animation.json"
+
 M.defaults = {
   -- Animation settings
   animation = {
@@ -57,8 +60,97 @@ M.defaults = {
 
 M.options = {}
 
+-- Load saved settings from disk
+function M.load_saved()
+  local file = io.open(data_path, "r")
+  if not file then
+    return {}
+  end
+  local content = file:read("*a")
+  file:close()
+  local ok, saved = pcall(vim.json.decode, content)
+  if ok and saved then
+    return saved
+  end
+  return {}
+end
+
+-- Favorites list (art IDs)
+M.favorites = {}
+
+-- Favorites weight (0-100): chance of picking a favorite when available
+M.favorites_weight = 70
+
+-- Save current settings to disk
+function M.save()
+  -- Only save animation settings that can be changed via UI
+  local to_save = {
+    animation = {
+      effect = M.options.animation.effect,
+      ambient = M.options.animation.ambient,
+      loop = M.options.animation.loop,
+      steps = M.options.animation.steps,
+    },
+    favorites = M.favorites,
+    favorites_weight = M.favorites_weight,
+  }
+  local ok, json = pcall(vim.json.encode, to_save)
+  if not ok then
+    return false
+  end
+  local file = io.open(data_path, "w")
+  if not file then
+    return false
+  end
+  file:write(json)
+  file:close()
+  return true
+end
+
+-- Clear saved settings (reset to config defaults)
+function M.clear_saved()
+  os.remove(data_path)
+  M.favorites = {}
+  M.favorites_weight = 70
+end
+
+-- Toggle favorite status for an art ID
+function M.toggle_favorite(art_id)
+  for i, id in ipairs(M.favorites) do
+    if id == art_id then
+      table.remove(M.favorites, i)
+      M.save()
+      return false -- removed
+    end
+  end
+  table.insert(M.favorites, art_id)
+  M.save()
+  return true -- added
+end
+
+-- Check if an art is favorited
+function M.is_favorite(art_id)
+  for _, id in ipairs(M.favorites) do
+    if id == art_id then
+      return true
+    end
+  end
+  return false
+end
+
 function M.setup(opts)
-  M.options = vim.tbl_deep_extend("force", {}, M.defaults, opts or {})
+  -- Load saved settings (from UI changes)
+  local saved = M.load_saved()
+  -- Merge: defaults < user opts < saved UI settings
+  -- This ensures UI-changed settings persist over config file settings
+  M.options = vim.tbl_deep_extend("force", {}, M.defaults, opts or {}, saved)
+  -- Load favorites separately
+  if saved.favorites then
+    M.favorites = saved.favorites
+  end
+  if saved.favorites_weight then
+    M.favorites_weight = saved.favorites_weight
+  end
 end
 
 -- Initialize with defaults
