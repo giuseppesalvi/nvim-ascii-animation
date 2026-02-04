@@ -16,7 +16,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 
 ## Features
 
-- Seven **animation effects**: chaos, typewriter, diagonal, lines, matrix, wave, and random
+- Eight **animation effects**: chaos, typewriter, diagonal, lines, matrix, wave, fade, and random
 - **Loop mode**: continuous animation replay with optional reverse
 - **Ambient effects**: subtle glitch or shimmer after animation completes
 - **Ease-in-out** timing: slow start → fast middle → slow finish
@@ -48,7 +48,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
   opts = {
     animation = {
       enabled = true,
-      effect = "chaos",  -- "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "wave" | "random"
+      effect = "chaos",  -- "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "wave" | "fade" | "random"
       effect_options = {
         origin = "center",  -- Wave origin: "center" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "top" | "bottom" | "left" | "right"
         speed = 1.0,        -- Wave propagation speed multiplier
@@ -418,7 +418,7 @@ animation = {
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `animation.enabled` | boolean | `true` | Enable/disable animation |
-| `animation.effect` | string | `"chaos"` | Animation effect: `"chaos"`, `"typewriter"`, `"diagonal"`, `"lines"`, `"matrix"`, `"wave"`, or `"random"` |
+| `animation.effect` | string | `"chaos"` | Animation effect: `"chaos"`, `"typewriter"`, `"diagonal"`, `"lines"`, `"matrix"`, `"wave"`, `"fade"`, or `"random"` |
 | `animation.effect_options.origin` | string | `"center"` | Wave effect origin point (see Wave Effect below) |
 | `animation.effect_options.speed` | number | `1.0` | Wave propagation speed multiplier |
 | `animation.steps` | number | `40` | Total animation steps (more = smoother) |
@@ -595,6 +595,11 @@ animation = {
   },
 }
 ```
+
+### Fade Effect
+1. **Brightness**: Text fades in from dim to bright using dynamic highlight groups
+2. **Stagger**: Top lines fade in first, creating a cascading brightness wave
+3. **Smooth**: Uses ease-in-out timing for a cinematic feel
 
 ### Random Effect
 1. **Variety**: Randomly selects one of the six effects each time animation starts
