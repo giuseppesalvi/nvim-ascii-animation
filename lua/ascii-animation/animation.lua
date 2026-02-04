@@ -287,6 +287,186 @@ local function fade_line(line, reveal_ratio, line_idx, total_lines)
   return line, adjusted_ratio
 end
 
+-- Create scramble version (password reveal / slot machine effect)
+local function scramble_line(line, reveal_ratio, line_idx, total_lines)
+  local effect_opts = config.options.animation.effect_options or {}
+  local stagger = effect_opts.stagger or "left"
+  local charset = effect_opts.charset or config.options.chaos_chars
+
+  local chars = vim.fn.split(line, "\\zs")
+  local result = {}
+  local num_chars = #chars
+  if num_chars == 0 then return "" end
+
+  local stagger_delay = effect_opts.stagger_delay or 30
+  local stagger_spread = math.max(0.3, math.min(0.8, stagger_delay / 50))
+  local cycles = effect_opts.cycles or 5
+  local settle_duration = math.max(0.2, math.min(0.5, 0.1 + cycles / 25))
+
+  local function get_stagger_offset(idx)
+    if stagger == "right" then
+      return 1 - (idx - 1) / math.max(1, num_chars - 1)
+    elseif stagger == "center" then
+      local mid = (num_chars + 1) / 2
+      return math.abs(idx - mid) / math.max(1, mid - 1)
+    elseif stagger == "random" then
+      return ((line_idx * 17 + idx * 31) % 100) / 100
+    else
+      return (idx - 1) / math.max(1, num_chars - 1)
+    end
+  end
+
+  for idx, char in ipairs(chars) do
+    if char == " " or char == "" then
+      table.insert(result, char)
+    else
+      local stagger_offset = get_stagger_offset(idx)
+      local settle_time = stagger_offset * stagger_spread + settle_duration
+      if reveal_ratio >= settle_time then
+        table.insert(result, char)
+      else
+        local rand_idx = math.random(1, #charset)
+        table.insert(result, charset:sub(rand_idx, rand_idx))
+      end
+    end
+  end
+  return table.concat(result)
+end
+
+-- Create rain/drip effect (characters fall and stack from bottom)
+local function rain_line(line, reveal_ratio, line_idx, total_lines)
+  local chaos_chars = config.options.chaos_chars
+  local chars = vim.fn.split(line, "\\zs")
+  local result = {}
+
+  local inverted_pos = (total_lines - line_idx + 1) / total_lines
+  local line_threshold = inverted_pos * 0.6
+  local line_progress = math.max(0, (reveal_ratio - line_threshold) / (1 - line_threshold))
+
+  for idx, char in ipairs(chars) do
+    if char == " " or char == "" then
+      table.insert(result, char)
+    else
+      local col_seed = ((idx * 17 + line_idx * 7) % 100) / 100
+      local char_delay = col_seed * 0.25
+      local char_progress = math.max(0, (line_progress - char_delay) / (1 - char_delay))
+      if char_progress >= 0.7 then
+        table.insert(result, char)
+      else
+        local rand_idx = math.random(1, #chaos_chars)
+        table.insert(result, chaos_chars:sub(rand_idx, rand_idx))
+      end
+    end
+  end
+  return table.concat(result)
+end
+
+-- State for spiral effect
+local spiral_state = { max_width = 0, center_x = 0, center_y = 0, max_spiral_dist = 0 }
+
+local function get_spiral_distance(x, y, center_x, center_y, clockwise, tightness)
+  local dx = x - center_x
+  local dy = (y - center_y) * 2
+  local radius = math.sqrt(dx * dx + dy * dy)
+  local angle = math.atan2(dy, dx)
+  if angle < 0 then angle = angle + 2 * math.pi end
+  if not clockwise then angle = 2 * math.pi - angle end
+  return radius + (angle / (2 * math.pi)) * tightness
+end
+
+-- Create spiral reveal effect
+local function spiral_line(line, reveal_ratio, line_idx, total_lines)
+  local chaos_chars = config.options.chaos_chars
+  local chars = vim.fn.split(line, "\\zs")
+  local result = {}
+
+  local effect_opts = config.options.animation.effect_options or {}
+  local direction = effect_opts.direction or "outward"
+  local rotation = effect_opts.rotation or "clockwise"
+  local tightness = (effect_opts.tightness or 1.0) * 3
+  local clockwise = rotation == "clockwise"
+
+  for idx, char in ipairs(chars) do
+    if char == " " or char == "" then
+      table.insert(result, char)
+    else
+      local spiral_dist = get_spiral_distance(idx, line_idx, spiral_state.center_x, spiral_state.center_y, clockwise, tightness)
+      local normalized_dist = spiral_dist / spiral_state.max_spiral_dist
+      if direction == "inward" then normalized_dist = 1 - normalized_dist end
+      if normalized_dist <= reveal_ratio then
+        table.insert(result, char)
+      else
+        local rand_idx = math.random(1, #chaos_chars)
+        table.insert(result, chaos_chars:sub(rand_idx, rand_idx))
+      end
+    end
+  end
+  return table.concat(result)
+end
+
+-- Create explode effect (center-outward reveal)
+local function explode_line(line, reveal_ratio, line_idx, total_lines)
+  local chaos_chars = config.options.chaos_chars
+  local chars = vim.fn.split(line, "\\zs")
+  local result = {}
+  local len = #chars
+  local center = len / 2
+  local line_center = total_lines / 2
+  local line_dist = math.abs(line_idx - line_center) / total_lines
+  local line_offset = line_dist * 0.2
+
+  for idx, char in ipairs(chars) do
+    if char == " " or char == "" then
+      table.insert(result, char)
+    else
+      local dist_from_center = math.abs(idx - center) / (len / 2 + 0.001)
+      local threshold = dist_from_center + line_offset
+      local adjusted_ratio = reveal_ratio < 0.8 and reveal_ratio * 1.1 or (0.88 + (reveal_ratio - 0.8) * 0.6)
+      if adjusted_ratio > threshold then
+        table.insert(result, char)
+      else
+        local seed = (line_idx * 17 + idx * 31) % #chaos_chars + 1
+        local rand_offset = math.floor(reveal_ratio * 10) % #chaos_chars
+        local chaos_idx = ((seed + rand_offset - 1) % #chaos_chars) + 1
+        table.insert(result, chaos_chars:sub(chaos_idx, chaos_idx))
+      end
+    end
+  end
+  return table.concat(result)
+end
+
+-- Create implode effect (edge-inward reveal)
+local function implode_line(line, reveal_ratio, line_idx, total_lines)
+  local chaos_chars = config.options.chaos_chars
+  local chars = vim.fn.split(line, "\\zs")
+  local result = {}
+  local len = #chars
+  local center = len / 2
+  local line_center = total_lines / 2
+  local line_dist = 1 - math.abs(line_idx - line_center) / total_lines
+  local line_offset = line_dist * 0.2
+
+  for idx, char in ipairs(chars) do
+    if char == " " or char == "" then
+      table.insert(result, char)
+    else
+      local dist_from_center = math.abs(idx - center) / (len / 2 + 0.001)
+      local dist_from_edge = 1 - dist_from_center
+      local threshold = dist_from_edge + line_offset
+      local adjusted_ratio = reveal_ratio < 0.8 and reveal_ratio * 1.1 or (0.88 + (reveal_ratio - 0.8) * 0.6)
+      if adjusted_ratio > threshold then
+        table.insert(result, char)
+      else
+        local seed = (line_idx * 17 + idx * 31) % #chaos_chars + 1
+        local rand_offset = math.floor(reveal_ratio * 10) % #chaos_chars
+        local chaos_idx = ((seed + rand_offset - 1) % #chaos_chars) + 1
+        table.insert(result, chaos_chars:sub(chaos_idx, chaos_idx))
+      end
+    end
+  end
+  return table.concat(result)
+end
+
 -- Effect dispatch table
 local effects = {
   chaos = chaos_line,
@@ -296,10 +476,15 @@ local effects = {
   matrix = matrix_line,
   wave = wave_line,
   fade = fade_line,
+  scramble = scramble_line,
+  rain = rain_line,
+  spiral = spiral_line,
+  explode = explode_line,
+  implode = implode_line,
 }
 
 -- List of effect names for random selection
-local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix", "wave", "fade" }
+local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix", "wave", "fade", "scramble", "rain", "spiral", "explode", "implode" }
 
 -- Pick a random effect
 local function get_random_effect()
