@@ -147,6 +147,62 @@ local function matrix_line(line, reveal_ratio, line_idx, total_lines)
   return table.concat(result)
 end
 
+-- Create scramble version (password reveal / slot machine effect)
+local function scramble_line(line, reveal_ratio, line_idx, total_lines)
+  local effect_opts = config.options.effect_options or {}
+  local stagger = effect_opts.stagger or "left"
+  local charset = effect_opts.charset or config.options.chaos_chars
+
+  local chars = vim.fn.split(line, "\\zs")
+  local result = {}
+  local num_chars = #chars
+  if num_chars == 0 then return "" end
+
+  -- Convert stagger_delay to spread factor (30 = 0.6 spread, range 0.3-0.8)
+  local stagger_delay = effect_opts.stagger_delay or 30
+  local stagger_spread = math.max(0.3, math.min(0.8, stagger_delay / 50))
+
+  -- Convert cycles to settle duration (5 cycles = 0.3, range 0.2-0.5)
+  local cycles = effect_opts.cycles or 5
+  local settle_duration = math.max(0.2, math.min(0.5, 0.1 + cycles / 25))
+
+  -- Calculate stagger offset for each character position (0 to 1)
+  local function get_stagger_offset(idx)
+    if stagger == "right" then
+      return 1 - (idx - 1) / math.max(1, num_chars - 1)
+    elseif stagger == "center" then
+      local mid = (num_chars + 1) / 2
+      return math.abs(idx - mid) / math.max(1, mid - 1)
+    elseif stagger == "random" then
+      -- Deterministic pseudo-random based on line and position
+      return ((line_idx * 17 + idx * 31) % 100) / 100
+    else -- "left" (default)
+      return (idx - 1) / math.max(1, num_chars - 1)
+    end
+  end
+
+  for idx, char in ipairs(chars) do
+    if char == " " or char == "" then
+      table.insert(result, char)
+    else
+      local stagger_offset = get_stagger_offset(idx)
+      -- Character settle time based on stagger position
+      local settle_time = stagger_offset * stagger_spread + settle_duration
+
+      if reveal_ratio >= settle_time then
+        -- Settled: show final character
+        table.insert(result, char)
+      else
+        -- Scrambling: show random character from charset
+        local rand_idx = math.random(1, #charset)
+        table.insert(result, charset:sub(rand_idx, rand_idx))
+      end
+    end
+  end
+
+  return table.concat(result)
+end
+
 -- Effect dispatch table
 local effects = {
   chaos = chaos_line,
@@ -154,10 +210,11 @@ local effects = {
   diagonal = diagonal_line,
   lines = lines_line,
   matrix = matrix_line,
+  scramble = scramble_line,
 }
 
 -- List of effect names for random selection
-local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix" }
+local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix", "scramble" }
 
 -- Pick a random effect
 local function get_random_effect()
@@ -351,6 +408,10 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
     reveal_ratio = ease_in_out(actual_step / total_steps)
     frame_delay = config.options.animation.max_delay / 2
   elseif effect == "matrix" then
+    reveal_ratio = actual_step / total_steps
+    frame_delay = config.options.animation.min_delay
+  elseif effect == "scramble" then
+    -- Linear progression with fast frame rate for slot-machine feel
     reveal_ratio = actual_step / total_steps
     frame_delay = config.options.animation.min_delay
   else  -- chaos (default)

@@ -8,7 +8,7 @@ M.defaults = {
   -- Animation settings
   animation = {
     enabled = true,
-    -- Animation effect: "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "random"
+    -- Animation effect: "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "scramble" | "random"
     effect = "chaos",
     -- Total steps in the animation
     steps = 40,
@@ -37,6 +37,14 @@ M.defaults = {
     random_mode = "always",
     -- No-repeat: Don't show the same art twice in a row
     no_repeat = false,
+  },
+
+  -- Effect-specific options (for scramble effect)
+  effect_options = {
+    charset = nil,        -- nil = use chaos_chars, or custom string of chars
+    cycles = 5,           -- Number of random chars before settling
+    stagger = "left",     -- "left", "right", "random", "center"
+    stagger_delay = 30,   -- Controls spread of character settling (higher = more spread)
   },
 
   -- Chaos characters used during animation

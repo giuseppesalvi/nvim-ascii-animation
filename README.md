@@ -16,7 +16,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 
 ## Features
 
-- Six **animation effects**: chaos, typewriter, diagonal, lines, matrix, and random
+- Seven **animation effects**: chaos, typewriter, diagonal, lines, matrix, scramble, and random
 - **Loop mode**: continuous animation replay with optional reverse
 - **Ambient effects**: subtle glitch or shimmer after animation completes
 - **Ease-in-out** timing: slow start → fast middle → slow finish
@@ -48,7 +48,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
   opts = {
     animation = {
       enabled = true,
-      effect = "chaos",  -- "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "random"
+      effect = "chaos",  -- "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "scramble" | "random"
       steps = 40,        -- Total animation steps
       min_delay = 20,    -- Fastest frame delay (ms)
       max_delay = 120,   -- Slowest frame delay (ms)
@@ -414,7 +414,7 @@ animation = {
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `animation.enabled` | boolean | `true` | Enable/disable animation |
-| `animation.effect` | string | `"chaos"` | Animation effect: `"chaos"`, `"typewriter"`, `"diagonal"`, `"lines"`, `"matrix"`, or `"random"` |
+| `animation.effect` | string | `"chaos"` | Animation effect: `"chaos"`, `"typewriter"`, `"diagonal"`, `"lines"`, `"matrix"`, `"scramble"`, or `"random"` |
 | `animation.steps` | number | `40` | Total animation steps (more = smoother) |
 | `animation.min_delay` | number | `20` | Fastest frame delay in ms (middle of animation) |
 | `animation.max_delay` | number | `120` | Slowest frame delay in ms (start/end) |
@@ -427,6 +427,10 @@ animation = {
 | `animation.min_width` | number | `60` | Minimum terminal width for animation |
 | `animation.fallback` | string | `"tagline"` | Fallback when terminal too narrow: `"tagline"`, `"none"`, or art ID |
 | `chaos_chars` | string | `"@#$%&*..."` | Characters used for chaos/typewriter effect |
+| `effect_options.charset` | string/nil | `nil` | Custom charset for scramble (nil = use chaos_chars) |
+| `effect_options.cycles` | number | `5` | Number of random chars before settling (scramble) |
+| `effect_options.stagger` | string | `"left"` | Scramble direction: `"left"`, `"right"`, `"center"`, `"random"` |
+| `effect_options.stagger_delay` | number | `30` | Controls spread of character settling (higher = more spread) |
 | `header.padding` | number | `3` | Extra lines to include after header |
 
 ### Content Options
@@ -570,8 +574,26 @@ local delay = animation.get_frame_delay(10, 40)  -- Frame 10 of 40
 2. **Staggered**: Each character has unique timing based on position
 3. **Chaos**: Falling characters display random matrix-style symbols
 
+### Scramble Effect
+1. **Slot Machine**: Characters cycle through random characters before settling on the final value
+2. **Stagger Patterns**: Control settling direction with `"left"`, `"right"`, `"center"`, or `"random"`
+3. **Configurable**: Adjust cycles, charset, and stagger timing via `effect_options`
+
+```lua
+-- Example: center-out scramble with custom charset
+{
+  animation = { effect = "scramble" },
+  effect_options = {
+    charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+    cycles = 8,
+    stagger = "center",
+    stagger_delay = 40,
+  },
+}
+```
+
 ### Random Effect
-1. **Variety**: Randomly selects one of the five effects each time animation starts
+1. **Variety**: Randomly selects one of the six effects each time animation starts
 2. **Loop variety**: When looping, picks a new random effect for each cycle
 
 All effects use Neovim's extmarks with virtual text overlay, preserving your original buffer content and highlights.
