@@ -147,6 +147,42 @@ local function matrix_line(line, reveal_ratio, line_idx, total_lines)
   return table.concat(result)
 end
 
+-- Create rain/drip effect (characters fall and stack from bottom)
+local function rain_line(line, reveal_ratio, line_idx, total_lines)
+  local chaos_chars = config.options.chaos_chars
+  local chars = vim.fn.split(line, "\\zs")
+  local result = {}
+
+  -- Bottom-up reveal: invert line position
+  -- Bottom lines (high line_idx) reveal first
+  local inverted_pos = (total_lines - line_idx + 1) / total_lines
+  local line_threshold = inverted_pos * 0.6  -- 60% spread for line timing
+
+  -- Line's local progress (0 until threshold, then 0->1)
+  local line_progress = math.max(0, (reveal_ratio - line_threshold) / (1 - line_threshold))
+
+  for idx, char in ipairs(chars) do
+    if char == " " or char == "" then
+      table.insert(result, char)
+    else
+      -- Per-column stagger for drip effect
+      local col_seed = ((idx * 17 + line_idx * 7) % 100) / 100
+      local char_delay = col_seed * 0.25  -- 25% variation per column
+
+      local char_progress = math.max(0, (line_progress - char_delay) / (1 - char_delay))
+
+      if char_progress >= 0.7 then
+        table.insert(result, char)  -- Settled
+      else
+        local rand_idx = math.random(1, #chaos_chars)
+        table.insert(result, chaos_chars:sub(rand_idx, rand_idx))
+      end
+    end
+  end
+
+  return table.concat(result)
+end
+
 -- Effect dispatch table
 local effects = {
   chaos = chaos_line,
@@ -154,10 +190,11 @@ local effects = {
   diagonal = diagonal_line,
   lines = lines_line,
   matrix = matrix_line,
+  rain = rain_line,
 }
 
 -- List of effect names for random selection
-local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix" }
+local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix", "rain" }
 
 -- Pick a random effect
 local function get_random_effect()
@@ -351,6 +388,9 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
     reveal_ratio = ease_in_out(actual_step / total_steps)
     frame_delay = config.options.animation.max_delay / 2
   elseif effect == "matrix" then
+    reveal_ratio = actual_step / total_steps
+    frame_delay = config.options.animation.min_delay
+  elseif effect == "rain" then
     reveal_ratio = actual_step / total_steps
     frame_delay = config.options.animation.min_delay
   else  -- chaos (default)
