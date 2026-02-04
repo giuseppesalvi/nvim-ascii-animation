@@ -295,6 +295,9 @@ Keybindings:
 - `a`/`A`: cycle ambient
 - `l`: toggle loop
 - `s`/`S`: adjust steps
+- `m`/`M`: cycle random mode (always/daily/session)
+- `n`: toggle no-repeat
+- `w`/`W`: adjust favorites weight
 - `r`: refresh dashboard
 - `R`: reset to defaults
 - `p`: open preview

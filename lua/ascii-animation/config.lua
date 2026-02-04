@@ -24,6 +24,17 @@ M.defaults = {
     ambient_interval = 2000, -- How often ambient effect triggers (ms)
   },
 
+  -- Content selection settings
+  selection = {
+    -- Randomization mode: "always" | "daily" | "session"
+    -- "always": New random art each time (default)
+    -- "daily": Same art all day (based on date seed)
+    -- "session": Same art within Neovim session
+    random_mode = "always",
+    -- No-repeat: Don't show the same art twice in a row
+    no_repeat = false,
+  },
+
   -- Chaos characters used during animation
   chaos_chars = "@#$%&*+=-:;!?/\\|[]{}()<>~`'^",
 
@@ -83,13 +94,17 @@ M.favorites_weight = 70
 
 -- Save current settings to disk
 function M.save()
-  -- Only save animation settings that can be changed via UI
+  -- Only save settings that can be changed via UI
   local to_save = {
     animation = {
       effect = M.options.animation.effect,
       ambient = M.options.animation.ambient,
       loop = M.options.animation.loop,
       steps = M.options.animation.steps,
+    },
+    selection = {
+      random_mode = M.options.selection.random_mode,
+      no_repeat = M.options.selection.no_repeat,
     },
     favorites = M.favorites,
     favorites_weight = M.favorites_weight,
@@ -112,6 +127,8 @@ function M.clear_saved()
   os.remove(data_path)
   M.favorites = {}
   M.favorites_weight = 70
+  M.options.selection.random_mode = M.defaults.selection.random_mode
+  M.options.selection.no_repeat = M.defaults.selection.no_repeat
 end
 
 -- Toggle favorite status for an art ID

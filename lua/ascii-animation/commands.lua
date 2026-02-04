@@ -411,31 +411,38 @@ local function update_stats_content()
     if a == opts.animation.ambient then ambient_idx = i break end
   end
 
+  -- Random mode options
+  local random_modes = { "always", "daily", "session" }
+  local random_idx = 1
+  for i, m in ipairs(random_modes) do
+    if m == opts.selection.random_mode then random_idx = i break end
+  end
+
   local lines = {
     "",
-    "  ASCII Animation Stats",
-    "  " .. string.rep("─", 40),
+    "  ASCII Animation Settings",
+    "  " .. string.rep("─", 45),
     "",
     string.format("  Arts:        %d available (%d favorites)", art_count, fav_count),
     string.format("  Taglines:    %d available", message_count),
     string.format("  Styles:      %s", table.concat(styles, ", ")),
     string.format("  Period:      %s", period),
     "",
-    "  Animation Settings (press key to change):",
-    "  " .. string.rep("─", 40),
-    string.format("  [e] Effect:    %-12s  ◀ %d/%d ▶", effect, effect_idx, #effects),
-    string.format("  [a] Ambient:   %-12s  ◀ %d/%d ▶", opts.animation.ambient, ambient_idx, #ambients),
-    string.format("  [l] Loop:      %s", opts.animation.loop and "ON " or "OFF"),
-    string.format("  [s] Steps:     %d", opts.animation.steps),
-    string.format("  [w] Fav weight: %d%%", config.favorites_weight),
+    "  Animation:",
+    "  " .. string.rep("─", 45),
+    string.format("  [e] Effect:      %-10s  ◀ %d/%d ▶", effect, effect_idx, #effects),
+    string.format("  [a] Ambient:     %-10s  ◀ %d/%d ▶", opts.animation.ambient, ambient_idx, #ambients),
+    string.format("  [l] Loop:        %s", opts.animation.loop and "ON " or "OFF"),
+    string.format("  [s] Steps:       %d", opts.animation.steps),
     "",
-    "  Keybindings:",
-    "  " .. string.rep("─", 40),
-    "  e/E: cycle effect        a/A: cycle ambient",
-    "  l:   toggle loop         s/S: adjust steps",
-    "  w/W: fav weight          r:   refresh dashboard",
-    "  p:   preview             R:   reset defaults",
-    "  q:   close (auto-saved)",
+    "  Selection:",
+    "  " .. string.rep("─", 45),
+    string.format("  [m] Random mode: %-10s  ◀ %d/%d ▶", opts.selection.random_mode, random_idx, #random_modes),
+    string.format("  [n] No repeat:   %s", opts.selection.no_repeat and "ON " or "OFF"),
+    string.format("  [w] Fav weight:  %d%%", config.favorites_weight),
+    "",
+    "  Keys: e/a/m: cycle  l/n: toggle  s/w: ±adjust",
+    "  r: refresh  p: preview  R: reset  q: close",
     "",
   }
 
@@ -493,6 +500,29 @@ local function adjust_steps(delta)
   end
 end
 
+-- Cycle through random mode options
+local function cycle_random_mode(delta)
+  local modes = { "always", "daily", "session" }
+  local current = config.options.selection.random_mode
+  local idx = 1
+  for i, m in ipairs(modes) do
+    if m == current then idx = i break end
+  end
+  idx = idx + delta
+  if idx < 1 then idx = #modes
+  elseif idx > #modes then idx = 1 end
+  config.options.selection.random_mode = modes[idx]
+  config.save()
+  update_stats_content()
+end
+
+-- Toggle no-repeat
+local function toggle_no_repeat()
+  config.options.selection.no_repeat = not config.options.selection.no_repeat
+  config.save()
+  update_stats_content()
+end
+
 -- Adjust favorites weight
 local function adjust_fav_weight(delta)
   local new_weight = config.favorites_weight + delta
@@ -540,36 +570,42 @@ function M.stats()
     if a == opts.animation.ambient then ambient_idx = i break end
   end
 
+  local random_modes = { "always", "daily", "session" }
+  local random_idx = 1
+  for i, m in ipairs(random_modes) do
+    if m == opts.selection.random_mode then random_idx = i break end
+  end
+
   local lines = {
     "",
-    "  ASCII Animation Stats",
-    "  " .. string.rep("─", 40),
+    "  ASCII Animation Settings",
+    "  " .. string.rep("─", 45),
     "",
     string.format("  Arts:        %d available (%d favorites)", art_count, fav_count),
     string.format("  Taglines:    %d available", message_count),
     string.format("  Styles:      %s", table.concat(styles, ", ")),
     string.format("  Period:      %s", period),
     "",
-    "  Animation Settings (press key to change):",
-    "  " .. string.rep("─", 40),
-    string.format("  [e] Effect:    %-12s  ◀ %d/%d ▶", effect, effect_idx, #effects),
-    string.format("  [a] Ambient:   %-12s  ◀ %d/%d ▶", opts.animation.ambient, ambient_idx, #ambients),
-    string.format("  [l] Loop:      %s", opts.animation.loop and "ON " or "OFF"),
-    string.format("  [s] Steps:     %d", opts.animation.steps),
-    string.format("  [w] Fav weight: %d%%", config.favorites_weight),
+    "  Animation:",
+    "  " .. string.rep("─", 45),
+    string.format("  [e] Effect:      %-10s  ◀ %d/%d ▶", effect, effect_idx, #effects),
+    string.format("  [a] Ambient:     %-10s  ◀ %d/%d ▶", opts.animation.ambient, ambient_idx, #ambients),
+    string.format("  [l] Loop:        %s", opts.animation.loop and "ON " or "OFF"),
+    string.format("  [s] Steps:       %d", opts.animation.steps),
     "",
-    "  Keybindings:",
-    "  " .. string.rep("─", 40),
-    "  e/E: cycle effect        a/A: cycle ambient",
-    "  l:   toggle loop         s/S: adjust steps",
-    "  w/W: fav weight          r:   refresh dashboard",
-    "  p:   preview             R:   reset defaults",
-    "  q:   close (auto-saved)",
+    "  Selection:",
+    "  " .. string.rep("─", 45),
+    string.format("  [m] Random mode: %-10s  ◀ %d/%d ▶", opts.selection.random_mode, random_idx, #random_modes),
+    string.format("  [n] No repeat:   %s", opts.selection.no_repeat and "ON " or "OFF"),
+    string.format("  [w] Fav weight:  %d%%", config.favorites_weight),
+    "",
+    "  Keys: e/a/m: cycle  l/n: toggle  s/w: ±adjust",
+    "  r: refresh  p: preview  R: reset  q: close",
     "",
   }
 
   -- Calculate dimensions
-  local width = 50
+  local width = 52
   local height = #lines + 2
 
   local row = math.floor((vim.o.lines - height) / 2)
@@ -609,6 +645,9 @@ function M.stats()
     { "l", toggle_loop },
     { "s", function() adjust_steps(5) end },
     { "S", function() adjust_steps(-5) end },
+    { "m", function() cycle_random_mode(1) end },
+    { "M", function() cycle_random_mode(-1) end },
+    { "n", toggle_no_repeat },
     { "w", function() adjust_fav_weight(10) end },
     { "W", function() adjust_fav_weight(-10) end },
     { "r", function() close_stats() M.refresh() end },

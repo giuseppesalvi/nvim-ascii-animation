@@ -225,10 +225,16 @@ end
 ```
 
 **Current settings in :AsciiSettings:**
+
+Animation:
 - `effect` - Animation effect (chaos, typewriter, diagonal, lines, matrix, random)
 - `ambient` - Ambient effect (none, glitch, shimmer)
 - `loop` - Loop mode toggle
 - `steps` - Animation steps (10-100)
+
+Selection:
+- `random_mode` - Art selection mode (always, daily, session)
+- `no_repeat` - Don't repeat last shown art
 - `favorites_weight` - Probability of picking favorite art (0-100%)
 
 ---
