@@ -26,11 +26,16 @@
 
 ```
 nvim-ascii-animation/
+├── .github/
+│   └── ISSUE_TEMPLATE/       # Issue templates (bug, feature)
 ├── lua/
 │   └── ascii-animation/
 │       ├── init.lua          # Main entry point
 │       ├── animation.lua     # Animation logic
-│       └── config.lua        # Configuration
+│       ├── config.lua        # Configuration
+│       ├── content.lua       # Built-in ASCII arts & taglines
+│       ├── time.lua          # Time period detection
+│       └── effects/          # Animation effects (future)
 ├── README.md
 ├── LICENSE
 └── CLAUDE.md
@@ -109,6 +114,44 @@ fix: resolve animation timing issue
 docs: update installation instructions
 ```
 
+### GitHub Issues
+
+**Always use issue templates** when creating issues via `gh issue create`.
+
+**Issue Types & Prefixes:**
+- `bug: <description>` - Bug reports (label: `bug`)
+- `feat: <description>` - Feature requests (label: `enhancement`)
+
+**Issue Body Structure:**
+```
+## Problem
+[What problem does this solve / what's broken]
+
+## Proposed Solution
+[Detailed description of the fix or feature]
+
+## API Design (for features)
+```lua
+-- Code examples showing proposed config/API
+```
+
+## Implementation Notes
+[Technical considerations, affected files, etc.]
+```
+
+**Labels:**
+- Type: `bug`, `enhancement`
+- Area: `animation`, `content`, `ux`, `commands`
+
+**Creating Issues via CLI:**
+```bash
+# Feature request
+gh issue create --title "feat: add new effect" --label "enhancement,animation" --body "..."
+
+# Bug report
+gh issue create --title "bug: animation flickers" --label "bug" --body "..."
+```
+
 ---
 
 ## Quick Reference
@@ -131,4 +174,4 @@ This CLAUDE.md is a **living document**. Update it when:
 
 ---
 
-**Last Updated**: 2025-02-04
+**Last Updated**: 2026-02-04
