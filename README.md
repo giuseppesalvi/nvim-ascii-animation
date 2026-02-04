@@ -23,6 +23,10 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 - **60+ built-in ASCII arts** in 3 styles: blocks, gradient, isometric
 - **Time-aware content**: morning, afternoon, evening, night, weekend themes
 - **200+ motivational taglines** that match the time of day
+- **Daily/session seed**: same art all day or per session for consistency
+- **Favorites system**: boost selection probability of preferred arts
+- **No-repeat**: avoid showing recently displayed arts
+- **Terminal width detection**: automatic fallback for narrow terminals
 - Works with popular dashboard plugins:
   - [snacks.nvim](https://github.com/folke/snacks.nvim)
   - [alpha-nvim](https://github.com/goolord/alpha-nvim)
@@ -239,6 +243,16 @@ require("ascii-animation").setup({
     },
     weekend_override = true,      -- Use weekend content on Sat/Sun
 
+    -- Randomization mode
+    random = "always",            -- "always" | "daily" | "session"
+
+    -- Favorites: arts that appear more often
+    favorites = { "morning_blocks_1", "night_gradient_2" },
+    favorite_weight = 3,          -- 3x more likely to be selected
+
+    -- No-repeat: avoid showing the same art repeatedly
+    no_repeat = 5,                -- Don't repeat any of the last 5 arts
+
     -- Add your own content (merged with built-in)
     custom_arts = {
       morning = {
@@ -250,6 +264,40 @@ require("ascii-animation").setup({
     },
   },
 })
+```
+
+### Daily Seed Mode
+
+Keep the same art all day for a consistent dashboard experience:
+
+```lua
+content = {
+  random = "daily",  -- Same art throughout the day
+}
+```
+
+### Session Seed Mode
+
+Same art within a Neovim session, but different when you restart:
+
+```lua
+content = {
+  random = "session",
+}
+```
+
+### Terminal Width Handling
+
+Configure fallback behavior for narrow terminals:
+
+```lua
+animation = {
+  auto_fit = true,       -- Skip arts wider than terminal
+  min_width = 80,        -- Require at least 80 columns
+  fallback = "tagline",  -- Show only tagline if too narrow
+  -- fallback = "none",  -- Show nothing if too narrow
+  -- fallback = "small_art_id",  -- Show specific smaller art
+}
 ```
 
 ## Options
@@ -268,6 +316,9 @@ require("ascii-animation").setup({
 | `animation.loop_reverse` | boolean | `false` | Play animation in reverse before next loop |
 | `animation.ambient` | string | `"none"` | Ambient effect after animation: `"none"`, `"glitch"`, or `"shimmer"` |
 | `animation.ambient_interval` | number | `2000` | How often ambient effect triggers in ms |
+| `animation.auto_fit` | boolean | `false` | Skip arts wider than terminal width |
+| `animation.min_width` | number | `60` | Minimum terminal width for animation |
+| `animation.fallback` | string | `"tagline"` | Fallback when terminal too narrow: `"tagline"`, `"none"`, or art ID |
 | `chaos_chars` | string | `"@#$%&*..."` | Characters used for chaos/typewriter effect |
 | `header.padding` | number | `3` | Extra lines to include after header |
 
@@ -282,6 +333,10 @@ require("ascii-animation").setup({
 | `content.weekend_override` | boolean | `true` | Use weekend content on Sat/Sun |
 | `content.custom_arts` | table | `{}` | User-defined arts by period |
 | `content.custom_messages` | table | `{}` | User-defined messages by period |
+| `content.random` | string | `"always"` | Randomization mode: `"always"`, `"daily"`, or `"session"` |
+| `content.favorites` | table | `{}` | List of art IDs for higher selection probability |
+| `content.favorite_weight` | number | `2` | Multiplier for favorites in selection pool |
+| `content.no_repeat` | boolean/number | `false` | Don't repeat last N arts: `false`, `true` (1), or number |
 
 ## API
 
