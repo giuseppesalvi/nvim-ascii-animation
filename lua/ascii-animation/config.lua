@@ -1,6 +1,22 @@
 -- Default configuration for ascii-animation
 local M = {}
 
+-- Color themes for phase highlights
+M.color_themes = {
+  default = { chaos = "#555555", revealing = "#888888", revealed = "#ffffff", cursor = "#00ff00", glitch = "#ff0055" },
+  cyberpunk = { chaos = "#1a1a2e", revealing = "#4a4a6a", revealed = "#00ff41", cursor = "#ff00ff", glitch = "#ff3366" },
+  matrix = { chaos = "#003300", revealing = "#00aa00", revealed = "#00ff41", cursor = "#ffffff", glitch = "#00ff00" },
+  ocean = { chaos = "#1a3a4a", revealing = "#3a6a8a", revealed = "#8ad4ff", cursor = "#00ffcc", glitch = "#ff6b6b" },
+  sunset = { chaos = "#2a1a2a", revealing = "#6a3a5a", revealed = "#ffaa77", cursor = "#ffff00", glitch = "#ff4466" },
+  forest = { chaos = "#1a2a1a", revealing = "#3a5a3a", revealed = "#88cc88", cursor = "#ffff44", glitch = "#ff6644" },
+  monochrome = { chaos = "#333333", revealing = "#666666", revealed = "#cccccc", cursor = "#ffffff", glitch = "#999999" },
+  dracula = { chaos = "#282a36", revealing = "#bd93f9", revealed = "#f8f8f2", cursor = "#50fa7b", glitch = "#ff79c6" },
+  nord = { chaos = "#2e3440", revealing = "#88c0d0", revealed = "#eceff4", cursor = "#a3be8c", glitch = "#bf616a" },
+}
+
+-- Ordered list of theme names for cycling
+M.color_theme_names = { "default", "cyberpunk", "matrix", "ocean", "sunset", "forest", "monochrome", "dracula", "nord" }
+
 -- Character set presets for animation effects
 M.char_presets = {
   default = "@#$%&*+=-:;!?/\\|[]{}()<>~`'^",
@@ -36,6 +52,27 @@ end
 function M.get_chaos_chars()
   local preset = M.options.animation and M.options.animation.char_preset or "default"
   return M.char_presets[preset] or M.char_presets.default
+end
+
+-- Get effective phase colors (theme colors merged with custom overrides)
+function M.get_phase_colors()
+  local theme_name = M.options.animation and M.options.animation.color_theme
+  local theme = theme_name and M.color_themes[theme_name] or M.color_themes.default
+  local custom = M.options.animation and M.options.animation.phase_colors or {}
+
+  return {
+    chaos = custom.chaos or theme.chaos,
+    revealing = custom.revealing or theme.revealing,
+    revealed = custom.revealed or theme.revealed,
+    cursor = custom.cursor or theme.cursor,
+    glitch = custom.glitch or theme.glitch,
+  }
+end
+
+-- Check if phase highlights should be active (explicit setting or theme set)
+function M.use_phase_highlights()
+  local opts = M.options.animation or {}
+  return opts.use_phase_highlights or opts.color_theme ~= nil
 end
 
 -- Path for persistent settings
@@ -85,7 +122,10 @@ M.defaults = {
     char_preset = "default", -- "default" | "minimal" | "matrix" | "blocks" | "braille" | "stars" | "geometric" | "binary" | "dots"
     -- Phase-based highlighting (uses AsciiAnimation* highlight groups)
     use_phase_highlights = false,
-    -- Custom colors for phase highlights (nil = use defaults)
+    -- Color theme for phase highlights (auto-enables use_phase_highlights)
+    -- Options: "default" | "cyberpunk" | "matrix" | "ocean" | "sunset" | "forest" | "monochrome" | "dracula" | "nord"
+    color_theme = nil,
+    -- Custom colors for phase highlights (overrides theme colors, nil = use theme/defaults)
     phase_colors = {
       chaos = nil,      -- Default: #555555
       revealing = nil,  -- Default: #888888
@@ -225,6 +265,7 @@ function M.save()
       ambient_interval = M.options.animation.ambient_interval,
       char_preset = M.options.animation.char_preset,
       use_phase_highlights = M.options.animation.use_phase_highlights,
+      color_theme = M.options.animation.color_theme,
       phase_colors = M.options.animation.phase_colors,
     },
     selection = {
@@ -278,6 +319,7 @@ function M.clear_saved()
   M.options.animation.ambient_interval = M.defaults.animation.ambient_interval
   M.options.animation.char_preset = M.defaults.animation.char_preset
   M.options.animation.use_phase_highlights = M.defaults.animation.use_phase_highlights
+  M.options.animation.color_theme = M.defaults.animation.color_theme
   M.options.animation.phase_colors = vim.deepcopy(M.defaults.animation.phase_colors)
   -- Reset content settings
   M.options.content.styles = M.defaults.content.styles

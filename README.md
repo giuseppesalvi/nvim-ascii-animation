@@ -89,6 +89,8 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
       char_preset = "default", -- "default" | "minimal" | "matrix" | "blocks" | "braille" | "stars" | "geometric" | "binary" | "dots"
       -- Phase-based highlighting (see Highlight Groups section)
       use_phase_highlights = false,
+      -- Color theme for phase highlights (auto-enables use_phase_highlights)
+      color_theme = nil, -- "default" | "cyberpunk" | "matrix" | "ocean" | "sunset" | "forest" | "monochrome" | "dracula" | "nord"
     },
     chaos_chars = "@#$%&*+=-:;!?/\\|[]{}()<>~`'^", -- Custom chars (overrides preset)
   },
@@ -451,13 +453,13 @@ Opens an interactive settings panel with **live preview**:
 - `Backspace`: back to main menu
 
 **Phase Colors (press `P` when phase highlights enabled):**
-- `P`: cycle through color presets (Default, Cyberpunk, Ocean, Sunset, Forest, Monochrome)
+- `T`: cycle through color themes (default, cyberpunk, matrix, ocean, sunset, forest, monochrome, dracula, nord)
 - `1`: edit Chaos color (hex input)
 - `2`: edit Revealing color (hex input)
 - `3`: edit Revealed color (hex input)
 - `4`: edit Cursor color (hex input)
 - `5`: edit Glitch color (hex input)
-- `r`: reset to default colors
+- `r`: reset custom colors (uses current theme colors)
 - `Backspace`: back to main menu
 
 **Styles Filter (press `y`):**
@@ -660,6 +662,7 @@ animation = {
 | `animation.ambient_interval` | number | `2000` | How often ambient effect triggers in ms |
 | `animation.char_preset` | string | `"default"` | Character preset: `"default"`, `"minimal"`, `"matrix"`, `"blocks"`, `"braille"`, `"stars"`, `"geometric"`, `"binary"`, `"dots"` |
 | `animation.use_phase_highlights` | boolean | `false` | Enable phase-based highlight groups (see Highlight Groups section) |
+| `animation.color_theme` | string | `nil` | Color theme for phase highlights (auto-enables phase highlights): `"default"`, `"cyberpunk"`, `"matrix"`, `"ocean"`, `"sunset"`, `"forest"`, `"monochrome"`, `"dracula"`, `"nord"` |
 | `animation.auto_fit` | boolean | `false` | Skip arts wider than terminal width |
 | `animation.min_width` | number | `60` | Minimum terminal width for animation |
 | `animation.fallback` | string | `"tagline"` | Fallback when terminal too narrow: `"tagline"`, `"none"`, or art ID |
@@ -921,7 +924,15 @@ animation = {
 
 When `use_phase_highlights` is enabled, the animation uses dedicated highlight groups for different character states. This allows you to customize colors based on whether a character is in the chaos, revealing, or revealed phase.
 
-**Enable phase highlights:**
+**Enable with a color theme (recommended):**
+
+```lua
+animation = {
+  color_theme = "cyberpunk", -- or "matrix", "ocean", "sunset", "forest", "monochrome", "dracula", "nord"
+}
+```
+
+**Enable with default colors:**
 
 ```lua
 animation = {
@@ -969,12 +980,28 @@ vim.api.nvim_set_hl(0, "AsciiAnimationCursor", { fg = colors.cursor, bold = true
 vim.api.nvim_set_hl(0, "AsciiAnimationGlitch", { fg = colors.glitch })
 ```
 
+**Color Themes:**
+
+Setting `color_theme` automatically enables phase highlights. Available themes:
+
+| Theme | Description |
+|-------|-------------|
+| `default` | Neutral gray-to-white with green cursor |
+| `cyberpunk` | Neon green/magenta on dark purple |
+| `matrix` | Classic green-on-black terminal style |
+| `ocean` | Cool blue tones with cyan accents |
+| `sunset` | Warm orange/amber on dark purple |
+| `forest` | Natural green palette with yellow cursor |
+| `monochrome` | Elegant grayscale |
+| `dracula` | Popular Dracula colorscheme colors |
+| `nord` | Arctic, bluish-gray Nord palette |
+
 **Using `:AsciiSettings` (recommended for quick customization):**
 
 Press `P` in the settings panel to access the Phase Colors submenu, where you can:
-- Cycle through 6 built-in presets: Default, Cyberpunk, Ocean, Sunset, Forest, Monochrome
+- Press `T` to cycle through all 9 color themes
 - Edit individual colors by pressing `1`-`5` and entering a hex color
-- Reset to defaults with `r`
+- Reset custom colors with `r` (reverts to current theme defaults)
 
 Settings are automatically persisted across sessions.
 
