@@ -98,7 +98,7 @@ M.defaults = {
     weekend_override = true,     -- Use weekend content on Sat/Sun
 
     -- Style filter (nil = all styles)
-    -- Available: "blocks", "gradient", "isometric"
+    -- Available: "blocks", "gradient", "isometric", "box", "minimal", "pixel", "braille"
     styles = nil,
 
     -- Randomization mode: "always" | "daily" | "session"
@@ -162,6 +162,9 @@ function M.save()
       random_mode = M.options.selection.random_mode,
       no_repeat = M.options.selection.no_repeat,
     },
+    content = {
+      styles = M.options.content.styles,
+    },
     favorites = M.favorites,
     favorites_weight = M.favorites_weight,
   }
@@ -196,6 +199,8 @@ function M.clear_saved()
   M.options.animation.min_delay = M.defaults.animation.min_delay
   M.options.animation.max_delay = M.defaults.animation.max_delay
   M.options.animation.ambient_interval = M.defaults.animation.ambient_interval
+  -- Reset content settings
+  M.options.content.styles = M.defaults.content.styles
 end
 
 -- Toggle favorite status for an art ID

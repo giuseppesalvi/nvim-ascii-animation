@@ -37,7 +37,7 @@ nvim-ascii-animation/
 │       ├── time.lua          # Time period detection
 │       └── content/          # Content system
 │           ├── init.lua      # Content manager
-│           ├── arts/         # ASCII art by style (blocks, gradient, isometric)
+│           ├── arts/         # ASCII art by style (blocks, gradient, isometric, box, minimal, pixel, braille)
 │           └── messages/     # Taglines by period
 ├── README.md
 ├── LICENSE

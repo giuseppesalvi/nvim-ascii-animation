@@ -504,6 +504,104 @@ local function get_timing_submenu_lines()
   }
 end
 
+-- All available styles
+local ALL_STYLES = { "blocks", "gradient", "isometric", "box", "minimal", "pixel", "braille" }
+
+-- Check if a style is enabled
+local function is_style_enabled(style)
+  local styles = config.options.content.styles
+  if styles == nil then
+    return true  -- nil means all styles enabled
+  end
+  for _, s in ipairs(styles) do
+    if s == style then
+      return true
+    end
+  end
+  return false
+end
+
+-- Toggle a style on/off
+local function toggle_style(style)
+  local styles = config.options.content.styles
+
+  -- If nil (all enabled), create list with all styles then remove this one
+  if styles == nil then
+    styles = {}
+    for _, s in ipairs(ALL_STYLES) do
+      if s ~= style then
+        table.insert(styles, s)
+      end
+    end
+    config.options.content.styles = styles
+  else
+    -- Check if style is in the list
+    local found_idx = nil
+    for i, s in ipairs(styles) do
+      if s == style then
+        found_idx = i
+        break
+      end
+    end
+
+    if found_idx then
+      -- Remove it (disable)
+      table.remove(styles, found_idx)
+      -- If all styles would be disabled, keep at least one
+      if #styles == 0 then
+        vim.notify("At least one style must be enabled", vim.log.levels.WARN)
+        table.insert(styles, style)
+        return
+      end
+    else
+      -- Add it (enable)
+      table.insert(styles, style)
+    end
+
+    -- If all styles are now enabled, set to nil
+    if #styles == #ALL_STYLES then
+      config.options.content.styles = nil
+    else
+      config.options.content.styles = styles
+    end
+  end
+
+  config.save()
+end
+
+-- Get count of enabled styles
+local function get_enabled_styles_count()
+  local styles = config.options.content.styles
+  if styles == nil then
+    return #ALL_STYLES
+  end
+  return #styles
+end
+
+-- Get styles submenu lines
+local function get_styles_submenu_lines()
+  local lines = {
+    "",
+    "  Art Styles Filter",
+    "  " .. string.rep("─", 38),
+    "",
+  }
+
+  for i, style in ipairs(ALL_STYLES) do
+    local enabled = is_style_enabled(style)
+    local checkbox = enabled and "[x]" or "[ ]"
+    table.insert(lines, string.format("  [%d] %s %-12s", i, checkbox, style))
+  end
+
+  table.insert(lines, "")
+  table.insert(lines, string.format("  %d/%d styles enabled", get_enabled_styles_count(), #ALL_STYLES))
+  table.insert(lines, "")
+  table.insert(lines, "  Keys: 1-7: toggle  Backspace: back")
+  table.insert(lines, "")
+
+  return lines
+end
+
 -- Check if effect has options submenu
 local function effect_has_options(effect)
   return effect == "wave" or effect == "glitch" or effect == "scramble" or effect == "spiral" or effect == "fade"
@@ -523,6 +621,8 @@ local function update_settings_content()
   if settings_state.submenu then
     if settings_state.submenu == "timing" then
       lines = get_timing_submenu_lines()
+    elseif settings_state.submenu == "styles" then
+      lines = get_styles_submenu_lines()
     else
       lines = get_effect_submenu_lines(settings_state.submenu)
     end
@@ -557,6 +657,9 @@ local function update_settings_content()
     local has_opts = effect_has_options(effect)
     local opts_hint = has_opts and "  [o] Options..." or ""
 
+    local styles_count = get_enabled_styles_count()
+    local styles_label = styles_count == #ALL_STYLES and "all" or tostring(styles_count)
+
     lines = {
       "",
       "  Animation Settings",
@@ -574,6 +677,7 @@ local function update_settings_content()
       string.format("  [m] Mode:     %-10s ◀ %d/%d ▶", opts.selection.random_mode, random_idx, #random_modes),
       string.format("  [n] No repeat: %s", opts.selection.no_repeat and "ON " or "OFF"),
       string.format("  [w] Fav weight: %d%%", config.favorites_weight),
+      string.format("  [y] Styles...  (%s/%d)", styles_label, #ALL_STYLES),
       "",
       string.format("  Arts: %d (%d favs)", art_count, fav_count),
       "",
@@ -1196,6 +1300,30 @@ local function setup_settings_keybindings(buf)
       toggle_loop_reverse()
     end
   end, { buffer = buf, nowait = true, silent = true })
+
+  -- Styles submenu
+  vim.keymap.set("n", "y", function()
+    if not settings_state.submenu then
+      settings_state.submenu = "styles"
+      update_settings_content()
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  -- Style toggles (1-7) - only in styles submenu
+  for i, style in ipairs(ALL_STYLES) do
+    vim.keymap.set("n", tostring(i), function()
+      if settings_state.submenu == "styles" then
+        toggle_style(style)
+        update_settings_content()
+        -- Pick a new random art from enabled styles for preview
+        local arts = get_arts_list(nil)  -- This uses the styles filter
+        if #arts > 0 then
+          settings_state.current_art = arts[math.random(1, #arts)]
+          replay_preview()
+        end
+      end
+    end, { buffer = buf, nowait = true, silent = true })
+  end
 end
 
 -- Display interactive settings with live preview

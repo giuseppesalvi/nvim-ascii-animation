@@ -261,9 +261,27 @@ function M.get_header_for_period(period)
   }
 end
 
--- List all art IDs
+-- List all art IDs (respects style filter)
 function M.list_arts()
-  return arts.list_art_ids()
+  local style_filter = get_style_filter()
+  if style_filter == nil then
+    return arts.list_art_ids()
+  end
+
+  -- Collect IDs from all periods with style filtering
+  local all_ids = {}
+  local seen = {}
+  local periods = { "morning", "afternoon", "evening", "night", "weekend" }
+  for _, period in ipairs(periods) do
+    local period_ids = arts.list_art_ids_for_period(period, style_filter)
+    for _, id in ipairs(period_ids) do
+      if not seen[id] then
+        seen[id] = true
+        table.insert(all_ids, id)
+      end
+    end
+  end
+  return all_ids
 end
 
 -- List art IDs for a specific period

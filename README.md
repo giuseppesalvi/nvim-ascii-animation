@@ -20,7 +20,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 - **Loop mode**: continuous animation replay with optional reverse
 - **Ambient effects**: subtle glitch or shimmer after animation completes
 - **Ease-in-out** timing: slow start → fast middle → slow finish
-- **60+ built-in ASCII arts** in 3 styles: blocks, gradient, isometric
+- **140+ built-in ASCII arts** in 7 styles: blocks, gradient, isometric, box, minimal, pixel, braille
 - **Time-aware content**: morning, afternoon, evening, night, weekend themes
 - **200+ motivational taglines** that match the time of day
 - **Personalization placeholders**: `{name}`, `{project}`, `{time}`, `{date}`, `{version}`, `{plugin_count}`
@@ -178,7 +178,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 
 ## Content System
 
-The plugin includes a built-in content system with **60+ ASCII arts** and **200+ taglines** that automatically adapt to the time of day.
+The plugin includes a built-in content system with **140+ ASCII arts** and **200+ taglines** that automatically adapt to the time of day.
 
 ### Time Periods
 
@@ -195,6 +195,10 @@ The plugin includes a built-in content system with **60+ ASCII arts** and **200+
 - **Blocks** (`██ ╚═╝ ▓█`) - Bold, modern, eye-catching
 - **Gradient** (`░▒▓`) - Subtle, sophisticated, flowing
 - **Isometric** (`/\ | __`) - Technical, elegant, architectural
+- **Box** (`─ │ ┌ ┐ └ ┘ ╔ ╗`) - Clean, structured frames using box-drawing characters
+- **Minimal** - Zen-like simplicity with lots of whitespace
+- **Pixel** (`▄█▀░▓`) - Retro 8-bit style graphics
+- **Braille** (`⣿⠛⣤⠀`) - High-resolution art using braille characters
 
 ### Using Content with snacks.nvim
 
@@ -257,7 +261,7 @@ require("ascii-animation").setup({
     builtin_messages = true,      -- Use built-in taglines
 
     -- Filter art styles (nil = all styles)
-    styles = nil,                 -- or {"blocks", "gradient", "isometric"}
+    styles = nil,                 -- or {"blocks", "gradient", "isometric", "box", "minimal", "pixel", "braille"}
 
     -- Custom time periods
     time_periods = {
@@ -507,7 +511,7 @@ animation = {
 | `content.enabled` | boolean | `true` | Enable content system |
 | `content.builtin_arts` | boolean | `true` | Use built-in ASCII art collection |
 | `content.builtin_messages` | boolean | `true` | Use built-in taglines |
-| `content.styles` | table/nil | `nil` | Filter styles: `{"blocks", "gradient", "isometric"}` |
+| `content.styles` | table/nil | `nil` | Filter styles: `{"blocks", "gradient", "isometric", "box", "minimal", "pixel", "braille"}` |
 | `content.weekend_override` | boolean | `true` | Use weekend content on Sat/Sun |
 | `content.placeholders` | table | `{}` | Override auto-detected placeholder values |
 | `content.placeholders.name` | string | auto | User's name (auto: git user.name) |
@@ -568,7 +572,7 @@ ascii.get_header_for_period("weekend")
 ascii.list_arts()                        -- All art IDs
 ascii.list_arts_for_period("morning")    -- Art IDs for period
 ascii.get_art_by_id("morning_blocks_1")  -- Specific art by ID
-ascii.get_styles()                       -- {"blocks", "gradient", "isometric"}
+ascii.get_styles()                       -- {"blocks", "gradient", "isometric", "box", "minimal", "pixel", "braille"}
 
 -- Commands (programmatic access)
 ascii.preview("morning_blocks_1")        -- Preview art in floating window
