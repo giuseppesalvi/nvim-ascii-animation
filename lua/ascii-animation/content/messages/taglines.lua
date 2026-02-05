@@ -50,6 +50,10 @@ M.messages = {
     { text = "Good {time}, {name}!", theme = "personalized" },
     { text = "Welcome back to {project}.", theme = "personalized" },
     { text = "Ready to build {project}?", theme = "personalized" },
+    { text = "{greeting}, {name}!", theme = "personalized" },
+    { text = "Happy {day}! Let's code.", theme = "personalized" },
+    { text = "{streak} day streak! Keep going.", theme = "personalized" },
+    { text = "{random_emoji} Time to code!", theme = "personalized" },
     -- Philosophical
     { text = "Today writes tomorrow's history.", theme = "philosophical" },
     { text = "The void awaits your creation.", theme = "philosophical" },
@@ -111,6 +115,9 @@ M.messages = {
     { text = "Good {time}, {name}!", theme = "personalized" },
     { text = "{project} awaits your code.", theme = "personalized" },
     { text = "Neovim {version} at your service.", theme = "personalized" },
+    { text = "Working on {git_branch}?", theme = "personalized" },
+    { text = "You've been coding for {uptime}!", theme = "personalized" },
+    { text = "It's {hour} — stay focused.", theme = "personalized" },
     -- Philosophical
     { text = "The middle path leads to completion.", theme = "philosophical" },
     { text = "Progress over perfection.", theme = "philosophical" },
@@ -174,6 +181,8 @@ M.messages = {
     { text = "Good {time}, {name}!", theme = "personalized" },
     { text = "Wrapping up {project}.", theme = "personalized" },
     { text = "{date} — Make it count.", theme = "personalized" },
+    { text = "{greeting}! {uptime} of coding today.", theme = "personalized" },
+    { text = "{random_emoji} Wrapping up {day}.", theme = "personalized" },
     -- Philosophical
     { text = "Dusk teaches us to release.", theme = "philosophical" },
     { text = "Tomorrow inherits today's work.", theme = "philosophical" },
@@ -234,6 +243,8 @@ M.messages = {
     { text = "Late {time}, {name}.", theme = "personalized" },
     { text = "Neovim {version} • {plugin_count} plugins loaded.", theme = "personalized" },
     { text = "The night belongs to {project}.", theme = "personalized" },
+    { text = "{greeting}, {name}. It's {hour}.", theme = "personalized" },
+    { text = "{uptime} and counting...", theme = "personalized" },
     -- Philosophical
     { text = "In darkness, we see clearly.", theme = "philosophical" },
     { text = "The void speaks in functions.", theme = "philosophical" },
@@ -306,6 +317,8 @@ M.messages = {
     { text = "Happy {time}, {name}!", theme = "personalized" },
     { text = "Weekend vibes in {project}.", theme = "personalized" },
     { text = "{date} — Your time to create.", theme = "personalized" },
+    { text = "{random_emoji} Happy {day}!", theme = "personalized" },
+    { text = "{streak} day streak! Even on weekends.", theme = "personalized" },
     -- Philosophical
     { text = "Freedom is the root of creation.", theme = "philosophical" },
     { text = "Play is the highest form of research.", theme = "philosophical" },
