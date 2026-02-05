@@ -262,6 +262,8 @@ local function check_commands()
     "AsciiPreview",
     "AsciiSettings",
     "AsciiRefresh",
+    "AsciiStop",
+    "AsciiRestart",
   }
 
   local all_ok = true
