@@ -949,6 +949,12 @@ local function update_settings_content()
     local footer_opts = opts.footer or {}
     local footer_label = footer_opts.enabled and footer_opts.alignment or "OFF"
 
+    -- Unicode warning for charset
+    local charset_warning = ""
+    if config.preset_requires_unicode(char_preset) then
+      charset_warning = "      (requires Unicode font)"
+    end
+
     lines = {
       "",
       "  Animation",
@@ -960,6 +966,7 @@ local function update_settings_content()
       string.format("  [l] Loop:     %s", opts.animation.loop and "ON " or "OFF"),
       string.format("  [s] Steps:    %d", opts.animation.steps),
       string.format("  [c] Charset:  %-10s ◀ %d/%d ▶", char_preset, charset_idx, #config.char_preset_names),
+      charset_warning,
       "  [t] Timing...",
       "",
       "  Content",
@@ -980,18 +987,23 @@ local function update_settings_content()
       "",
     }
 
-    -- Remove empty options line if effect has no options
-    if not has_opts then
-      local new_lines = {}
-      for _, line in ipairs(lines) do
-        if line ~= "" or #new_lines == 0 or new_lines[#new_lines] ~= "" then
-          if line ~= opts_hint or has_opts then
-            table.insert(new_lines, line)
-          end
-        end
+    -- Remove empty options/warning lines
+    local new_lines = {}
+    for _, line in ipairs(lines) do
+      local skip = false
+      -- Skip empty opts_hint if no options
+      if line == opts_hint and not has_opts then skip = true end
+      -- Skip empty charset_warning
+      if line == "" and charset_warning == "" then
+        -- Only skip if this would create a double empty line
+        if #new_lines > 0 and new_lines[#new_lines] == "" then skip = true end
       end
-      lines = new_lines
+      if line == charset_warning and charset_warning == "" then skip = true end
+      if not skip then
+        table.insert(new_lines, line)
+      end
     end
+    lines = new_lines
   end
 
   vim.bo[settings_state.settings_buf].modifiable = true
@@ -2253,7 +2265,11 @@ function M.register_commands()
     end
     config.options.animation.char_preset = preset
     config.save()
-    vim.notify("Charset set to: " .. preset, vim.log.levels.INFO)
+    local msg = "Charset set to: " .. preset
+    if config.preset_requires_unicode(preset) then
+      msg = msg .. " (requires Unicode font support)"
+    end
+    vim.notify(msg, vim.log.levels.INFO)
   end, {
     nargs = "?",
     complete = function(arg_lead)
