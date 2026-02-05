@@ -3,11 +3,21 @@
 
 local config = require("ascii-animation.config")
 local time = require("ascii-animation.time")
+local state = require("ascii-animation.state")
 
 local M = {}
 
 -- Cache for values that don't change during session
 local value_cache = {}
+
+-- Session start time for uptime calculation
+local session_start = os.time()
+
+-- Session-stable random seed for emoji
+local emoji_seed = os.time() + math.floor(os.clock() * 1000)
+
+-- Track whether we've recorded today's usage for streak
+local streak_recorded = false
 
 -- Get user name from config or git
 local function get_name()
@@ -108,6 +118,83 @@ local function get_plugin_count()
   return tostring(count)
 end
 
+-- Get day of the week
+local function get_day()
+  return os.date("%A")
+end
+
+-- Get current hour in 12h format
+local function get_hour()
+  local hour_str = os.date("%I %p")
+  -- Strip leading zero
+  return hour_str:gsub("^0", "")
+end
+
+-- Get natural time-of-day greeting
+local function get_greeting()
+  local hour = tonumber(os.date("%H"))
+  if hour < 12 then
+    return "Good morning"
+  elseif hour < 17 then
+    return "Good afternoon"
+  elseif hour < 21 then
+    return "Good evening"
+  else
+    return "Hey"
+  end
+end
+
+-- Get current git branch name
+local function get_git_branch()
+  if value_cache.git_branch == nil then
+    local handle = io.popen("git branch --show-current 2>/dev/null")
+    if handle then
+      local result = handle:read("*a")
+      handle:close()
+      result = result:gsub("^%s*(.-)%s*$", "%1") -- trim whitespace
+      value_cache.git_branch = result ~= "" and result or false
+    else
+      value_cache.git_branch = false
+    end
+  end
+  return value_cache.git_branch or nil
+end
+
+-- Get session uptime formatted as "Xh Ym" or "Xm"
+local function get_uptime()
+  local elapsed = os.difftime(os.time(), session_start)
+  local minutes = math.floor(elapsed / 60)
+  local hours = math.floor(minutes / 60)
+  minutes = minutes % 60
+
+  if hours > 0 then
+    return string.format("%dh %dm", hours, minutes)
+  else
+    return string.format("%dm", math.max(minutes, 1))
+  end
+end
+
+-- Get consecutive usage day streak count
+local function get_streak()
+  -- Record today's usage on first call per session
+  if not streak_recorded then
+    state.record_usage_date()
+    streak_recorded = true
+  end
+  return tostring(state.get_streak_count())
+end
+
+-- Get a session-stable random emoji
+local function get_random_emoji()
+  local emojis = {
+    "🚀", "✨", "🔥", "💻", "⚡", "🎯", "🌟", "💡",
+    "🎨", "🛠️", "🏗️", "📦", "🧩", "🔮", "🎲", "🌈",
+  }
+  -- Use session-stable seed for consistent emoji within session
+  local index = (emoji_seed % #emojis) + 1
+  return emojis[index]
+end
+
 -- Placeholder resolvers
 local resolvers = {
   name = get_name,
@@ -116,6 +203,13 @@ local resolvers = {
   date = get_date,
   version = get_version,
   plugin_count = get_plugin_count,
+  day = get_day,
+  hour = get_hour,
+  greeting = get_greeting,
+  git_branch = get_git_branch,
+  uptime = get_uptime,
+  streak = get_streak,
+  random_emoji = get_random_emoji,
 }
 
 -- Resolve a single placeholder
@@ -194,7 +288,7 @@ end
 
 -- Get list of available placeholder names
 function M.list_placeholders()
-  return { "name", "project", "time", "date", "version", "plugin_count" }
+  return { "name", "project", "time", "date", "version", "plugin_count", "day", "hour", "greeting", "git_branch", "uptime", "streak", "random_emoji" }
 end
 
 return M

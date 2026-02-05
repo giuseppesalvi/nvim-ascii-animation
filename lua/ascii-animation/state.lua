@@ -204,4 +204,91 @@ function M.get_recent_messages(n)
   return result
 end
 
+-- Record a usage date for streak tracking
+function M.record_usage_date(date)
+  date = date or os.date("%Y-%m-%d")
+  local state = M.load()
+
+  if type(state.streak_dates) ~= "table" then
+    state.streak_dates = {}
+  end
+
+  -- Don't add duplicates
+  for _, d in ipairs(state.streak_dates) do
+    if d == date then
+      return
+    end
+  end
+
+  -- Insert at front (most recent first)
+  table.insert(state.streak_dates, 1, date)
+
+  -- Keep only last 365 entries
+  if #state.streak_dates > 365 then
+    local trimmed = {}
+    for i = 1, 365 do
+      trimmed[i] = state.streak_dates[i]
+    end
+    state.streak_dates = trimmed
+  end
+
+  M.save(state)
+end
+
+-- Count consecutive usage days ending with today or yesterday
+function M.get_streak_count()
+  local state = M.load()
+  if type(state.streak_dates) ~= "table" or #state.streak_dates == 0 then
+    return 0
+  end
+
+  local today = os.date("%Y-%m-%d")
+
+  -- Convert date string to os.time for day arithmetic
+  local function date_to_time(d)
+    local y, m, day = d:match("(%d+)-(%d+)-(%d+)")
+    if not y then
+      return nil
+    end
+    return os.time({ year = tonumber(y), month = tonumber(m), day = tonumber(day), hour = 12 })
+  end
+
+  -- Build a set of dates for fast lookup
+  local date_set = {}
+  for _, d in ipairs(state.streak_dates) do
+    date_set[d] = true
+  end
+
+  -- Start counting from today (or yesterday if today not recorded yet)
+  local start_time = date_to_time(today)
+  if not start_time then
+    return 0
+  end
+
+  local streak = 0
+  if date_set[today] then
+    streak = 1
+  elseif date_set[os.date("%Y-%m-%d", start_time - 86400)] then
+    -- Start from yesterday
+    start_time = start_time - 86400
+    streak = 1
+  else
+    return 0
+  end
+
+  -- Count consecutive days backwards
+  local check_time = start_time - 86400
+  while true do
+    local check_date = os.date("%Y-%m-%d", check_time)
+    if date_set[check_date] then
+      streak = streak + 1
+      check_time = check_time - 86400
+    else
+      break
+    end
+  end
+
+  return streak
+end
+
 return M
