@@ -480,6 +480,24 @@ Re-runs the animation on the current buffer. Useful after returning to your dash
 :AsciiRefresh
 ```
 
+### `:checkhealth ascii-animation`
+
+Run the health check to diagnose issues with the plugin:
+
+```vim
+:checkhealth ascii-animation
+```
+
+**Checks performed:**
+- Module loading - verifies all core modules load without error
+- Content system - counts available arts and messages
+- Terminal capabilities - width, true color, and UTF-8 encoding
+- Configuration - validates settings file and reports current values
+- State persistence - checks state file for recent history
+- Dashboard integrations - detects snacks.nvim, alpha-nvim, dashboard-nvim, lazy.nvim
+- Time system - verifies period detection
+- User commands - ensures all commands are registered
+
 ### Personalization Placeholders
 
 Taglines support placeholder tokens that get replaced at render time:
