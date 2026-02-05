@@ -115,11 +115,13 @@ function M.get_header()
   if vim.o.columns < min_width then
     local period = time.get_current_period()
     local message = content.get_message()
+    local footer = M.get_footer()
 
     if fallback == "none" then
       return {
         art = {},
         message = "",
+        footer = footer,
         period = period,
         art_id = nil,
         art_name = nil,
@@ -128,6 +130,7 @@ function M.get_header()
       return {
         art = {},
         message = message or "",
+        footer = footer,
         period = period,
         art_id = nil,
         art_name = nil,
@@ -139,6 +142,7 @@ function M.get_header()
         return {
           art = art.lines or {},
           message = message or "",
+          footer = footer,
           period = period,
           art_id = art.id,
           art_name = art.name,
@@ -148,6 +152,7 @@ function M.get_header()
       return {
         art = {},
         message = message or "",
+        footer = footer,
         period = period,
         art_id = nil,
         art_name = nil,
@@ -155,7 +160,9 @@ function M.get_header()
     end
   end
 
-  return content.get_header()
+  local header = content.get_header()
+  header.footer = M.get_footer()
+  return header
 end
 
 -- Get a complete header for a specific period
@@ -202,6 +209,83 @@ end
 -- Get available art styles
 function M.get_styles()
   return content.get_styles()
+end
+
+-- ============================================
+-- Footer API
+-- ============================================
+
+-- Get the rendered footer string
+-- Processes the template with available placeholders
+function M.get_footer()
+  local footer_opts = config.options.footer or {}
+  if not footer_opts.enabled then
+    return ""
+  end
+
+  local template = footer_opts.template or "{message}"
+
+  -- Get a message for the {message} placeholder
+  local message = content.get_message() or ""
+
+  -- Build placeholder values
+  local values = {
+    message = message,
+    date = placeholders.resolve("date") or "",
+    time = placeholders.resolve("time") or "",
+    version = placeholders.resolve("version") or "",
+    plugins = placeholders.resolve("plugin_count") or "",
+    name = placeholders.resolve("name") or "",
+    project = placeholders.resolve("project") or "",
+  }
+
+  -- Replace placeholders in template
+  local result = template:gsub("{(%w+)}", function(key)
+    return values[key] or ""
+  end)
+
+  -- Clean up any double spaces from empty placeholders
+  result = result:gsub("  +", " "):gsub("^ +", ""):gsub(" +$", "")
+
+  return result
+end
+
+-- Get footer lines formatted for dashboard integration
+-- @param width (optional) Width for alignment, defaults to terminal width
+-- @return table of strings (footer lines)
+function M.get_footer_lines(width)
+  local footer_opts = config.options.footer or {}
+  if not footer_opts.enabled then
+    return {}
+  end
+
+  local footer_text = M.get_footer()
+  if footer_text == "" then
+    return {}
+  end
+
+  width = width or vim.o.columns
+  local alignment = footer_opts.alignment or "center"
+
+  local lines = {}
+  -- Handle multi-line footers (split by newline)
+  for line in footer_text:gmatch("[^\n]+") do
+    local aligned_line = line
+    local line_width = vim.fn.strdisplaywidth(line)
+
+    if alignment == "center" then
+      local padding = math.floor((width - line_width) / 2)
+      aligned_line = string.rep(" ", math.max(0, padding)) .. line
+    elseif alignment == "right" then
+      local padding = width - line_width
+      aligned_line = string.rep(" ", math.max(0, padding)) .. line
+    end
+    -- "left" alignment: no padding needed
+
+    table.insert(lines, aligned_line)
+  end
+
+  return lines
 end
 
 -- Expose modules for advanced usage

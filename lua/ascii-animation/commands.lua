@@ -371,8 +371,11 @@ local settings_state = {
   preview_buf = nil,
   preview_win = nil,
   current_art = nil,
-  submenu = nil,  -- nil | "wave" | "glitch" | "scramble" | "spiral" | "fade" | "timing"
+  submenu = nil,  -- nil | "wave" | "glitch" | "scramble" | "spiral" | "fade" | "timing" | "styles" | "messages" | "footer"
 }
+
+-- Import messages module for period counts
+local messages = require("ascii-animation.content.messages")
 
 -- Close settings windows (both panels)
 local function close_settings()
@@ -602,6 +605,277 @@ local function get_styles_submenu_lines()
   return lines
 end
 
+-- All message periods
+local ALL_PERIODS = { "morning", "afternoon", "evening", "night", "weekend" }
+
+-- Message browser state
+local message_browser = {
+  messages = {},      -- All messages with IDs
+  filtered = {},      -- Filtered list (by period/theme)
+  index = 1,          -- Current selected message index
+  page = 1,           -- Current page
+  page_size = 10,     -- Messages per page
+  period_filter = nil, -- nil = all, or specific period
+  theme_filter = nil,  -- nil = all, or specific theme
+  view = "messages",   -- "messages" | "themes"
+}
+
+-- Initialize/refresh message browser list
+local function refresh_message_list()
+  message_browser.messages = content.get_all_messages_with_ids()
+  message_browser.filtered = {}
+
+  for _, msg in ipairs(message_browser.messages) do
+    local include = true
+    -- Filter by period if set
+    if message_browser.period_filter and msg.period ~= message_browser.period_filter then
+      include = false
+    end
+    -- Filter by theme if set
+    if message_browser.theme_filter and msg.theme ~= message_browser.theme_filter then
+      include = false
+    end
+    if include then
+      table.insert(message_browser.filtered, msg)
+    end
+  end
+
+  -- Sort by theme for grouped display
+  local theme_order = {}
+  for i, theme in ipairs(content.themes or {}) do
+    theme_order[theme] = i
+  end
+  table.sort(message_browser.filtered, function(a, b)
+    local order_a = theme_order[a.theme] or 99
+    local order_b = theme_order[b.theme] or 99
+    if order_a ~= order_b then
+      return order_a < order_b
+    end
+    return a.index < b.index
+  end)
+
+  -- Reset selection if out of bounds
+  if message_browser.index > #message_browser.filtered then
+    message_browser.index = math.max(1, #message_browser.filtered)
+  end
+  -- Recalculate page
+  message_browser.page = math.ceil(message_browser.index / message_browser.page_size)
+  if message_browser.page < 1 then message_browser.page = 1 end
+end
+
+-- Get themes submenu lines
+local function get_themes_submenu_lines()
+  local themes = content.themes or {}
+  local theme_names = content.theme_names or {}
+
+  local lines = {
+    "",
+    "  Message Themes",
+    "  " .. string.rep("─", 38),
+    "",
+  }
+
+  for i, theme in ipairs(themes) do
+    local is_disabled = config.is_theme_disabled(theme)
+    local checkbox = is_disabled and "[ ]" or "[x]"
+    local count = content.get_message_count_for_theme(theme)
+    local name = theme_names[theme] or theme
+    table.insert(lines, string.format("  [%d] %s %-14s (%d)", i, checkbox, name, count))
+  end
+
+  local enabled = #themes - #config.themes_disabled
+  table.insert(lines, "")
+  table.insert(lines, string.format("  %d/%d themes enabled", enabled, #themes))
+  table.insert(lines, "")
+  table.insert(lines, "  Keys:")
+  table.insert(lines, "    1-7: toggle theme on/off")
+  table.insert(lines, "    b: browse individual messages")
+  table.insert(lines, "    Backspace: back to main")
+  table.insert(lines, "")
+
+  return lines
+end
+
+-- Get messages submenu lines
+local function get_messages_submenu_lines()
+  -- Show themes view
+  if message_browser.view == "themes" then
+    return get_themes_submenu_lines()
+  end
+
+  -- Ensure list is populated
+  if #message_browser.messages == 0 then
+    refresh_message_list()
+  end
+
+  local lines = {
+    "",
+    "  Message Browser",
+    "  " .. string.rep("─", 38),
+    "",
+  }
+
+  -- Stats
+  local fav_count = #config.message_favorites
+  local disabled_count = #config.message_disabled
+  local themes_disabled = #config.themes_disabled
+
+  -- Build filter label
+  local filter_parts = {}
+  if message_browser.period_filter then
+    table.insert(filter_parts, message_browser.period_filter)
+  end
+  if message_browser.theme_filter then
+    local theme_names = content.theme_names or {}
+    table.insert(filter_parts, theme_names[message_browser.theme_filter] or message_browser.theme_filter)
+  end
+  local filter_label = #filter_parts > 0 and table.concat(filter_parts, "+") or "all"
+
+  table.insert(lines, string.format("  Filter: %-12s (%d msgs)", filter_label, #message_browser.filtered))
+  table.insert(lines, string.format("  ★ %d fav  ✗ %d msg  ✗ %d themes", fav_count, disabled_count, themes_disabled))
+  table.insert(lines, "")
+
+  -- Build display with theme headers
+  local display_items = {}  -- {type="header"|"msg", theme=, msg=, idx=}
+  local current_theme = nil
+  local theme_names = content.theme_names or {}
+
+  for i, msg in ipairs(message_browser.filtered) do
+    -- Add header when theme changes
+    if msg.theme ~= current_theme then
+      current_theme = msg.theme
+      table.insert(display_items, {
+        type = "header",
+        theme = msg.theme,
+        theme_name = theme_names[msg.theme] or msg.theme,
+      })
+    end
+    table.insert(display_items, {
+      type = "msg",
+      msg = msg,
+      idx = i,
+    })
+  end
+
+  -- Calculate page bounds (including headers in display)
+  local items_per_page = message_browser.page_size + 2  -- Allow extra for headers
+  local start_item = (message_browser.page - 1) * message_browser.page_size + 1
+
+  -- Find the display position for the current page start
+  local display_start = 1
+  local msg_count = 0
+  for i, item in ipairs(display_items) do
+    if item.type == "msg" then
+      msg_count = msg_count + 1
+      if msg_count == start_item then
+        -- Back up to include header if this is first msg of a theme
+        if i > 1 and display_items[i-1].type == "header" then
+          display_start = i - 1
+        else
+          display_start = i
+        end
+        break
+      end
+    end
+  end
+
+  local total_pages = math.max(1, math.ceil(#message_browser.filtered / message_browser.page_size))
+  local lines_shown = 0
+  local max_lines = items_per_page
+
+  -- Display items for current page
+  for i = display_start, #display_items do
+    if lines_shown >= max_lines then break end
+
+    local item = display_items[i]
+    if item.type == "header" then
+      local is_disabled = config.is_theme_disabled(item.theme)
+      local status = is_disabled and " ✗" or ""
+      table.insert(lines, string.format("  ── %s%s ──", item.theme_name, status))
+      lines_shown = lines_shown + 1
+    else
+      local msg = item.msg
+      local is_selected = (item.idx == message_browser.index)
+      local is_fav = config.is_message_favorite(msg.id)
+      local is_disabled = config.is_message_disabled(msg.id)
+      local theme_disabled = config.is_theme_disabled(msg.theme)
+
+      local prefix = is_selected and "► " or "  "
+      local fav_icon = is_fav and "★" or " "
+      local status_icon = (is_disabled or theme_disabled) and "✗" or "✓"
+
+      -- Truncate message text
+      local max_len = 26
+      local text = msg.text
+      if #text > max_len then
+        text = text:sub(1, max_len - 2) .. ".."
+      end
+
+      table.insert(lines, string.format("%s%s %s %s", prefix, fav_icon, status_icon, text))
+      lines_shown = lines_shown + 1
+    end
+  end
+
+  -- Pad to consistent height
+  while lines_shown < max_lines do
+    table.insert(lines, "")
+    lines_shown = lines_shown + 1
+  end
+
+  table.insert(lines, "")
+  table.insert(lines, string.format("  Page %d/%d", message_browser.page, total_pages))
+  table.insert(lines, "")
+  table.insert(lines, "  Keys:")
+  table.insert(lines, "    j/k: navigate  n/N: page")
+  table.insert(lines, "    F: favorite  d: disable  p: preview")
+  table.insert(lines, "    1-5: filter period  c: clear filter")
+  table.insert(lines, "    t: back to themes  BS: main menu")
+  table.insert(lines, "")
+
+  return lines
+end
+
+-- Get footer submenu lines
+local function get_footer_submenu_lines()
+  local footer_opts = config.options.footer or {}
+  local alignments = { "left", "center", "right" }
+  local align_idx = 1
+  for i, a in ipairs(alignments) do
+    if a == footer_opts.alignment then align_idx = i break end
+  end
+
+  local lines = {
+    "",
+    "  Footer Settings",
+    "  " .. string.rep("─", 38),
+    "",
+    string.format("  [e] Enabled:   %s", footer_opts.enabled and "ON " or "OFF"),
+    string.format("  [a] Alignment: %-8s  ◀ %d/%d ▶", footer_opts.alignment or "center", align_idx, #alignments),
+    "",
+    "  [t] Edit template...",
+    string.format("      Current: %s", footer_opts.template or "{message}"),
+    "",
+    "  Available placeholders:",
+    "    {message} {date} {time} {version}",
+    "    {plugins} {name} {project}",
+    "",
+  }
+
+  -- Add footer preview
+  local ascii = require("ascii-animation")
+  local preview_text = ascii.get_footer()
+  if preview_text and preview_text ~= "" then
+    table.insert(lines, "  Preview:")
+    table.insert(lines, string.format("    \"%s\"", preview_text))
+    table.insert(lines, "")
+  end
+
+  table.insert(lines, "  Keys: e/a/t: adjust  Backspace: back")
+  table.insert(lines, "")
+
+  return lines
+end
+
 -- Check if effect has options submenu
 local function effect_has_options(effect)
   return effect == "wave" or effect == "glitch" or effect == "scramble" or effect == "spiral" or effect == "fade"
@@ -623,6 +897,10 @@ local function update_settings_content()
       lines = get_timing_submenu_lines()
     elseif settings_state.submenu == "styles" then
       lines = get_styles_submenu_lines()
+    elseif settings_state.submenu == "messages" then
+      lines = get_messages_submenu_lines()
+    elseif settings_state.submenu == "footer" then
+      lines = get_footer_submenu_lines()
     else
       lines = get_effect_submenu_lines(settings_state.submenu)
     end
@@ -660,9 +938,13 @@ local function update_settings_content()
     local styles_count = get_enabled_styles_count()
     local styles_label = styles_count == #ALL_STYLES and "all" or tostring(styles_count)
 
+    -- Footer info
+    local footer_opts = opts.footer or {}
+    local footer_label = footer_opts.enabled and footer_opts.alignment or "OFF"
+
     lines = {
       "",
-      "  Animation Settings",
+      "  Animation",
       "  " .. string.rep("─", 38),
       "",
       string.format("  [e] Effect:   %-10s ◀ %d/%d ▶", effect, effect_idx, #effects),
@@ -672,12 +954,17 @@ local function update_settings_content()
       string.format("  [s] Steps:    %d", opts.animation.steps),
       "  [t] Timing...",
       "",
-      "  Selection",
+      "  Content",
       "  " .. string.rep("─", 38),
       string.format("  [m] Mode:     %-10s ◀ %d/%d ▶", opts.selection.random_mode, random_idx, #random_modes),
       string.format("  [n] No repeat: %s", opts.selection.no_repeat and "ON " or "OFF"),
       string.format("  [w] Fav weight: %d%%", config.favorites_weight),
       string.format("  [y] Styles...  (%s/%d)", styles_label, #ALL_STYLES),
+      string.format("  [g] Themes...    (%d/%d)", 7 - #config.themes_disabled, 7),
+      "",
+      "  Footer",
+      "  " .. string.rep("─", 38),
+      string.format("  [f] Footer...  (%s)", footer_label),
       "",
       string.format("  Arts: %d (%d favs)", art_count, fav_count),
       "",
@@ -706,6 +993,8 @@ end
 
 -- Forward declaration for replay
 local replay_preview
+-- Forward declaration for preview buffer update
+local update_preview_buffer
 
 -- Cycle through effect options
 local function cycle_effect(delta)
@@ -809,8 +1098,15 @@ end
 
 -- Close submenu (go back)
 local function close_submenu()
+  local was_footer = settings_state.submenu == "footer"
+  local was_messages = settings_state.submenu == "messages"
   settings_state.submenu = nil
   update_settings_content()
+  -- Restore preview to normal view
+  if was_footer or was_messages then
+    update_preview_buffer()
+    replay_preview()
+  end
 end
 
 -- Wave options adjusters
@@ -1021,8 +1317,8 @@ local function reset_to_defaults()
   replay_preview()
 end
 
--- Update preview buffer content
-local function update_preview_buffer()
+-- Update preview buffer content (implements forward declaration)
+update_preview_buffer = function()
   if not settings_state.preview_buf or not vim.api.nvim_buf_is_valid(settings_state.preview_buf) then
     return
   end
@@ -1063,6 +1359,176 @@ replay_preview = function()
   end, 50)
 end
 
+-- Update preview buffer to show footer when in footer submenu
+local function update_preview_with_footer()
+  if not settings_state.preview_buf or not vim.api.nvim_buf_is_valid(settings_state.preview_buf) then
+    return
+  end
+
+  local art = settings_state.current_art
+  if not art or not art.lines then return end
+
+  -- Calculate preview width from art
+  local art_width = 0
+  for _, line in ipairs(art.lines) do
+    art_width = math.max(art_width, vim.fn.strdisplaywidth(line))
+  end
+  local preview_width = math.max(40, art_width + 4)
+
+  -- Build content with padding
+  local lines = { "" }
+  for _, line in ipairs(art.lines) do
+    table.insert(lines, "  " .. line)
+  end
+  table.insert(lines, "")
+  table.insert(lines, string.format("  %s", art.name or art.id))
+
+  -- Add footer preview if in footer submenu
+  if settings_state.submenu == "footer" then
+    local ascii = require("ascii-animation")
+    local footer_opts = config.options.footer or {}
+
+    table.insert(lines, "")
+    table.insert(lines, "  ┌" .. string.rep("─", preview_width - 4) .. "┐")
+
+    if footer_opts.enabled then
+      local footer_text = ascii.get_footer()
+      if footer_text and footer_text ~= "" then
+        -- Apply alignment for preview
+        local alignment = footer_opts.alignment or "center"
+        local text_width = vim.fn.strdisplaywidth(footer_text)
+        local inner_width = preview_width - 6  -- Account for borders and padding
+        local aligned_footer
+
+        if text_width > inner_width then
+          -- Truncate if too long
+          footer_text = footer_text:sub(1, inner_width - 2) .. ".."
+          text_width = vim.fn.strdisplaywidth(footer_text)
+        end
+
+        if alignment == "center" then
+          local left_pad = math.floor((inner_width - text_width) / 2)
+          local right_pad = inner_width - text_width - left_pad
+          aligned_footer = string.rep(" ", left_pad) .. footer_text .. string.rep(" ", right_pad)
+        elseif alignment == "right" then
+          local pad = inner_width - text_width
+          aligned_footer = string.rep(" ", pad) .. footer_text
+        else  -- left
+          local pad = inner_width - text_width
+          aligned_footer = footer_text .. string.rep(" ", pad)
+        end
+
+        table.insert(lines, "  │ " .. aligned_footer .. " │")
+      else
+        local empty = string.rep(" ", preview_width - 6)
+        table.insert(lines, "  │ " .. empty .. " │")
+      end
+    else
+      local disabled_text = "(footer disabled)"
+      local inner_width = preview_width - 6
+      local pad = math.floor((inner_width - #disabled_text) / 2)
+      local padded = string.rep(" ", pad) .. disabled_text .. string.rep(" ", inner_width - #disabled_text - pad)
+      table.insert(lines, "  │ " .. padded .. " │")
+    end
+
+    table.insert(lines, "  └" .. string.rep("─", preview_width - 4) .. "┘")
+
+    -- Show alignment indicator
+    local alignment = footer_opts.alignment or "center"
+    local indicator
+    if alignment == "left" then
+      indicator = "  ◀ left"
+    elseif alignment == "right" then
+      indicator = string.rep(" ", preview_width - 10) .. "right ▶"
+    else
+      indicator = string.rep(" ", math.floor((preview_width - 8) / 2)) .. "center"
+    end
+    table.insert(lines, indicator)
+  end
+
+  table.insert(lines, "")
+
+  vim.bo[settings_state.preview_buf].modifiable = true
+  vim.api.nvim_buf_set_lines(settings_state.preview_buf, 0, -1, false, lines)
+  vim.bo[settings_state.preview_buf].modifiable = false
+end
+
+-- Update preview buffer to show selected message when in messages submenu
+local function update_preview_with_message()
+  if not settings_state.preview_buf or not vim.api.nvim_buf_is_valid(settings_state.preview_buf) then
+    return
+  end
+
+  local art = settings_state.current_art
+  if not art or not art.lines then return end
+
+  -- Build content with padding
+  local lines = { "" }
+  for _, line in ipairs(art.lines) do
+    table.insert(lines, "  " .. line)
+  end
+  table.insert(lines, "")
+  table.insert(lines, string.format("  %s", art.name or art.id))
+  table.insert(lines, "")
+
+  -- Add message preview if in messages submenu
+  if settings_state.submenu == "messages" then
+    local msg = message_browser.filtered[message_browser.index]
+    if msg then
+      table.insert(lines, "  " .. string.rep("─", 30))
+      table.insert(lines, "")
+
+      local placeholders = require("ascii-animation.placeholders")
+      local processed = placeholders.process(msg.text)
+
+      -- Word wrap long messages
+      local max_width = 34
+      local words = {}
+      for word in processed:gmatch("%S+") do
+        table.insert(words, word)
+      end
+
+      local current_line = "  "
+      for _, word in ipairs(words) do
+        if #current_line + #word + 1 > max_width then
+          table.insert(lines, current_line)
+          current_line = "  " .. word
+        else
+          if current_line == "  " then
+            current_line = "  " .. word
+          else
+            current_line = current_line .. " " .. word
+          end
+        end
+      end
+      if current_line ~= "  " then
+        table.insert(lines, current_line)
+      end
+
+      table.insert(lines, "")
+
+      -- Show message metadata
+      local is_fav = config.is_message_favorite(msg.id)
+      local is_disabled = config.is_message_disabled(msg.id)
+      local theme_disabled = config.is_theme_disabled(msg.theme)
+      local status = ""
+      if is_fav then status = status .. " ★" end
+      if is_disabled then status = status .. " ✗msg" end
+      if theme_disabled then status = status .. " ✗theme" end
+      if status == "" then status = " ✓" end
+
+      local theme_names = content.theme_names or {}
+      local theme_label = theme_names[msg.theme] or msg.theme
+      table.insert(lines, string.format("  [%s · %s]%s", msg.period, theme_label, status))
+      table.insert(lines, "")
+    end
+  end
+
+  vim.bo[settings_state.preview_buf].modifiable = true
+  vim.api.nvim_buf_set_lines(settings_state.preview_buf, 0, -1, false, lines)
+  vim.bo[settings_state.preview_buf].modifiable = false
+end
+
 -- Setup keybindings for settings buffer
 local function setup_settings_keybindings(buf)
   -- Common keybindings
@@ -1079,30 +1545,6 @@ local function setup_settings_keybindings(buf)
 
   -- Context-aware keybindings
   -- Main menu keys
-  vim.keymap.set("n", "e", function()
-    if not settings_state.submenu then
-      cycle_effect(1)
-    end
-  end, { buffer = buf, nowait = true, silent = true })
-
-  vim.keymap.set("n", "E", function()
-    if not settings_state.submenu then
-      cycle_effect(-1)
-    end
-  end, { buffer = buf, nowait = true, silent = true })
-
-  vim.keymap.set("n", "a", function()
-    if not settings_state.submenu then
-      cycle_ambient(1)
-    end
-  end, { buffer = buf, nowait = true, silent = true })
-
-  vim.keymap.set("n", "A", function()
-    if not settings_state.submenu then
-      cycle_ambient(-1)
-    end
-  end, { buffer = buf, nowait = true, silent = true })
-
   vim.keymap.set("n", "l", function()
     if not settings_state.submenu then
       toggle_loop()
@@ -1149,12 +1591,6 @@ local function setup_settings_keybindings(buf)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
-  vim.keymap.set("n", "n", function()
-    if not settings_state.submenu then
-      toggle_no_repeat()
-    end
-  end, { buffer = buf, nowait = true, silent = true })
-
   vim.keymap.set("n", "w", function()
     if not settings_state.submenu then
       adjust_fav_weight(10)
@@ -1178,20 +1614,6 @@ local function setup_settings_keybindings(buf)
   vim.keymap.set("n", "O", function()
     if settings_state.submenu == "wave" then
       cycle_wave_origin(-1)
-    end
-  end, { buffer = buf, nowait = true, silent = true })
-
-  vim.keymap.set("n", "t", function()
-    if not settings_state.submenu then
-      open_timing_submenu()
-    elseif settings_state.submenu == "spiral" then
-      adjust_spiral_tightness(0.1)
-    end
-  end, { buffer = buf, nowait = true, silent = true })
-
-  vim.keymap.set("n", "T", function()
-    if settings_state.submenu == "spiral" then
-      adjust_spiral_tightness(-0.1)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
@@ -1309,17 +1731,312 @@ local function setup_settings_keybindings(buf)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
-  -- Style toggles (1-7) - only in styles submenu
-  for i, style in ipairs(ALL_STYLES) do
+  -- Messages/Themes submenu - starts with Themes view
+  vim.keymap.set("n", "g", function()
+    if not settings_state.submenu then
+      settings_state.submenu = "messages"
+      message_browser.period_filter = nil
+      message_browser.theme_filter = nil
+      message_browser.view = "themes"  -- Start with themes view
+      message_browser.index = 1
+      message_browser.page = 1
+      refresh_message_list()
+      update_settings_content()
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  -- Browse individual messages (from themes view)
+  vim.keymap.set("n", "b", function()
+    if settings_state.submenu == "messages" and message_browser.view == "themes" then
+      message_browser.view = "messages"
+      refresh_message_list()
+      update_settings_content()
+      -- Resize preview window for message preview
+      if settings_state.preview_win and vim.api.nvim_win_is_valid(settings_state.preview_win) then
+        local art = settings_state.current_art
+        if art then
+          local new_height = #art.lines + 14
+          vim.api.nvim_win_set_config(settings_state.preview_win, { height = new_height })
+        end
+      end
+      update_preview_with_message()
+    elseif settings_state.submenu == "glitch" then
+      adjust_glitch_block_chance(0.1)
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  -- Back to themes from messages view (or footer template edit)
+  vim.keymap.set("n", "t", function()
+    if settings_state.submenu == "messages" and message_browser.view == "messages" then
+      message_browser.view = "themes"
+      update_settings_content()
+      update_preview_buffer()
+    elseif settings_state.submenu == "footer" then
+      vim.ui.input({
+        prompt = "Footer template: ",
+        default = config.options.footer.template or "{message}",
+      }, function(input)
+        if input then
+          config.options.footer.template = input
+          config.save()
+          update_settings_content()
+          update_preview_with_footer()
+        end
+      end)
+    elseif not settings_state.submenu then
+      open_timing_submenu()
+    elseif settings_state.submenu == "spiral" then
+      adjust_spiral_tightness(0.1)
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  -- Clear all filters in message browser
+  vim.keymap.set("n", "c", function()
+    if settings_state.submenu == "messages" and message_browser.view == "messages" then
+      message_browser.period_filter = nil
+      message_browser.theme_filter = nil
+      message_browser.index = 1
+      message_browser.page = 1
+      refresh_message_list()
+      update_settings_content()
+      update_preview_with_message()
+    elseif settings_state.submenu == "scramble" then
+      adjust_scramble_cycles(1)
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  -- Message browser navigation (j/k)
+  vim.keymap.set("n", "j", function()
+    if settings_state.submenu == "messages" then
+      if message_browser.index < #message_browser.filtered then
+        message_browser.index = message_browser.index + 1
+        message_browser.page = math.ceil(message_browser.index / message_browser.page_size)
+        update_settings_content()
+        update_preview_with_message()
+      end
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  vim.keymap.set("n", "k", function()
+    if settings_state.submenu == "messages" then
+      if message_browser.index > 1 then
+        message_browser.index = message_browser.index - 1
+        message_browser.page = math.ceil(message_browser.index / message_browser.page_size)
+        update_settings_content()
+        update_preview_with_message()
+      end
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  -- Message browser page navigation (n/N)
+  vim.keymap.set("n", "n", function()
+    if settings_state.submenu == "messages" then
+      local total_pages = math.max(1, math.ceil(#message_browser.filtered / message_browser.page_size))
+      if message_browser.page < total_pages then
+        message_browser.page = message_browser.page + 1
+        message_browser.index = (message_browser.page - 1) * message_browser.page_size + 1
+        update_settings_content()
+        update_preview_with_message()
+      end
+    elseif not settings_state.submenu then
+      toggle_no_repeat()
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  vim.keymap.set("n", "N", function()
+    if settings_state.submenu == "messages" then
+      if message_browser.page > 1 then
+        message_browser.page = message_browser.page - 1
+        message_browser.index = (message_browser.page - 1) * message_browser.page_size + 1
+        update_settings_content()
+        update_preview_with_message()
+      end
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  -- Message favorite toggle (in messages submenu, 'f' key)
+  vim.keymap.set("n", "F", function()
+    if settings_state.submenu == "messages" then
+      local msg = message_browser.filtered[message_browser.index]
+      if msg then
+        local added = config.toggle_message_favorite(msg.id)
+        vim.notify(added and "Added to favorites" or "Removed from favorites", vim.log.levels.INFO)
+        update_settings_content()
+      end
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  -- Message disable toggle (in messages submenu)
+  vim.keymap.set("n", "d", function()
+    if settings_state.submenu == "messages" then
+      local msg = message_browser.filtered[message_browser.index]
+      if msg then
+        local disabled = config.toggle_message_disabled(msg.id)
+        vim.notify(disabled and "Message disabled" or "Message enabled", vim.log.levels.INFO)
+        update_settings_content()
+      end
+    elseif settings_state.submenu == "spiral" then
+      cycle_spiral_direction(1)
+    elseif settings_state.submenu == "timing" then
+      adjust_loop_delay(100)
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  -- Footer submenu
+  vim.keymap.set("n", "f", function()
+    if not settings_state.submenu then
+      settings_state.submenu = "footer"
+      update_settings_content()
+      -- Resize preview window to fit footer
+      if settings_state.preview_win and vim.api.nvim_win_is_valid(settings_state.preview_win) then
+        local art = settings_state.current_art
+        if art then
+          local new_height = #art.lines + 12  -- Extra for footer box
+          vim.api.nvim_win_set_config(settings_state.preview_win, { height = new_height })
+        end
+      end
+      -- Show footer preview below art
+      update_preview_with_footer()
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  -- Footer-specific keys
+  vim.keymap.set("n", "e", function()
+    if settings_state.submenu == "footer" then
+      config.options.footer.enabled = not config.options.footer.enabled
+      config.save()
+      update_settings_content()
+      update_preview_with_footer()
+    elseif not settings_state.submenu then
+      cycle_effect(1)
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  vim.keymap.set("n", "E", function()
+    if not settings_state.submenu then
+      cycle_effect(-1)
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  -- Footer alignment cycling / Ambient cycling
+  vim.keymap.set("n", "a", function()
+    if settings_state.submenu == "footer" then
+      local alignments = { "left", "center", "right" }
+      local current = config.options.footer.alignment or "center"
+      local idx = 1
+      for i, a in ipairs(alignments) do
+        if a == current then idx = i break end
+      end
+      idx = idx + 1
+      if idx > #alignments then idx = 1 end
+      config.options.footer.alignment = alignments[idx]
+      config.save()
+      update_settings_content()
+      update_preview_with_footer()
+    elseif not settings_state.submenu then
+      cycle_ambient(1)
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  vim.keymap.set("n", "A", function()
+    if settings_state.submenu == "footer" then
+      local alignments = { "left", "center", "right" }
+      local current = config.options.footer.alignment or "center"
+      local idx = 1
+      for i, a in ipairs(alignments) do
+        if a == current then idx = i break end
+      end
+      idx = idx - 1
+      if idx < 1 then idx = #alignments end
+      config.options.footer.alignment = alignments[idx]
+      config.save()
+      update_settings_content()
+      update_preview_with_footer()
+    elseif not settings_state.submenu then
+      cycle_ambient(-1)
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  vim.keymap.set("n", "T", function()
+    if settings_state.submenu == "spiral" then
+      adjust_spiral_tightness(-0.1)
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  -- Message preview (show full message in notification)
+  vim.keymap.set("n", "p", function()
+    if settings_state.submenu == "messages" then
+      local msg = message_browser.filtered[message_browser.index]
+      if msg then
+        local placeholders = require("ascii-animation.placeholders")
+        local processed = placeholders.process(msg.text)
+        vim.notify(processed, vim.log.levels.INFO)
+      else
+        vim.notify("No message selected", vim.log.levels.WARN)
+      end
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  -- All themes for filtering
+  local ALL_THEMES = content.themes or { "motivational", "personalized", "philosophical", "cryptic", "poetic", "zen", "witty" }
+
+  -- Number keys for toggles (1-7 for styles, 1-5 for period, 6-9+0 for theme in messages)
+  vim.keymap.set("n", "0", function()
+    if settings_state.submenu == "messages" then
+      if message_browser.view == "messages" then
+        -- 0 = witty theme filter (7th theme)
+        message_browser.theme_filter = ALL_THEMES[7]
+        message_browser.index = 1
+        message_browser.page = 1
+        refresh_message_list()
+        update_settings_content()
+        update_preview_with_message()
+      end
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  for i = 1, 9 do
     vim.keymap.set("n", tostring(i), function()
       if settings_state.submenu == "styles" then
-        toggle_style(style)
-        update_settings_content()
-        -- Pick a new random art from enabled styles for preview
-        local arts = get_arts_list(nil)  -- This uses the styles filter
-        if #arts > 0 then
-          settings_state.current_art = arts[math.random(1, #arts)]
-          replay_preview()
+        if i <= #ALL_STYLES then
+          toggle_style(ALL_STYLES[i])
+          update_settings_content()
+          -- Pick a new random art from enabled styles for preview
+          local arts = get_arts_list(nil)
+          if #arts > 0 then
+            settings_state.current_art = arts[math.random(1, #arts)]
+            replay_preview()
+          end
+        end
+      elseif settings_state.submenu == "messages" then
+        if message_browser.view == "themes" then
+          -- In themes view: 1-7 toggles themes
+          if i <= #ALL_THEMES then
+            local disabled = config.toggle_theme_disabled(ALL_THEMES[i])
+            vim.notify(disabled and "Theme disabled" or "Theme enabled", vim.log.levels.INFO)
+            update_settings_content()
+          end
+        else
+          -- In messages view: 1-5 = period, 6-9 = theme
+          if i <= 5 then
+            message_browser.period_filter = ALL_PERIODS[i]
+            message_browser.index = 1
+            message_browser.page = 1
+            refresh_message_list()
+            update_settings_content()
+            update_preview_with_message()
+          elseif i >= 6 and i <= 9 then
+            -- 6=motivational, 7=personalized, 8=philosophical, 9=cryptic
+            local theme_idx = i - 5
+            if theme_idx <= #ALL_THEMES then
+              message_browser.theme_filter = ALL_THEMES[theme_idx]
+              message_browser.index = 1
+              message_browser.page = 1
+              refresh_message_list()
+              update_settings_content()
+              update_preview_with_message()
+            end
+          end
         end
       end
     end, { buffer = buf, nowait = true, silent = true })
@@ -1355,8 +2072,9 @@ function M.stats()
   end
   preview_width = math.max(preview_width, art_width + 6)
 
-  local settings_height = 24
-  local preview_height = #art.lines + 5
+  local settings_height = 32
+  -- Extra height for footer/message preview (6 lines for footer box + alignment indicator)
+  local preview_height = #art.lines + 12
 
   local total_height = math.max(settings_height, preview_height)
   local row = math.floor((vim.o.lines - total_height) / 2)
