@@ -16,7 +16,30 @@ local fade_state = {
 
 -- Glitch effect constants
 local glitch_chars = "█▓▒░▀▄▌▐▊▋▍▎▏┃┆┇┊┋╎╏│║▕▐▌"
+local glitch_chars_table = vim.fn.split(glitch_chars, "\\zs")
 local glitch_highlights = { "ErrorMsg", "WarningMsg", "DiffDelete", "DiffChange", "Special" }
+
+-- Cache for split chaos chars (to handle UTF-8 properly)
+local chaos_chars_cache = {
+  str = nil,
+  chars = nil,
+}
+
+-- Get chaos chars as a table (handles UTF-8 multi-byte characters)
+local function get_chaos_chars_table()
+  local current = config.get_chaos_chars()
+  if chaos_chars_cache.str ~= current then
+    chaos_chars_cache.str = current
+    chaos_chars_cache.chars = vim.fn.split(current, "\\zs")
+  end
+  return chaos_chars_cache.chars
+end
+
+-- Get a random chaos character (UTF-8 safe)
+local function random_chaos_char()
+  local chars = get_chaos_chars_table()
+  return chars[math.random(1, #chars)]
+end
 
 -- State for tracking current animation
 local animation_state = {
@@ -47,7 +70,6 @@ end
 
 -- Create chaotic version of a line (preserving spaces for alignment)
 local function chaos_line(line, reveal_ratio, line_idx, total_lines)
-  local chaos_chars = config.get_chaos_chars()
   local result = {}
   local chars = vim.fn.split(line, "\\zs")
 
@@ -57,8 +79,7 @@ local function chaos_line(line, reveal_ratio, line_idx, total_lines)
     elseif math.random() < reveal_ratio then
       table.insert(result, char)
     else
-      local idx = math.random(1, #chaos_chars)
-      table.insert(result, chaos_chars:sub(idx, idx))
+      table.insert(result, random_chaos_char())
     end
   end
 
@@ -67,7 +88,6 @@ end
 
 -- Create typewriter version of a line (left-to-right reveal with cursor)
 local function typewriter_line(line, reveal_ratio, line_idx, total_lines)
-  local chaos_chars = config.get_chaos_chars()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
   local cursor_pos = math.floor(#chars * reveal_ratio)
@@ -81,8 +101,7 @@ local function typewriter_line(line, reveal_ratio, line_idx, total_lines)
       table.insert(result, char)  -- Revealed
     else
       -- Hidden: show chaos char
-      local rand_idx = math.random(1, #chaos_chars)
-      table.insert(result, chaos_chars:sub(rand_idx, rand_idx))
+      table.insert(result, random_chaos_char())
     end
   end
 
@@ -91,7 +110,6 @@ end
 
 -- Create diagonal sweep version (top-left to bottom-right)
 local function diagonal_line(line, reveal_ratio, line_idx, total_lines)
-  local chaos_chars = config.get_chaos_chars()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
   -- Offset reveal based on line position (top lines reveal first)
@@ -107,8 +125,7 @@ local function diagonal_line(line, reveal_ratio, line_idx, total_lines)
         table.insert(result, char)
       else
         -- Not yet revealed: show chaos char
-        local rand_idx = math.random(1, #chaos_chars)
-        table.insert(result, chaos_chars:sub(rand_idx, rand_idx))
+        table.insert(result, random_chaos_char())
       end
     end
   end
@@ -133,7 +150,6 @@ end
 
 -- Create matrix rain effect (characters fall and settle)
 local function matrix_line(line, reveal_ratio, line_idx, total_lines)
-  local chaos_chars = config.get_chaos_chars()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
 
@@ -149,8 +165,7 @@ local function matrix_line(line, reveal_ratio, line_idx, total_lines)
         table.insert(result, char)  -- Settled
       else
         -- Falling or waiting: show random matrix character
-        local rand_idx = math.random(1, #chaos_chars)
-        table.insert(result, chaos_chars:sub(rand_idx, rand_idx))
+        table.insert(result, random_chaos_char())
       end
     end
   end
@@ -159,7 +174,6 @@ end
 
 -- Create wave effect (ripple reveal from origin point)
 local function wave_line(line, reveal_ratio, line_idx, total_lines)
-  local chaos_chars = config.get_chaos_chars()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
 
@@ -222,8 +236,7 @@ local function wave_line(line, reveal_ratio, line_idx, total_lines)
         table.insert(result, char)
       else
         -- Show chaos char
-        local rand_idx = math.random(1, #chaos_chars)
-        table.insert(result, chaos_chars:sub(rand_idx, rand_idx))
+        table.insert(result, random_chaos_char())
       end
     end
   end
@@ -301,7 +314,9 @@ end
 local function scramble_line(line, reveal_ratio, line_idx, total_lines)
   local effect_opts = config.options.animation.effect_options or {}
   local stagger = effect_opts.stagger or "left"
-  local charset = effect_opts.charset or config.get_chaos_chars()
+  -- Use custom charset if provided, otherwise use chaos chars table
+  local charset_str = effect_opts.charset
+  local charset_table = charset_str and vim.fn.split(charset_str, "\\zs") or get_chaos_chars_table()
 
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
@@ -335,8 +350,7 @@ local function scramble_line(line, reveal_ratio, line_idx, total_lines)
       if reveal_ratio >= settle_time then
         table.insert(result, char)
       else
-        local rand_idx = math.random(1, #charset)
-        table.insert(result, charset:sub(rand_idx, rand_idx))
+        table.insert(result, charset_table[math.random(1, #charset_table)])
       end
     end
   end
@@ -345,7 +359,6 @@ end
 
 -- Create rain/drip effect (characters fall and stack from bottom)
 local function rain_line(line, reveal_ratio, line_idx, total_lines)
-  local chaos_chars = config.get_chaos_chars()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
 
@@ -363,8 +376,7 @@ local function rain_line(line, reveal_ratio, line_idx, total_lines)
       if char_progress >= 0.7 then
         table.insert(result, char)
       else
-        local rand_idx = math.random(1, #chaos_chars)
-        table.insert(result, chaos_chars:sub(rand_idx, rand_idx))
+        table.insert(result, random_chaos_char())
       end
     end
   end
@@ -386,7 +398,6 @@ end
 
 -- Create spiral reveal effect
 local function spiral_line(line, reveal_ratio, line_idx, total_lines)
-  local chaos_chars = config.get_chaos_chars()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
 
@@ -406,8 +417,7 @@ local function spiral_line(line, reveal_ratio, line_idx, total_lines)
       if normalized_dist <= reveal_ratio then
         table.insert(result, char)
       else
-        local rand_idx = math.random(1, #chaos_chars)
-        table.insert(result, chaos_chars:sub(rand_idx, rand_idx))
+        table.insert(result, random_chaos_char())
       end
     end
   end
@@ -416,7 +426,7 @@ end
 
 -- Create explode effect (center-outward reveal)
 local function explode_line(line, reveal_ratio, line_idx, total_lines)
-  local chaos_chars = config.get_chaos_chars()
+  local chaos_chars_tbl = get_chaos_chars_table()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
   local len = #chars
@@ -435,10 +445,10 @@ local function explode_line(line, reveal_ratio, line_idx, total_lines)
       if adjusted_ratio > threshold then
         table.insert(result, char)
       else
-        local seed = (line_idx * 17 + idx * 31) % #chaos_chars + 1
-        local rand_offset = math.floor(reveal_ratio * 10) % #chaos_chars
-        local chaos_idx = ((seed + rand_offset - 1) % #chaos_chars) + 1
-        table.insert(result, chaos_chars:sub(chaos_idx, chaos_idx))
+        local seed = (line_idx * 17 + idx * 31) % #chaos_chars_tbl + 1
+        local rand_offset = math.floor(reveal_ratio * 10) % #chaos_chars_tbl
+        local chaos_idx = ((seed + rand_offset - 1) % #chaos_chars_tbl) + 1
+        table.insert(result, chaos_chars_tbl[chaos_idx])
       end
     end
   end
@@ -447,7 +457,7 @@ end
 
 -- Create implode effect (edge-inward reveal)
 local function implode_line(line, reveal_ratio, line_idx, total_lines)
-  local chaos_chars = config.get_chaos_chars()
+  local chaos_chars_tbl = get_chaos_chars_table()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
   local len = #chars
@@ -467,10 +477,10 @@ local function implode_line(line, reveal_ratio, line_idx, total_lines)
       if adjusted_ratio > threshold then
         table.insert(result, char)
       else
-        local seed = (line_idx * 17 + idx * 31) % #chaos_chars + 1
-        local rand_offset = math.floor(reveal_ratio * 10) % #chaos_chars
-        local chaos_idx = ((seed + rand_offset - 1) % #chaos_chars) + 1
-        table.insert(result, chaos_chars:sub(chaos_idx, chaos_idx))
+        local seed = (line_idx * 17 + idx * 31) % #chaos_chars_tbl + 1
+        local rand_offset = math.floor(reveal_ratio * 10) % #chaos_chars_tbl
+        local chaos_idx = ((seed + rand_offset - 1) % #chaos_chars_tbl) + 1
+        table.insert(result, chaos_chars_tbl[chaos_idx])
       end
     end
   end
@@ -485,7 +495,7 @@ local function glitch_line(line, reveal_ratio, line_idx, total_lines)
   local block_size = opts.block_size or 5
   local resolve_speed = opts.resolve_speed or 1.0
 
-  local chaos_chars_str = config.get_chaos_chars()
+  local chaos_chars_tbl = get_chaos_chars_table()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
   local segments = {}
@@ -534,16 +544,13 @@ local function glitch_line(line, reveal_ratio, line_idx, total_lines)
       else
         local effect_roll = math.random()
         if has_block and idx >= block_start and idx <= block_end then
-          local block_idx = math.random(1, #glitch_chars)
-          output_char = glitch_chars:sub(block_idx, block_idx)
+          output_char = glitch_chars_table[math.random(1, #glitch_chars_table)]
           is_glitched = true
         elseif effect_roll < effective_intensity * 0.6 then
-          local glitch_idx = math.random(1, #glitch_chars)
-          output_char = glitch_chars:sub(glitch_idx, glitch_idx)
+          output_char = glitch_chars_table[math.random(1, #glitch_chars_table)]
           is_glitched = true
         elseif effect_roll < effective_intensity then
-          local chaos_idx = math.random(1, #chaos_chars_str)
-          output_char = chaos_chars_str:sub(chaos_idx, chaos_idx)
+          output_char = chaos_chars_tbl[math.random(1, #chaos_chars_tbl)]
           is_glitched = true
         else
           output_char = char
@@ -598,14 +605,12 @@ end
 
 -- Apply glitch effect: randomly replace a few characters with chaos chars
 local function apply_glitch(line, intensity)
-  local chaos_chars = config.get_chaos_chars()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
 
   for _, char in ipairs(chars) do
     if char ~= " " and char ~= "" and math.random() < intensity then
-      local idx = math.random(1, #chaos_chars)
-      table.insert(result, chaos_chars:sub(idx, idx))
+      table.insert(result, random_chaos_char())
     else
       table.insert(result, char)
     end
@@ -615,12 +620,10 @@ end
 
 -- Apply shimmer effect: one random character shows chaos
 local function apply_shimmer(line, char_index)
-  local chaos_chars = config.get_chaos_chars()
   local chars = vim.fn.split(line, "\\zs")
 
   if char_index <= #chars and chars[char_index] ~= " " and chars[char_index] ~= "" then
-    local idx = math.random(1, #chaos_chars)
-    chars[char_index] = chaos_chars:sub(idx, idx)
+    chars[char_index] = random_chaos_char()
   end
   return table.concat(chars)
 end
