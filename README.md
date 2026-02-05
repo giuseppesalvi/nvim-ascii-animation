@@ -18,7 +18,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 
 - 14 **animation effects**: chaos, typewriter, diagonal, lines, matrix, wave, fade, scramble, rain, spiral, explode, implode, glitch, and random
 - **Loop mode**: continuous animation replay with optional reverse
-- **Ambient effects**: subtle glitch or shimmer after animation completes
+- **8 ambient effects**: glitch, shimmer, cursor trail, sparkle, scanlines, noise, shake, sound
 - **Ease-in-out** timing: slow start → fast middle → slow finish
 - **140+ built-in ASCII arts** in 7 styles: blocks, gradient, isometric, box, minimal, pixel, braille
 - **Time-aware content**: morning, afternoon, evening, night, weekend themes
@@ -86,7 +86,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
       loop_delay = 2000,     -- Delay between loops (ms)
       loop_reverse = false,  -- Play reverse before next loop
       -- Ambient effect (when not looping)
-      ambient = "none",      -- "none" | "glitch" | "shimmer"
+      ambient = "none",      -- "none" | "glitch" | "shimmer" | "cursor_trail" | "sparkle" | "scanlines" | "noise" | "shake" | "sound"
       ambient_interval = 2000,
       -- Character set preset
       char_preset = "default", -- "default" | "minimal" | "matrix" | "blocks" | "braille" | "stars" | "geometric" | "binary" | "dots"
@@ -498,7 +498,7 @@ Opens an interactive settings panel with **live preview**:
 **Main Menu Keybindings:**
 - `e`/`E`: cycle effect (14 effects)
 - `o`: open effect options (for wave, glitch, scramble, spiral, fade)
-- `a`/`A`: cycle ambient effect
+- `a`/`A`: cycle ambient effect (9 options)
 - `l`: toggle loop
 - `s`/`S`: adjust steps (±5)
 - `c`: cycle charset preset forward (9 presets)
@@ -767,8 +767,9 @@ animation = {
 | `animation.loop` | boolean | `false` | Enable loop mode (animation replays continuously) |
 | `animation.loop_delay` | number | `2000` | Delay between loops in ms |
 | `animation.loop_reverse` | boolean | `false` | Play animation in reverse before next loop |
-| `animation.ambient` | string | `"none"` | Ambient effect after animation: `"none"`, `"glitch"`, or `"shimmer"` |
+| `animation.ambient` | string | `"none"` | Ambient effect: `"none"`, `"glitch"`, `"shimmer"`, `"cursor_trail"`, `"sparkle"`, `"scanlines"`, `"noise"`, `"shake"`, `"sound"` |
 | `animation.ambient_interval` | number | `2000` | How often ambient effect triggers in ms |
+| `animation.ambient_options` | table | see below | Per-effect ambient configuration options |
 | `animation.char_preset` | string | `"default"` | Character preset: `"default"`, `"minimal"`, `"matrix"`, `"blocks"`, `"braille"`, `"stars"`, `"geometric"`, `"binary"`, `"dots"` |
 | `animation.use_phase_highlights` | boolean | `false` | Enable phase-based highlight groups (see Highlight Groups section) |
 | `animation.color_theme` | string | `nil` | Color theme for phase highlights (auto-enables phase highlights): `"default"`, `"cyberpunk"`, `"matrix"`, `"ocean"`, `"sunset"`, `"forest"`, `"monochrome"`, `"dracula"`, `"nord"` |
@@ -1039,13 +1040,49 @@ Ambient effects add subtle ongoing visual interest after the animation completes
 
 - **`"glitch"`**: Random characters briefly flicker to chaos characters
 - **`"shimmer"`**: Single random characters briefly flash
+- **`"cursor_trail"`**: A virtual cursor moves through the art leaving a fading trail
+- **`"sparkle"`**: Random sparkle characters (✦✧★·) appear at random positions
+- **`"scanlines"`**: CRT-style horizontal dimmed lines overlay
+- **`"noise"`**: Random noise characters replace some chars briefly
+- **`"shake"`**: Simulates screen shake by offsetting text positions
+- **`"sound"`**: Plays a sound file at each interval (requires configuration)
 
 ```lua
 animation = {
-  ambient = "glitch",      -- "none" | "glitch" | "shimmer"
-  ambient_interval = 2000, -- Trigger every 2 seconds
+  ambient = "sparkle",      -- Choose your ambient effect
+  ambient_interval = 2000,  -- Trigger every 2 seconds
+
+  -- Per-effect options (only the selected effect's options are used)
+  ambient_options = {
+    cursor_trail = {
+      trail_chars = "▓▒░",   -- Trail characters (brightest to dimmest)
+      trail_length = 3,       -- Number of trail chars
+      move_speed = 1,         -- Chars to move per tick
+    },
+    sparkle = {
+      chars = "✦✧★·",        -- Sparkle characters
+      density = 0.05,         -- % of non-space chars to sparkle (0.05 = 5%)
+    },
+    scanlines = {
+      spacing = 2,            -- Every Nth line gets dimmed
+      dim_amount = 0.5,       -- Brightness reduction (0.5 = 50% dimmer)
+    },
+    noise = {
+      intensity = 0.1,        -- % of non-space chars affected (0.1 = 10%)
+    },
+    shake = {
+      max_offset = 2,         -- Maximum chars to offset
+      line_probability = 0.3, -- Probability each line shakes (0.3 = 30%)
+    },
+    sound = {
+      file_path = nil,        -- Path to sound file (required for sound effect)
+      volume = 50,            -- Volume 0-100 (macOS: afplay, Linux: paplay)
+    },
+  },
 }
 ```
+
+> **Note:** The `sound` effect requires a configured `file_path` and uses system audio commands: `afplay` (macOS, built-in) or `paplay` (Linux, requires PulseAudio).
 
 ### Highlight Groups
 
