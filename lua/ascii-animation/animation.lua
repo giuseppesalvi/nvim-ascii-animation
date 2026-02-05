@@ -69,6 +69,74 @@ local function refresh_phase_highlights()
   setup_phase_highlights()
 end
 
+-- State for rainbow/gradient highlights
+local color_mode_state = {
+  mode = nil,
+  line_count = 0,
+  rainbow_colors = nil,
+  gradient_start = nil,
+  gradient_stop = nil,
+}
+
+-- Setup rainbow highlight groups (one per color in palette, cycling for lines)
+local function setup_rainbow_highlights()
+  local colors = config.get_rainbow_colors()
+  color_mode_state.rainbow_colors = colors
+
+  for i, color in ipairs(colors) do
+    local hl_name = "AsciiRainbow" .. i
+    vim.api.nvim_set_hl(0, hl_name, { fg = color })
+  end
+end
+
+-- Setup gradient highlight groups (one per line)
+local function setup_gradient_highlights(line_count)
+  local gradient = config.get_gradient_colors()
+  color_mode_state.gradient_start = gradient.start
+  color_mode_state.gradient_stop = gradient.stop
+  color_mode_state.line_count = line_count
+
+  for i = 1, line_count do
+    local ratio = (i - 1) / math.max(1, line_count - 1)
+    local color = config.interpolate_color(gradient.start, gradient.stop, ratio)
+    local hl_name = "AsciiGradient" .. i
+    vim.api.nvim_set_hl(0, hl_name, { fg = color })
+  end
+end
+
+-- Get highlight name for a line based on color mode
+local function get_line_highlight(line_num, base_highlight)
+  local color_mode = config.get_color_mode()
+
+  if color_mode == "rainbow" then
+    local colors = color_mode_state.rainbow_colors or config.get_rainbow_colors()
+    local color_idx = ((line_num - 1) % #colors) + 1
+    return "AsciiRainbow" .. color_idx
+  elseif color_mode == "gradient" then
+    return "AsciiGradient" .. line_num
+  else
+    return base_highlight
+  end
+end
+
+-- Setup color mode highlights based on current settings
+local function setup_color_mode_highlights(line_count)
+  local color_mode = config.get_color_mode()
+  color_mode_state.mode = color_mode
+
+  if color_mode == "rainbow" then
+    setup_rainbow_highlights()
+  elseif color_mode == "gradient" then
+    setup_gradient_highlights(line_count)
+  end
+end
+
+-- Force refresh of color mode highlights
+local function refresh_color_mode_highlights(line_count)
+  color_mode_state.mode = nil
+  setup_color_mode_highlights(line_count or color_mode_state.line_count)
+end
+
 -- Get phase highlight name based on reveal ratio
 local function get_phase_highlight(reveal_ratio, is_cursor, is_glitch)
   if is_glitch then
@@ -1125,8 +1193,9 @@ local function start_ambient(buf, header_end, highlight)
         local line = lines[i]
         if line and #line > 0 and math.random() < 0.3 then
           local transformed = apply_glitch(line, 0.05)
+          local line_hl = get_line_highlight(i, highlight or "Normal")
           pcall(vim.api.nvim_buf_set_extmark, buf, M.ns_id, i - 1, 0, {
-            virt_text = { { transformed, highlight or "Normal" } },
+            virt_text = { { transformed, line_hl } },
             virt_text_pos = "overlay",
             hl_mode = "combine",
           })
@@ -1140,8 +1209,9 @@ local function start_ambient(buf, header_end, highlight)
         local chars = vim.fn.split(line, "\\zs")
         local char_idx = math.random(1, #chars)
         local transformed = apply_shimmer(line, char_idx)
+        local line_hl = get_line_highlight(line_idx, highlight or "Normal")
         pcall(vim.api.nvim_buf_set_extmark, buf, M.ns_id, line_idx - 1, 0, {
-          virt_text = { { transformed, highlight or "Normal" } },
+          virt_text = { { transformed, line_hl } },
           virt_text_pos = "overlay",
           hl_mode = "combine",
         })
@@ -1279,7 +1349,10 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
     local line = lines[i]
     if line and #line > 0 then
       local transformed, brightness = effect_fn(line, reveal_ratio, i, header_end)
-      local line_highlight = highlight or "Normal"
+      local base_highlight = highlight or "Normal"
+
+      -- Apply color mode (rainbow/gradient) for line-specific coloring
+      local line_highlight = get_line_highlight(i, base_highlight)
 
       -- Fade effect uses dynamic highlight groups based on brightness
       if effect == "fade" and brightness then
@@ -1350,6 +1423,9 @@ function M.start(buf, header_lines, highlight)
     create_fade_highlights(highlight)
   end
 
+  -- Setup color mode highlights (rainbow/gradient)
+  setup_color_mode_highlights(header_end)
+
   -- Store state for potential stop
   animation_state.running = true
   animation_state.buf = buf
@@ -1363,5 +1439,6 @@ end
 -- Export for manual highlight setup
 M.setup_phase_highlights = setup_phase_highlights
 M.refresh_phase_highlights = refresh_phase_highlights
+M.refresh_color_mode_highlights = refresh_color_mode_highlights
 
 return M

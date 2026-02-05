@@ -91,6 +91,16 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
       use_phase_highlights = false,
       -- Color theme for phase highlights (auto-enables use_phase_highlights)
       color_theme = nil, -- "default" | "cyberpunk" | "matrix" | "ocean" | "sunset" | "forest" | "monochrome" | "dracula" | "nord"
+      -- Color mode for line coloring
+      color_mode = "default", -- "default" | "rainbow" | "gradient"
+      -- Rainbow mode options
+      rainbow = {
+        palette = "default", -- "default" | "pastel" | "neon" | "warm" | "cool" | "mono"
+      },
+      -- Gradient mode options
+      gradient = {
+        preset = "sunset", -- "sunset" | "ocean" | "forest" | "fire" | "purple" | "pink" | "midnight" | "aurora"
+      },
     },
     chaos_chars = "@#$%&*+=-:;!?/\\|[]{}()<>~`'^", -- Custom chars (overrides preset)
   },
@@ -406,9 +416,10 @@ Opens an interactive settings panel with **live preview**:
 - `a`/`A`: cycle ambient effect
 - `l`: toggle loop
 - `s`/`S`: adjust steps (±5)
-- `c`/`C`: cycle charset preset (9 presets)
+- `c`: cycle charset preset forward (9 presets)
 - `p`: toggle phase highlights
 - `P`: open phase colors (when phase highlights enabled)
+- `C`: open color mode settings (rainbow/gradient)
 - `t`: open timing settings
 - `m`/`M`: cycle random mode (always/daily/session)
 - `n`: toggle no-repeat
@@ -460,6 +471,19 @@ Opens an interactive settings panel with **live preview**:
 - `4`: edit Cursor color (hex input)
 - `5`: edit Glitch color (hex input)
 - `r`: reset custom colors (uses current theme colors)
+- `Backspace`: back to main menu
+
+**Color Mode (press `C`):**
+- `m`/`M`: cycle color mode (default, rainbow, gradient)
+
+*In rainbow mode:*
+- `p`: cycle rainbow palette (default, pastel, neon, warm, cool, mono)
+
+*In gradient mode:*
+- `g`: cycle gradient preset (sunset, ocean, forest, fire, purple, pink, midnight, aurora)
+- `1`: edit start color (hex input)
+- `2`: edit stop color (hex input)
+- `r`: reset custom colors (uses preset)
 - `Backspace`: back to main menu
 
 **Styles Filter (press `y`):**
@@ -663,6 +687,11 @@ animation = {
 | `animation.char_preset` | string | `"default"` | Character preset: `"default"`, `"minimal"`, `"matrix"`, `"blocks"`, `"braille"`, `"stars"`, `"geometric"`, `"binary"`, `"dots"` |
 | `animation.use_phase_highlights` | boolean | `false` | Enable phase-based highlight groups (see Highlight Groups section) |
 | `animation.color_theme` | string | `nil` | Color theme for phase highlights (auto-enables phase highlights): `"default"`, `"cyberpunk"`, `"matrix"`, `"ocean"`, `"sunset"`, `"forest"`, `"monochrome"`, `"dracula"`, `"nord"` |
+| `animation.color_mode` | string | `"default"` | Line coloring mode: `"default"`, `"rainbow"`, `"gradient"` |
+| `animation.rainbow.palette` | string | `"default"` | Rainbow palette: `"default"`, `"pastel"`, `"neon"`, `"warm"`, `"cool"`, `"mono"` |
+| `animation.gradient.preset` | string | `"sunset"` | Gradient preset: `"sunset"`, `"ocean"`, `"forest"`, `"fire"`, `"purple"`, `"pink"`, `"midnight"`, `"aurora"` |
+| `animation.gradient.start` | string | `nil` | Custom gradient start color (hex, overrides preset) |
+| `animation.gradient.stop` | string | `nil` | Custom gradient stop color (hex, overrides preset) |
 | `animation.auto_fit` | boolean | `false` | Skip arts wider than terminal width |
 | `animation.min_width` | number | `60` | Minimum terminal width for animation |
 | `animation.fallback` | string | `"tagline"` | Fallback when terminal too narrow: `"tagline"`, `"none"`, or art ID |
@@ -1006,6 +1035,69 @@ Press `P` in the settings panel to access the Phase Colors submenu, where you ca
 Settings are automatically persisted across sessions.
 
 **Note:** The plugin applies custom colors from `:AsciiSettings` first. If you want to override via your colorscheme, define the highlight groups before the animation runs. When `use_phase_highlights` is disabled (default), the animation uses the dashboard's base highlight for all characters.
+
+### Rainbow and Gradient Color Modes
+
+In addition to phase-based highlighting, you can apply line-based coloring with rainbow or gradient modes.
+
+**Rainbow Mode:**
+
+Each line gets a different color from a palette, cycling through the colors:
+
+```lua
+animation = {
+  color_mode = "rainbow",
+  rainbow = {
+    palette = "neon", -- or "default", "pastel", "warm", "cool", "mono"
+  },
+}
+```
+
+**Available Rainbow Palettes:**
+
+| Palette | Colors |
+|---------|--------|
+| `default` | Classic ROYGBIV rainbow |
+| `pastel` | Soft, muted tones |
+| `neon` | Bright, vibrant colors |
+| `warm` | Red to yellow gradient |
+| `cool` | Blue to cyan gradient |
+| `mono` | White to dark grayscale |
+
+**Gradient Mode:**
+
+Smooth color transition from top to bottom of the ASCII art:
+
+```lua
+animation = {
+  color_mode = "gradient",
+  gradient = {
+    preset = "ocean", -- or "sunset", "forest", "fire", "purple", "pink", "midnight", "aurora"
+    -- Custom colors override preset:
+    -- start = "#ff0000",
+    -- stop = "#0000ff",
+  },
+}
+```
+
+**Available Gradient Presets:**
+
+| Preset | Transition |
+|--------|------------|
+| `sunset` | Orange to yellow |
+| `ocean` | Cyan to blue |
+| `forest` | Teal to green |
+| `fire` | Red to orange |
+| `purple` | Purple to indigo |
+| `pink` | Rose to light pink |
+| `midnight` | Dark gray gradient |
+| `aurora` | Cyan to green |
+
+**Using `:AsciiSettings` (press `C` from main menu):**
+
+- Press `m` to cycle through color modes (default, rainbow, gradient)
+- In rainbow mode: press `p` to cycle palettes
+- In gradient mode: press `g` to cycle presets, `1`/`2` to edit start/stop colors
 
 ## Credits
 
