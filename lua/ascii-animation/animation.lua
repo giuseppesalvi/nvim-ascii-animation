@@ -19,17 +19,8 @@ local glitch_chars = "█▓▒░▀▄▌▐▊▋▍▎▏┃┆┇┊┋╎�
 local glitch_chars_table = vim.fn.split(glitch_chars, "\\zs")
 local glitch_highlights = { "ErrorMsg", "WarningMsg", "DiffDelete", "DiffChange", "Special" }
 
--- Default highlight definitions for animation phases
-local default_phase_highlights = {
-  AsciiAnimationChaos = { fg = "#555555" },
-  AsciiAnimationRevealing = { fg = "#888888" },
-  AsciiAnimationRevealed = { fg = "#ffffff" },
-  AsciiAnimationCursor = { fg = "#00ff00", bold = true },
-  AsciiAnimationGlitch = { fg = "#ff0055" },
-}
-
 -- Map config keys to highlight group names
-local phase_config_map = {
+local phase_highlight_groups = {
   chaos = "AsciiAnimationChaos",
   revealing = "AsciiAnimationRevealing",
   revealed = "AsciiAnimationRevealed",
@@ -40,15 +31,14 @@ local phase_config_map = {
 -- Track last applied colors to detect changes
 local last_applied_colors = {}
 
--- Setup phase highlights with colors from config (or defaults)
+-- Setup phase highlights with colors from config (theme + custom overrides)
 local function setup_phase_highlights()
-  local phase_colors = config.options.animation.phase_colors or {}
+  local phase_colors = config.get_phase_colors()
 
   -- Check if colors changed since last setup
   local colors_changed = false
-  for key, hl_name in pairs(phase_config_map) do
-    local custom_color = phase_colors[key]
-    if last_applied_colors[key] ~= custom_color then
+  for key, _ in pairs(phase_highlight_groups) do
+    if last_applied_colors[key] ~= phase_colors[key] then
       colors_changed = true
       break
     end
@@ -60,22 +50,16 @@ local function setup_phase_highlights()
   end
 
   -- Apply highlights
-  for key, hl_name in pairs(phase_config_map) do
-    local custom_color = phase_colors[key]
+  for key, hl_name in pairs(phase_highlight_groups) do
+    local color = phase_colors[key]
     local def
-    if custom_color then
-      -- Use custom color from config
-      if key == "cursor" then
-        def = { fg = custom_color, bold = true }
-      else
-        def = { fg = custom_color }
-      end
+    if key == "cursor" then
+      def = { fg = color, bold = true }
     else
-      -- Use default
-      def = default_phase_highlights[hl_name]
+      def = { fg = color }
     end
     vim.api.nvim_set_hl(0, hl_name, def)
-    last_applied_colors[key] = custom_color
+    last_applied_colors[key] = color
   end
 end
 
@@ -151,7 +135,7 @@ end
 
 -- Create chaotic version of a line (preserving spaces for alignment)
 local function chaos_line(line, reveal_ratio, line_idx, total_lines)
-  local use_phases = config.options.animation.use_phase_highlights
+  local use_phases = config.use_phase_highlights()
   local chars = vim.fn.split(line, "\\zs")
 
   if not use_phases then
@@ -207,7 +191,7 @@ end
 
 -- Create typewriter version of a line (left-to-right reveal with cursor)
 local function typewriter_line(line, reveal_ratio, line_idx, total_lines)
-  local use_phases = config.options.animation.use_phase_highlights
+  local use_phases = config.use_phase_highlights()
   local chars = vim.fn.split(line, "\\zs")
   local cursor_pos = math.floor(#chars * reveal_ratio)
 
@@ -268,7 +252,7 @@ end
 
 -- Create diagonal sweep version (top-left to bottom-right)
 local function diagonal_line(line, reveal_ratio, line_idx, total_lines)
-  local use_phases = config.options.animation.use_phase_highlights
+  local use_phases = config.use_phase_highlights()
   local chars = vim.fn.split(line, "\\zs")
   -- Offset reveal based on line position (top lines reveal first)
   local line_offset = (line_idx - 1) / total_lines * 0.3
@@ -346,7 +330,7 @@ end
 
 -- Create matrix rain effect (characters fall and settle)
 local function matrix_line(line, reveal_ratio, line_idx, total_lines)
-  local use_phases = config.options.animation.use_phase_highlights
+  local use_phases = config.use_phase_highlights()
   local chars = vim.fn.split(line, "\\zs")
 
   if not use_phases then
@@ -408,7 +392,7 @@ end
 
 -- Create wave effect (ripple reveal from origin point)
 local function wave_line(line, reveal_ratio, line_idx, total_lines)
-  local use_phases = config.options.animation.use_phase_highlights
+  local use_phases = config.use_phase_highlights()
   local chars = vim.fn.split(line, "\\zs")
 
   -- Get wave options with defaults
@@ -583,7 +567,7 @@ end
 
 -- Create scramble version (password reveal / slot machine effect)
 local function scramble_line(line, reveal_ratio, line_idx, total_lines)
-  local use_phases = config.options.animation.use_phase_highlights
+  local use_phases = config.use_phase_highlights()
   local effect_opts = config.options.animation.effect_options or {}
   local stagger = effect_opts.stagger or "left"
   -- Use custom charset if provided, otherwise use chaos chars table
@@ -672,7 +656,7 @@ end
 
 -- Create rain/drip effect (characters fall and stack from bottom)
 local function rain_line(line, reveal_ratio, line_idx, total_lines)
-  local use_phases = config.options.animation.use_phase_highlights
+  local use_phases = config.use_phase_highlights()
   local chars = vim.fn.split(line, "\\zs")
 
   local inverted_pos = (total_lines - line_idx + 1) / total_lines
@@ -752,7 +736,7 @@ end
 
 -- Create spiral reveal effect
 local function spiral_line(line, reveal_ratio, line_idx, total_lines)
-  local use_phases = config.options.animation.use_phase_highlights
+  local use_phases = config.use_phase_highlights()
   local chars = vim.fn.split(line, "\\zs")
 
   local effect_opts = config.options.animation.effect_options or {}
@@ -822,7 +806,7 @@ end
 
 -- Create explode effect (center-outward reveal)
 local function explode_line(line, reveal_ratio, line_idx, total_lines)
-  local use_phases = config.options.animation.use_phase_highlights
+  local use_phases = config.use_phase_highlights()
   local chaos_chars_tbl = get_chaos_chars_table()
   local chars = vim.fn.split(line, "\\zs")
   local len = #chars
@@ -898,7 +882,7 @@ end
 
 -- Create implode effect (edge-inward reveal)
 local function implode_line(line, reveal_ratio, line_idx, total_lines)
-  local use_phases = config.options.animation.use_phase_highlights
+  local use_phases = config.use_phase_highlights()
   local chaos_chars_tbl = get_chaos_chars_table()
   local chars = vim.fn.split(line, "\\zs")
   local len = #chars
@@ -976,7 +960,7 @@ end
 
 -- Create glitch reveal effect (cyberpunk-style with corruption)
 local function glitch_line(line, reveal_ratio, line_idx, total_lines)
-  local use_phases = config.options.animation.use_phase_highlights
+  local use_phases = config.use_phase_highlights()
   local opts = config.options.animation.effect_options.glitch or {}
   local intensity = opts.intensity or 0.5
   local block_chance = opts.block_chance or 0.2
@@ -1345,7 +1329,7 @@ function M.start(buf, header_lines, highlight)
   M.stop()
 
   -- Setup phase highlights if enabled
-  if config.options.animation.use_phase_highlights then
+  if config.use_phase_highlights() then
     setup_phase_highlights()
   end
 

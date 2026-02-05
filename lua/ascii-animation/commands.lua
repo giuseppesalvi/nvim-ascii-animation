@@ -507,57 +507,43 @@ local function get_timing_submenu_lines()
   }
 end
 
--- Preset colors for phase highlights
-local phase_color_presets = {
-  -- Each preset is { name, chaos, revealing, revealed, cursor, glitch }
-  { name = "Default",   chaos = "#555555", revealing = "#888888", revealed = "#ffffff", cursor = "#00ff00", glitch = "#ff0055" },
-  { name = "Cyberpunk", chaos = "#1a1a2e", revealing = "#4a4a6a", revealed = "#00ff41", cursor = "#ff00ff", glitch = "#ff3366" },
-  { name = "Ocean",     chaos = "#1a3a4a", revealing = "#3a6a8a", revealed = "#8ad4ff", cursor = "#00ffcc", glitch = "#ff6b6b" },
-  { name = "Sunset",    chaos = "#2a1a2a", revealing = "#6a3a5a", revealed = "#ffaa77", cursor = "#ffff00", glitch = "#ff4466" },
-  { name = "Forest",    chaos = "#1a2a1a", revealing = "#3a5a3a", revealed = "#88cc88", cursor = "#ffff44", glitch = "#ff6644" },
-  { name = "Monochrome", chaos = "#333333", revealing = "#666666", revealed = "#cccccc", cursor = "#ffffff", glitch = "#999999" },
-}
-
 -- Get phase colors submenu lines
 local function get_phase_colors_submenu_lines()
-  local phase_colors = config.options.animation.phase_colors or {}
-  local defaults = { chaos = "#555555", revealing = "#888888", revealed = "#ffffff", cursor = "#00ff00", glitch = "#ff0055" }
+  local phase_colors = config.get_phase_colors()
+  local current_theme = config.options.animation.color_theme or "default"
 
-  local function get_color(key)
-    return phase_colors[key] or defaults[key]
-  end
-
-  -- Find current preset index (if any)
-  local current_preset_idx = nil
-  for i, preset in ipairs(phase_color_presets) do
-    if get_color("chaos") == preset.chaos and
-       get_color("revealing") == preset.revealing and
-       get_color("revealed") == preset.revealed and
-       get_color("cursor") == preset.cursor and
-       get_color("glitch") == preset.glitch then
-      current_preset_idx = i
+  -- Find current theme index
+  local theme_idx = 1
+  for i, name in ipairs(config.color_theme_names) do
+    if name == current_theme then
+      theme_idx = i
       break
     end
   end
-  local preset_label = current_preset_idx and phase_color_presets[current_preset_idx].name or "Custom"
+
+  -- Check if colors match the theme (no custom overrides)
+  local theme_colors = config.color_themes[current_theme]
+  local custom = config.options.animation.phase_colors or {}
+  local has_custom = custom.chaos or custom.revealing or custom.revealed or custom.cursor or custom.glitch
+  local theme_label = has_custom and (current_theme .. "*") or current_theme
 
   return {
     "",
-    "  Phase Highlight Colors",
+    "  Color Theme",
     "  " .. string.rep("─", 38),
     "",
-    string.format("  [P] Preset:    %-12s ◀ ▶", preset_label),
+    string.format("  [T] Theme:     %-12s ◀ %d/%d ▶", theme_label, theme_idx, #config.color_theme_names),
     "",
-    string.format("  [1] Chaos:     %s  ██", get_color("chaos")),
-    string.format("  [2] Revealing: %s  ██", get_color("revealing")),
-    string.format("  [3] Revealed:  %s  ██", get_color("revealed")),
-    string.format("  [4] Cursor:    %s  ██", get_color("cursor")),
-    string.format("  [5] Glitch:    %s  ██", get_color("glitch")),
+    string.format("  [1] Chaos:     %s  ██", phase_colors.chaos),
+    string.format("  [2] Revealing: %s  ██", phase_colors.revealing),
+    string.format("  [3] Revealed:  %s  ██", phase_colors.revealed),
+    string.format("  [4] Cursor:    %s  ██", phase_colors.cursor),
+    string.format("  [5] Glitch:    %s  ██", phase_colors.glitch),
     "",
     "  Keys:",
-    "    P: cycle preset",
+    "    T: cycle theme",
     "    1-5: edit color (hex input)",
-    "    r: reset to defaults",
+    "    r: reset custom colors",
     "    Backspace: back",
     "",
   }
@@ -1025,8 +1011,8 @@ local function update_settings_content()
       string.format("  [s] Steps:    %d", opts.animation.steps),
       string.format("  [c] Charset:  %-10s ◀ %d/%d ▶", char_preset, charset_idx, #config.char_preset_names),
       charset_warning,
-      string.format("  [p] Phase HL: %s", opts.animation.use_phase_highlights and "ON " or "OFF"),
-      opts.animation.use_phase_highlights and "  [P] Phase Colors..." or "",
+      string.format("  [p] Phase HL: %s", config.use_phase_highlights() and "ON " or "OFF"),
+      config.use_phase_highlights() and string.format("  [P] Colors... (%s)", opts.animation.color_theme or "default") or "",
       "  [t] Timing...",
       "",
       "  Content",
@@ -1756,7 +1742,7 @@ local function setup_settings_keybindings(buf)
     elseif settings_state.submenu == "spiral" then
       cycle_spiral_rotation(1)
     elseif settings_state.submenu == "phase_colors" then
-      -- Reset phase colors to defaults
+      -- Reset custom color overrides (revert to theme colors)
       config.options.animation.phase_colors = {
         chaos = nil,
         revealing = nil,
@@ -1768,7 +1754,7 @@ local function setup_settings_keybindings(buf)
       animation.refresh_phase_highlights()
       update_settings_content()
       replay_preview()
-      vim.notify("Phase colors reset to defaults", vim.log.levels.INFO)
+      vim.notify("Custom colors cleared, using theme colors", vim.log.levels.INFO)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
@@ -2028,42 +2014,38 @@ local function setup_settings_keybindings(buf)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
-  -- Phase colors submenu (P key - opens submenu or cycles preset)
+  -- Phase colors submenu (P key - opens submenu)
   vim.keymap.set("n", "P", function()
     if not settings_state.submenu then
-      -- Open phase colors submenu (only if phase HL is enabled)
-      if config.options.animation.use_phase_highlights then
+      -- Open phase colors submenu (only if phase HL is enabled or theme is set)
+      if config.use_phase_highlights() then
         settings_state.submenu = "phase_colors"
         update_settings_content()
       end
-    elseif settings_state.submenu == "phase_colors" then
-      -- Cycle through color presets
-      local phase_colors = config.options.animation.phase_colors or {}
-      local defaults = { chaos = "#555555", revealing = "#888888", revealed = "#ffffff", cursor = "#00ff00", glitch = "#ff0055" }
-      local function get_color(key)
-        return phase_colors[key] or defaults[key]
-      end
-      -- Find current preset
-      local current_idx = nil
-      for i, preset in ipairs(phase_color_presets) do
-        if get_color("chaos") == preset.chaos and
-           get_color("revealing") == preset.revealing and
-           get_color("revealed") == preset.revealed and
-           get_color("cursor") == preset.cursor and
-           get_color("glitch") == preset.glitch then
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  -- Theme cycling (T key - in phase_colors submenu)
+  vim.keymap.set("n", "T", function()
+    if settings_state.submenu == "phase_colors" then
+      -- Cycle through themes
+      local current_theme = config.options.animation.color_theme or "default"
+      local current_idx = 1
+      for i, name in ipairs(config.color_theme_names) do
+        if name == current_theme then
           current_idx = i
           break
         end
       end
-      -- Cycle to next preset
-      local next_idx = current_idx and (current_idx % #phase_color_presets) + 1 or 1
-      local preset = phase_color_presets[next_idx]
+      local next_idx = (current_idx % #config.color_theme_names) + 1
+      config.options.animation.color_theme = config.color_theme_names[next_idx]
+      -- Clear custom overrides when switching themes
       config.options.animation.phase_colors = {
-        chaos = preset.chaos,
-        revealing = preset.revealing,
-        revealed = preset.revealed,
-        cursor = preset.cursor,
-        glitch = preset.glitch,
+        chaos = nil,
+        revealing = nil,
+        revealed = nil,
+        cursor = nil,
+        glitch = nil,
       }
       config.save()
       animation.refresh_phase_highlights()
