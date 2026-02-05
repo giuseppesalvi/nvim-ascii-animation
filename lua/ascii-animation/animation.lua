@@ -47,7 +47,7 @@ end
 
 -- Create chaotic version of a line (preserving spaces for alignment)
 local function chaos_line(line, reveal_ratio, line_idx, total_lines)
-  local chaos_chars = config.options.chaos_chars
+  local chaos_chars = config.get_chaos_chars()
   local result = {}
   local chars = vim.fn.split(line, "\\zs")
 
@@ -67,7 +67,7 @@ end
 
 -- Create typewriter version of a line (left-to-right reveal with cursor)
 local function typewriter_line(line, reveal_ratio, line_idx, total_lines)
-  local chaos_chars = config.options.chaos_chars
+  local chaos_chars = config.get_chaos_chars()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
   local cursor_pos = math.floor(#chars * reveal_ratio)
@@ -91,7 +91,7 @@ end
 
 -- Create diagonal sweep version (top-left to bottom-right)
 local function diagonal_line(line, reveal_ratio, line_idx, total_lines)
-  local chaos_chars = config.options.chaos_chars
+  local chaos_chars = config.get_chaos_chars()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
   -- Offset reveal based on line position (top lines reveal first)
@@ -133,7 +133,7 @@ end
 
 -- Create matrix rain effect (characters fall and settle)
 local function matrix_line(line, reveal_ratio, line_idx, total_lines)
-  local chaos_chars = config.options.chaos_chars
+  local chaos_chars = config.get_chaos_chars()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
 
@@ -159,7 +159,7 @@ end
 
 -- Create wave effect (ripple reveal from origin point)
 local function wave_line(line, reveal_ratio, line_idx, total_lines)
-  local chaos_chars = config.options.chaos_chars
+  local chaos_chars = config.get_chaos_chars()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
 
@@ -301,7 +301,7 @@ end
 local function scramble_line(line, reveal_ratio, line_idx, total_lines)
   local effect_opts = config.options.animation.effect_options or {}
   local stagger = effect_opts.stagger or "left"
-  local charset = effect_opts.charset or config.options.chaos_chars
+  local charset = effect_opts.charset or config.get_chaos_chars()
 
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
@@ -345,7 +345,7 @@ end
 
 -- Create rain/drip effect (characters fall and stack from bottom)
 local function rain_line(line, reveal_ratio, line_idx, total_lines)
-  local chaos_chars = config.options.chaos_chars
+  local chaos_chars = config.get_chaos_chars()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
 
@@ -386,7 +386,7 @@ end
 
 -- Create spiral reveal effect
 local function spiral_line(line, reveal_ratio, line_idx, total_lines)
-  local chaos_chars = config.options.chaos_chars
+  local chaos_chars = config.get_chaos_chars()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
 
@@ -416,7 +416,7 @@ end
 
 -- Create explode effect (center-outward reveal)
 local function explode_line(line, reveal_ratio, line_idx, total_lines)
-  local chaos_chars = config.options.chaos_chars
+  local chaos_chars = config.get_chaos_chars()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
   local len = #chars
@@ -447,7 +447,7 @@ end
 
 -- Create implode effect (edge-inward reveal)
 local function implode_line(line, reveal_ratio, line_idx, total_lines)
-  local chaos_chars = config.options.chaos_chars
+  local chaos_chars = config.get_chaos_chars()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
   local len = #chars
@@ -485,7 +485,7 @@ local function glitch_line(line, reveal_ratio, line_idx, total_lines)
   local block_size = opts.block_size or 5
   local resolve_speed = opts.resolve_speed or 1.0
 
-  local chaos_chars_str = config.options.chaos_chars
+  local chaos_chars_str = config.get_chaos_chars()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
   local segments = {}
@@ -598,7 +598,7 @@ end
 
 -- Apply glitch effect: randomly replace a few characters with chaos chars
 local function apply_glitch(line, intensity)
-  local chaos_chars = config.options.chaos_chars
+  local chaos_chars = config.get_chaos_chars()
   local chars = vim.fn.split(line, "\\zs")
   local result = {}
 
@@ -615,7 +615,7 @@ end
 
 -- Apply shimmer effect: one random character shows chaos
 local function apply_shimmer(line, char_index)
-  local chaos_chars = config.options.chaos_chars
+  local chaos_chars = config.get_chaos_chars()
   local chars = vim.fn.split(line, "\\zs")
 
   if char_index <= #chars and chars[char_index] ~= " " and chars[char_index] ~= "" then

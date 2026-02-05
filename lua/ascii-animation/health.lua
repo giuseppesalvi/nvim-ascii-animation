@@ -264,6 +264,7 @@ local function check_commands()
     "AsciiRefresh",
     "AsciiStop",
     "AsciiRestart",
+    "AsciiCharset",
   }
 
   local all_ok = true
