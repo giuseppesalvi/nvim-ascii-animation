@@ -37,7 +37,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
   - [lazy.nvim](https://github.com/folke/lazy.nvim) starter screen
 - Fully configurable animation speed, characters, and timing
 - Respects your colorscheme and dashboard highlights
-- **User commands**: `:AsciiPreview`, `:AsciiSettings`, `:AsciiRefresh`
+- **User commands**: `:AsciiPreview`, `:AsciiSettings`, `:AsciiRefresh`, `:AsciiStop`, `:AsciiRestart`
 
 ## Installation
 
@@ -478,6 +478,22 @@ Re-runs the animation on the current buffer. Useful after returning to your dash
 
 ```vim
 :AsciiRefresh
+```
+
+### `:AsciiStop`
+
+Stops the current animation and any ambient effects. Useful for taking screenshots or when you want a static display.
+
+```vim
+:AsciiStop
+```
+
+### `:AsciiRestart`
+
+Restarts the animation from the beginning. Useful for demos or presentations.
+
+```vim
+:AsciiRestart
 ```
 
 ### `:checkhealth ascii-animation`

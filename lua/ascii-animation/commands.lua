@@ -1,5 +1,5 @@
 -- User commands for ascii-animation
--- Provides :AsciiPreview, :AsciiList, :AsciiStats, :AsciiRefresh
+-- Provides :AsciiPreview, :AsciiList, :AsciiSettings, :AsciiRefresh, :AsciiStop, :AsciiRestart
 
 local config = require("ascii-animation.config")
 local animation = require("ascii-animation.animation")
@@ -2197,6 +2197,20 @@ function M.register_commands()
     M.refresh()
   end, {
     desc = "Re-run animation on current buffer",
+  })
+
+  vim.api.nvim_create_user_command("AsciiStop", function()
+    animation.stop()
+    vim.notify("Animation stopped", vim.log.levels.INFO)
+  end, {
+    desc = "Stop current ASCII animation",
+  })
+
+  vim.api.nvim_create_user_command("AsciiRestart", function()
+    M.refresh()
+    vim.notify("Animation restarted", vim.log.levels.INFO)
+  end, {
+    desc = "Restart ASCII animation from beginning",
   })
 end
 
