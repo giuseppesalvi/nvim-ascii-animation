@@ -91,6 +91,8 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
       ambient_interval = 2000,
       -- Character set preset
       char_preset = "default", -- "default" | "minimal" | "matrix" | "blocks" | "braille" | "stars" | "geometric" | "binary" | "dots"
+      -- Per-effect charset overrides (preset name or raw character string)
+      effect_chars = {},  -- e.g. { matrix = "matrix", rain = "│┃┆┇┊┋" }
       -- Phase-based highlighting (see Highlight Groups section)
       use_phase_highlights = false,
       -- Color theme for phase highlights (auto-enables use_phase_highlights)
@@ -788,6 +790,7 @@ animation = {
 | `animation.ambient_interval` | number | `2000` | How often ambient effect triggers in ms |
 | `animation.ambient_options` | table | see below | Per-effect ambient configuration options |
 | `animation.char_preset` | string | `"default"` | Character preset: `"default"`, `"minimal"`, `"matrix"`, `"blocks"`, `"braille"`, `"stars"`, `"geometric"`, `"binary"`, `"dots"` |
+| `animation.effect_chars` | table | `{}` | Per-effect charset overrides. Keys are effect names, values are preset names or raw character strings. e.g. `{ matrix = "matrix", rain = "│┃┆┇┊┋" }` |
 | `animation.use_phase_highlights` | boolean | `false` | Enable phase-based highlight groups (see Highlight Groups section) |
 | `animation.color_theme` | string | `nil` | Color theme for phase highlights (auto-enables phase highlights): `"default"`, `"cyberpunk"`, `"matrix"`, `"ocean"`, `"sunset"`, `"forest"`, `"monochrome"`, `"dracula"`, `"nord"` |
 | `animation.color_mode` | string | `"default"` | Line coloring mode: `"default"`, `"rainbow"`, `"gradient"` |

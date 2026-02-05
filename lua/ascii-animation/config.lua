@@ -123,6 +123,16 @@ function M.get_chaos_chars()
   return M.char_presets[preset] or M.char_presets.default
 end
 
+-- Get characters for a specific effect (falls back to global char_preset)
+function M.get_chars_for_effect(effect_name)
+  local effect_chars = M.options.animation and M.options.animation.effect_chars or {}
+  local override = effect_chars[effect_name]
+  if override then
+    return M.char_presets[override] or override
+  end
+  return M.get_chaos_chars()
+end
+
 -- Get effective phase colors (theme colors merged with custom overrides)
 function M.get_phase_colors()
   -- Check if period colors are enabled
@@ -297,6 +307,8 @@ M.defaults = {
     },
     -- Character set preset for chaos/scramble effects
     char_preset = "default", -- "default" | "minimal" | "matrix" | "blocks" | "braille" | "stars" | "geometric" | "binary" | "dots"
+    -- Per-effect charset overrides (preset name or raw character string)
+    effect_chars = {},  -- e.g. { matrix = "matrix", rain = "│┃┆┇┊┋" }
     -- Phase-based highlighting (uses AsciiAnimation* highlight groups)
     use_phase_highlights = false,
     -- Color theme for phase highlights (auto-enables use_phase_highlights)
@@ -465,6 +477,7 @@ function M.save()
       max_delay = M.options.animation.max_delay,
       ambient_interval = M.options.animation.ambient_interval,
       char_preset = M.options.animation.char_preset,
+      effect_chars = M.options.animation.effect_chars,
       use_phase_highlights = M.options.animation.use_phase_highlights,
       color_theme = M.options.animation.color_theme,
       phase_colors = M.options.animation.phase_colors,
@@ -526,6 +539,7 @@ function M.clear_saved()
   M.options.animation.max_delay = M.defaults.animation.max_delay
   M.options.animation.ambient_interval = M.defaults.animation.ambient_interval
   M.options.animation.char_preset = M.defaults.animation.char_preset
+  M.options.animation.effect_chars = vim.deepcopy(M.defaults.animation.effect_chars)
   M.options.animation.use_phase_highlights = M.defaults.animation.use_phase_highlights
   M.options.animation.color_theme = M.defaults.animation.color_theme
   M.options.animation.phase_colors = vim.deepcopy(M.defaults.animation.phase_colors)

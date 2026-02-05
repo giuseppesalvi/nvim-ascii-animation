@@ -1080,6 +1080,18 @@ local function update_settings_content()
       charset_warning = "      (requires Unicode font)"
     end
 
+    -- Per-effect charset override
+    local effect_chars = opts.animation.effect_chars or {}
+    local effect_charset_options = { "global" }
+    for _, name in ipairs(config.char_preset_names) do
+      table.insert(effect_charset_options, name)
+    end
+    local effect_charset_value = effect_chars[effect] or "global"
+    local effect_charset_idx = 1
+    for i, v in ipairs(effect_charset_options) do
+      if v == effect_charset_value then effect_charset_idx = i break end
+    end
+
     -- Color mode options
     local color_mode = opts.animation.color_mode or "default"
     local color_mode_idx = 1
@@ -1109,6 +1121,7 @@ local function update_settings_content()
       string.format("  [s] Steps:    %d", opts.animation.steps),
       string.format("  [c] Charset:  %-10s ◀ %d/%d ▶", char_preset, charset_idx, #config.char_preset_names),
       charset_warning,
+      string.format("  [u] Fx chars: %-10s ◀ %d/%d ▶", effect_charset_value, effect_charset_idx, #effect_charset_options),
       string.format("  [p] Phase HL: %s", config.use_phase_highlights() and "ON " or "OFF"),
       config.use_phase_highlights() and string.format("  [P] Colors... (%s)", opts.animation.color_theme or "default") or "",
       string.format("  [z] Period:   %s", opts.animation.period_colors and ("ON  (" .. time.get_current_period() .. " - " .. (config.period_moods[time.get_current_period()] or "") .. ")") or "OFF"),
@@ -1226,6 +1239,36 @@ local function cycle_charset(delta)
   if idx < 1 then idx = #presets
   elseif idx > #presets then idx = 1 end
   config.options.animation.char_preset = presets[idx]
+  config.save()
+  update_settings_content()
+  replay_preview()
+end
+
+-- Cycle per-effect charset override
+local function cycle_effect_charset(delta)
+  local options = { "global" }
+  for _, name in ipairs(config.char_preset_names) do
+    table.insert(options, name)
+  end
+  local effect = config.options.animation.effect
+  if effect == "random" then return end
+  local effect_chars = config.options.animation.effect_chars or {}
+  local current = effect_chars[effect] or "global"
+  local idx = 1
+  for i, v in ipairs(options) do
+    if v == current then idx = i break end
+  end
+  idx = idx + delta
+  if idx < 1 then idx = #options
+  elseif idx > #options then idx = 1 end
+  if not config.options.animation.effect_chars then
+    config.options.animation.effect_chars = {}
+  end
+  if options[idx] == "global" then
+    config.options.animation.effect_chars[effect] = nil
+  else
+    config.options.animation.effect_chars[effect] = options[idx]
+  end
   config.save()
   update_settings_content()
   replay_preview()
@@ -1918,6 +1961,19 @@ local function setup_settings_keybindings(buf)
       cycle_charset(-1)
     elseif settings_state.submenu == "scramble" then
       adjust_scramble_cycles(-1)
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  -- Per-effect charset cycling (main menu only)
+  vim.keymap.set("n", "u", function()
+    if not settings_state.submenu then
+      cycle_effect_charset(1)
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  vim.keymap.set("n", "U", function()
+    if not settings_state.submenu then
+      cycle_effect_charset(-1)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
