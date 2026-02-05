@@ -245,12 +245,70 @@ function M.get_message_count_for_theme(theme)
   return messages.get_message_count_for_theme(theme)
 end
 
+-- Extract text from a message (handles both string and table formats)
+-- For custom messages, they can be:
+--   "simple string"
+--   { "line1", "line2" }  -- multi-line as array
+--   { text = "...", theme = "..." }  -- same format as built-in
+--   { text = { "line1", "line2" }, theme = "..." }  -- multi-line built-in style
+local function extract_message_text(msg)
+  if type(msg) == "string" then
+    return msg
+  elseif type(msg) == "table" then
+    -- Check if it's an array of strings (multi-line)
+    if #msg > 0 and type(msg[1]) == "string" and not msg.text then
+      return msg  -- Return table as-is for multi-line
+    end
+    -- Otherwise it's a message object with text field
+    return msg.text
+  end
+  return nil
+end
+
+-- Check if a message's condition function passes (if it has one)
+-- Returns true if message should be included (no condition or condition passes)
+local function check_message_condition(msg)
+  if type(msg) ~= "table" then
+    return true  -- Simple strings have no condition
+  end
+
+  -- Check if message has a condition function
+  if msg.condition and type(msg.condition) == "function" then
+    local ok, result = pcall(msg.condition)
+    if not ok then
+      -- Condition function errored, exclude the message
+      return false
+    end
+    return result == true
+  end
+
+  return true  -- No condition means always include
+end
+
+-- Check if a message should be excluded due to no-repeat setting
+local function should_exclude_recent_message(msg_id)
+  local opts = config.options.content or {}
+  local no_repeat = opts.message_no_repeat
+
+  if not no_repeat or no_repeat == false then
+    return false
+  end
+
+  -- true means don't repeat last 1
+  local n = (no_repeat == true) and 1 or tonumber(no_repeat) or 0
+  if n <= 0 then
+    return false
+  end
+
+  return state.was_message_recently_shown(msg_id, n)
+end
+
 -- Get a random message for a specific period
 function M.get_message_for_period(period)
   ensure_random_seed()
 
   local opts = config.options.content or {}
-  local all_messages = {}
+  local all_messages = {}  -- Each entry: { id = msg_id, text = msg_text }
 
   -- Add built-in messages if enabled, filtering disabled ones and themes
   if opts.builtin_messages ~= false then
@@ -259,10 +317,16 @@ function M.get_message_for_period(period)
       local msg_id = get_message_id(period, i)
       -- Check if message is disabled OR theme is disabled
       if not config.is_message_disabled(msg_id) and not config.is_theme_disabled(m.theme) then
-        -- Add with weighting for favorites
-        local weight = config.is_message_favorite(msg_id) and 3 or 1
-        for _ = 1, weight do
-          table.insert(all_messages, m.text)
+        -- Check condition function (if present)
+        if check_message_condition(m) then
+          -- Check no-repeat filter
+          if not should_exclude_recent_message(msg_id) then
+            -- Add with weighting for favorites
+            local weight = config.is_message_favorite(msg_id) and 3 or 1
+            for _ = 1, weight do
+              table.insert(all_messages, { id = msg_id, text = m.text })
+            end
+          end
         end
       end
     end
@@ -270,12 +334,21 @@ function M.get_message_for_period(period)
 
   -- Add custom messages if configured
   if opts.custom_messages and opts.custom_messages[period] then
-    for _, m in ipairs(opts.custom_messages[period]) do
-      table.insert(all_messages, m)
+    for i, m in ipairs(opts.custom_messages[period]) do
+      -- Check condition function (if present)
+      if check_message_condition(m) then
+        local text = extract_message_text(m)
+        if text then
+          local msg_id = "custom_" .. period .. "_" .. i
+          if not should_exclude_recent_message(msg_id) then
+            table.insert(all_messages, { id = msg_id, text = text })
+          end
+        end
+      end
     end
   end
 
-  -- If all messages in this period are disabled, try other periods
+  -- If all messages in this period are filtered out, try other periods
   if #all_messages == 0 then
     local periods = { "morning", "afternoon", "evening", "night", "weekend" }
     for _, p in ipairs(periods) do
@@ -284,10 +357,25 @@ function M.get_message_for_period(period)
         for i, m in ipairs(fallback) do
           local msg_id = get_message_id(p, i)
           if not config.is_message_disabled(msg_id) and not config.is_theme_disabled(m.theme) then
-            table.insert(all_messages, m.text)
+            if not should_exclude_recent_message(msg_id) then
+              table.insert(all_messages, { id = msg_id, text = m.text })
+            end
           end
         end
         if #all_messages > 0 then break end
+      end
+    end
+  end
+
+  -- Last resort: if still no messages, ignore no-repeat filter
+  if #all_messages == 0 then
+    if opts.builtin_messages ~= false then
+      local builtin = messages.get_messages_for_period(period)
+      for i, m in ipairs(builtin) do
+        local msg_id = get_message_id(period, i)
+        if not config.is_message_disabled(msg_id) and not config.is_theme_disabled(m.theme) then
+          table.insert(all_messages, { id = msg_id, text = m.text })
+        end
       end
     end
   end
@@ -296,9 +384,11 @@ function M.get_message_for_period(period)
     return nil
   end
 
-  local message = all_messages[math.random(#all_messages)]
-  -- Process placeholders at render time
-  return placeholders.process(message)
+  local selected = all_messages[math.random(#all_messages)]
+  -- Record the message as shown
+  state.record_message_shown(selected.id)
+  -- Process placeholders at render time (handles both string and table)
+  return placeholders.process(selected.text)
 end
 
 -- Get a complete header (art + message) for the current time period

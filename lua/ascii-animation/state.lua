@@ -129,4 +129,79 @@ function M.get_daily_seed()
   return tonumber(os.date("%Y%m%d"))
 end
 
+-- Record that a message was shown
+function M.record_message_shown(msg_id)
+  if not msg_id then
+    return
+  end
+
+  local state = M.load()
+
+  -- Initialize recent_messages if needed
+  if type(state.recent_messages) ~= "table" then
+    state.recent_messages = {}
+  end
+
+  -- Add to front of recent_messages (most recent first)
+  -- Remove if already exists to avoid duplicates
+  local new_recent = { msg_id }
+  for _, id in ipairs(state.recent_messages) do
+    if id ~= msg_id then
+      table.insert(new_recent, id)
+    end
+  end
+
+  -- Keep only last 20 entries (messages are shown more frequently than arts)
+  state.recent_messages = {}
+  for i = 1, math.min(20, #new_recent) do
+    state.recent_messages[i] = new_recent[i]
+  end
+
+  M.save(state)
+end
+
+-- Check if message was shown in last N displays
+function M.was_message_recently_shown(msg_id, n)
+  if not msg_id or not n or n <= 0 then
+    return false
+  end
+
+  local state = M.load()
+  if type(state.recent_messages) ~= "table" then
+    return false
+  end
+
+  -- Check first N entries
+  for i = 1, math.min(n, #state.recent_messages) do
+    if state.recent_messages[i] == msg_id then
+      return true
+    end
+  end
+
+  return false
+end
+
+-- Get the last shown message ID
+function M.get_last_message_id()
+  local state = M.load()
+  if type(state.recent_messages) == "table" and #state.recent_messages > 0 then
+    return state.recent_messages[1]
+  end
+  return nil
+end
+
+-- Get recent message IDs (up to n)
+function M.get_recent_messages(n)
+  local state = M.load()
+  if type(state.recent_messages) ~= "table" then
+    return {}
+  end
+
+  local result = {}
+  for i = 1, math.min(n or 10, #state.recent_messages) do
+    table.insert(result, state.recent_messages[i])
+  end
+  return result
+end
+
 return M

@@ -131,8 +131,8 @@ function M.resolve(placeholder)
   return custom[placeholder]
 end
 
--- Process a string and replace all placeholders
-function M.process(text)
+-- Process a single line string and replace all placeholders
+local function process_line(text)
   if not text or type(text) ~= "string" then
     return text
   end
@@ -147,6 +147,44 @@ function M.process(text)
       return ""
     end
   end)
+end
+
+-- Process a string or table of strings and replace all placeholders
+-- Returns: string for single-line, table of strings for multi-line
+function M.process(text)
+  if not text then
+    return text
+  end
+
+  -- Handle table of lines (multi-line message)
+  if type(text) == "table" then
+    local processed = {}
+    for _, line in ipairs(text) do
+      table.insert(processed, process_line(line))
+    end
+    return processed
+  end
+
+  -- Handle single string
+  return process_line(text)
+end
+
+-- Check if a message is multi-line
+function M.is_multiline(text)
+  return type(text) == "table"
+end
+
+-- Flatten a message to a single string (for display contexts that need it)
+-- separator defaults to newline
+function M.flatten(text, separator)
+  if not text then
+    return ""
+  end
+  if type(text) == "string" then
+    return text
+  end
+  separator = separator or "\n"
+  return table.concat(text, separator)
 end
 
 -- Clear the value cache (useful for testing or refreshing)
