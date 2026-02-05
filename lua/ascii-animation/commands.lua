@@ -2025,7 +2025,7 @@ local function setup_settings_keybindings(buf)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
-  -- Theme cycling (T key - in phase_colors submenu)
+  -- Theme cycling (T key - in phase_colors submenu) / Spiral tightness (T key - in spiral submenu)
   vim.keymap.set("n", "T", function()
     if settings_state.submenu == "phase_colors" then
       -- Cycle through themes
@@ -2051,6 +2051,8 @@ local function setup_settings_keybindings(buf)
       animation.refresh_phase_highlights()
       update_settings_content()
       replay_preview()
+    elseif settings_state.submenu == "spiral" then
+      adjust_spiral_tightness(-0.1)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
@@ -2090,12 +2092,6 @@ local function setup_settings_keybindings(buf)
       update_preview_with_footer()
     elseif not settings_state.submenu then
       cycle_ambient(-1)
-    end
-  end, { buffer = buf, nowait = true, silent = true })
-
-  vim.keymap.set("n", "T", function()
-    if settings_state.submenu == "spiral" then
-      adjust_spiral_tightness(-0.1)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
