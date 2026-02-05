@@ -30,14 +30,19 @@ M.messages = {
   morning = {
     -- Motivational
     { text = "Rise and shine!", theme = "motivational" },
+    { text = "☀️ Rise and shine!", theme = "motivational" },
     { text = "New day, new code.", theme = "motivational" },
     { text = "Coffee time!", theme = "motivational" },
+    { text = "☕ Coffee time!", theme = "motivational" },
     { text = "Let's build.", theme = "motivational" },
+    { text = "✨ Let's build something great!", theme = "motivational" },
     { text = "Fresh start.", theme = "motivational" },
+    { text = "🌅 A new day begins.", theme = "motivational" },
     { text = "Seize the day!", theme = "motivational" },
     { text = "Code awaits.", theme = "motivational" },
     { text = "Morning magic.", theme = "motivational" },
     { text = "Early bird mode.", theme = "motivational" },
+    { text = "🐦 Early bird mode.", theme = "motivational" },
     { text = "New beginnings.", theme = "motivational" },
     { text = "Dawn of ideas.", theme = "motivational" },
     { text = "Wake up & code.", theme = "motivational" },
@@ -73,6 +78,9 @@ M.messages = {
     { text = "Breathe in bugs, breathe out fixes.", theme = "zen" },
     { text = "The code flows through you.", theme = "zen" },
     { text = "One with the terminal.", theme = "zen" },
+    -- Multi-line zen (poetic haiku-style)
+    { text = { "Morning light awaits.", "Empty buffer, fresh mind.", "Code flows like water." }, theme = "zen" },
+    { text = { "Dawn breaks softly.", "A new commit begins." }, theme = "poetic" },
     -- Witty
     { text = "May your coffee be strong and your bugs be weak.", theme = "witty" },
     { text = "sudo make me_productive.", theme = "witty" },
@@ -84,13 +92,17 @@ M.messages = {
   afternoon = {
     -- Motivational
     { text = "Keep going!", theme = "motivational" },
+    { text = "💪 Keep going!", theme = "motivational" },
     { text = "Stay focused.", theme = "motivational" },
+    { text = "🎯 Stay focused.", theme = "motivational" },
     { text = "You got this!", theme = "motivational" },
     { text = "In the zone.", theme = "motivational" },
+    { text = "🔥 In the zone.", theme = "motivational" },
     { text = "Crushing it.", theme = "motivational" },
     { text = "Flow state.", theme = "motivational" },
     { text = "Keep building.", theme = "motivational" },
     { text = "Momentum!", theme = "motivational" },
+    { text = "🚀 Momentum!", theme = "motivational" },
     { text = "Make it happen.", theme = "motivational" },
     { text = "Push through.", theme = "motivational" },
     { text = "Stay sharp.", theme = "motivational" },
@@ -133,17 +145,26 @@ M.messages = {
     { text = "Tabs vs spaces? Yes.", theme = "witty" },
     { text = "git push --force (just kidding).", theme = "witty" },
     { text = "console.log('still alive');", theme = "witty" },
+    -- Conditional: Friday only
+    { text = "🎉 Happy Friday!", theme = "witty", condition = function() return os.date("%A") == "Friday" end },
+    { text = "Friday vibes! Almost there.", theme = "motivational", condition = function() return os.date("%A") == "Friday" end },
+    -- Conditional: Monday motivation
+    { text = "💪 Monday: New week, fresh start!", theme = "motivational", condition = function() return os.date("%A") == "Monday" end },
   },
 
   evening = {
     -- Motivational
     { text = "Wind down.", theme = "motivational" },
+    { text = "🌆 Wind down.", theme = "motivational" },
     { text = "Golden hour.", theme = "motivational" },
+    { text = "🌅 Golden hour.", theme = "motivational" },
     { text = "Almost there.", theme = "motivational" },
     { text = "Evening flow.", theme = "motivational" },
     { text = "Peaceful code.", theme = "motivational" },
+    { text = "☮️ Peaceful code.", theme = "motivational" },
     { text = "Relax & code.", theme = "motivational" },
     { text = "Sunset mode.", theme = "motivational" },
+    { text = "🌇 Sunset mode.", theme = "motivational" },
     { text = "Gentle close.", theme = "motivational" },
     { text = "Day's end magic.", theme = "motivational" },
     { text = "Wrap it up.", theme = "motivational" },
@@ -193,17 +214,22 @@ M.messages = {
   night = {
     -- Motivational
     { text = "Night mode.", theme = "motivational" },
+    { text = "🌙 Night mode.", theme = "motivational" },
     { text = "Silent focus.", theme = "motivational" },
     { text = "Stars & code.", theme = "motivational" },
+    { text = "⭐ Stars & code.", theme = "motivational" },
     { text = "Midnight oil.", theme = "motivational" },
+    { text = "🕯️ Burning the midnight oil.", theme = "motivational" },
     { text = "Deep work.", theme = "motivational" },
     { text = "Night shift.", theme = "motivational" },
     { text = "Quiet hours.", theme = "motivational" },
     { text = "Nocturnal flow.", theme = "motivational" },
     { text = "Moon's up, code on.", theme = "motivational" },
     { text = "Night owl vibes.", theme = "motivational" },
+    { text = "🦉 Night owl mode activated.", theme = "motivational" },
     { text = "Darkness, creativity.", theme = "motivational" },
     { text = "3am thoughts.", theme = "motivational" },
+    { text = "💤 Remember to rest.", theme = "zen" },
     -- Personalized (with placeholders)
     { text = "Late {time}, {name}.", theme = "personalized" },
     { text = "Neovim {version} • {plugin_count} plugins loaded.", theme = "personalized" },
@@ -236,6 +262,8 @@ M.messages = {
     { text = "One with the darkness.", theme = "zen" },
     { text = "The void is full of potential.", theme = "zen" },
     { text = "Stillness compiles faster.", theme = "zen" },
+    -- Multi-line zen (night haiku)
+    { text = { "Moonlight on the keys.", "Silent thoughts become code.", "The night understands." }, theme = "zen" },
     -- Witty
     { text = "Sleep is for the weakly typed.", theme = "witty" },
     { text = "Who needs sleep? We have coffee.", theme = "witty" },
@@ -245,20 +273,33 @@ M.messages = {
     { text = "Insomnia-driven development.", theme = "witty" },
     { text = "The night is dark and full of errors.", theme = "witty" },
     { text = "404: Bedtime not found.", theme = "witty" },
+    -- Conditional: Very late night (after 11pm)
+    { text = "🌙 Late night coding session?", theme = "zen", condition = function() return tonumber(os.date("%H")) >= 23 end },
+    { text = "Past midnight... the code calls.", theme = "cryptic", condition = function() return tonumber(os.date("%H")) < 4 end },
+    -- Conditional: Early morning (before 5am)
+    { text = "🌅 Early riser! The world is still sleeping.", theme = "motivational", condition = function() return tonumber(os.date("%H")) < 5 end },
   },
 
   weekend = {
     -- Motivational
     { text = "Side projects!", theme = "motivational" },
+    { text = "🎮 Side projects!", theme = "motivational" },
     { text = "No meetings.", theme = "motivational" },
+    { text = "🎉 No meetings!", theme = "motivational" },
     { text = "Code for fun.", theme = "motivational" },
+    { text = "🎨 Code for fun.", theme = "motivational" },
     { text = "Passion time.", theme = "motivational" },
+    { text = "❤️ Passion time.", theme = "motivational" },
     { text = "Freedom.", theme = "motivational" },
+    { text = "🦅 Freedom.", theme = "motivational" },
     { text = "Hack away!", theme = "motivational" },
+    { text = "⚡ Hack away!", theme = "motivational" },
     { text = "Your time.", theme = "motivational" },
     { text = "Create freely.", theme = "motivational" },
     { text = "Build dreams.", theme = "motivational" },
+    { text = "✨ Build dreams.", theme = "motivational" },
     { text = "Explore & learn.", theme = "motivational" },
+    { text = "🔍 Explore & learn.", theme = "motivational" },
     { text = "No deadlines.", theme = "motivational" },
     { text = "Pure joy.", theme = "motivational" },
     -- Personalized (with placeholders)

@@ -22,8 +22,11 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 - **Ease-in-out** timing: slow start → fast middle → slow finish
 - **140+ built-in ASCII arts** in 7 styles: blocks, gradient, isometric, box, minimal, pixel, braille
 - **Time-aware content**: morning, afternoon, evening, night, weekend themes
-- **280+ motivational taglines** that match the time of day
+- **330+ motivational taglines** that match the time of day (including emoji variants)
 - **Message browser**: browse, preview, favorite, and disable individual messages or entire themes
+- **Multi-line messages**: Support for haiku-style multi-line taglines
+- **Conditional messages**: Day-specific messages (Happy Friday!, Monday motivation)
+- **Message history**: Track shown messages to avoid repetition
 - **Customizable footer**: template-based footer with placeholders and alignment
 - **Personalization placeholders**: `{name}`, `{project}`, `{time}`, `{date}`, `{version}`, `{plugin_count}`
 - **Daily/session seed**: same art all day or per session for consistency
@@ -360,6 +363,9 @@ require("ascii-animation").setup({
     custom_messages = {
       morning = { "My custom message!", "Another one" },
     },
+
+    -- Message no-repeat: avoid showing the same message repeatedly
+    message_no_repeat = 5,        -- Don't repeat any of the last 5 messages
   },
 
   -- Footer settings
@@ -370,6 +376,85 @@ require("ascii-animation").setup({
   },
 })
 ```
+
+### Message Enhancements
+
+The message system supports several advanced features for customization.
+
+#### Emoji Support
+
+Messages can include emoji (requires terminal with emoji support):
+
+```lua
+-- Built-in examples
+"☀️ Rise and shine!"
+"☕ Coffee time!"
+"🎉 Happy Friday!"
+"🌙 Night mode."
+"💤 Remember to rest."
+```
+
+#### Multi-line Messages
+
+Messages can span multiple lines for haiku-style or poetic content:
+
+```lua
+-- Built-in example (zen haiku)
+{ text = { "Morning light awaits.", "Empty buffer, fresh mind.", "Code flows like water." }, theme = "zen" }
+
+-- In custom_messages config
+content = {
+  custom_messages = {
+    morning = {
+      { "First line of the message.", "Second line continues here." },  -- Simple multi-line
+      { text = { "With theme:", "And multiple lines." }, theme = "poetic" },  -- With theme
+    },
+  },
+}
+```
+
+Multi-line messages are rendered with each line on a separate row in the dashboard.
+
+#### Message History (No-Repeat)
+
+Avoid showing recently displayed messages:
+
+```lua
+content = {
+  message_no_repeat = true,   -- Don't repeat the last message
+  -- or
+  message_no_repeat = 5,      -- Don't repeat any of the last 5 messages
+}
+```
+
+#### Conditional Messages
+
+Messages can have condition functions that determine when they appear:
+
+```lua
+-- Built-in examples
+{ text = "🎉 Happy Friday!", theme = "witty", condition = function() return os.date("%A") == "Friday" end }
+{ text = "💪 Monday: New week, fresh start!", theme = "motivational", condition = function() return os.date("%A") == "Monday" end }
+{ text = "🌙 Late night coding session?", theme = "zen", condition = function() return tonumber(os.date("%H")) >= 23 end }
+
+-- In custom_messages config
+content = {
+  custom_messages = {
+    afternoon = {
+      -- Only show on Wednesdays
+      { text = "Hump day! Halfway there.", condition = function() return os.date("%A") == "Wednesday" end },
+      -- Only show in December
+      { text = "🎄 Holiday season coding!", condition = function() return os.date("%m") == "12" end },
+    },
+  },
+}
+```
+
+Condition functions receive no arguments and should return `true` for the message to be included in the pool.
+
+#### Message Favorites
+
+Favorite messages appear 3x more often. Manage favorites in `:AsciiSettings` → `g` → `b` (Message Browser), then press `F` on any message.
 
 ## Commands
 
@@ -717,6 +802,7 @@ animation = {
 | `content.favorites` | table | `{}` | List of art IDs for higher selection probability |
 | `content.favorite_weight` | number | `2` | Multiplier for favorites in selection pool |
 | `content.no_repeat` | boolean/number | `false` | Don't repeat last N arts: `false`, `true` (1), or number |
+| `content.message_no_repeat` | boolean/number | `false` | Don't repeat last N messages: `false`, `true` (1), or number |
 
 Message favorites and disabled states are managed via `:AsciiSettings` → `g` (Message Browser) and persist automatically.
 
@@ -801,6 +887,18 @@ local placeholders = require("ascii-animation").placeholders
 -- Process a string with placeholders
 local text = placeholders.process("Hello, {name}! Working on {project}?")
 -- Returns: "Hello, John! Working on my-project?"
+
+-- Process multi-line messages (returns table of processed strings)
+local lines = placeholders.process({ "Hello, {name}!", "Welcome to {project}." })
+-- Returns: { "Hello, John!", "Welcome to my-project." }
+
+-- Check if a message is multi-line
+placeholders.is_multiline({ "Line 1", "Line 2" })  -- true
+placeholders.is_multiline("Single line")           -- false
+
+-- Flatten multi-line to single string (for display contexts that need it)
+placeholders.flatten({ "Line 1", "Line 2" })       -- "Line 1\nLine 2"
+placeholders.flatten({ "A", "B" }, " • ")          -- "A • B"
 
 -- Resolve a single placeholder
 placeholders.resolve("name")     -- "John"

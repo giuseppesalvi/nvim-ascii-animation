@@ -306,6 +306,12 @@ M.defaults = {
     -- number N: Don't repeat any of the last N shown arts
     no_repeat = false,
 
+    -- Message no-repeat: false | true | number
+    -- false: No filtering (default)
+    -- true: Don't repeat the last shown message
+    -- number N: Don't repeat any of the last N shown messages
+    message_no_repeat = false,
+
   },
 
   -- Footer settings
@@ -377,6 +383,7 @@ function M.save()
     },
     content = {
       styles = M.options.content.styles,
+      message_no_repeat = M.options.content.message_no_repeat,
     },
     message_favorites = M.message_favorites,
     message_disabled = M.message_disabled,
@@ -429,6 +436,7 @@ function M.clear_saved()
   M.options.animation.gradient = vim.deepcopy(M.defaults.animation.gradient)
   -- Reset content settings
   M.options.content.styles = M.defaults.content.styles
+  M.options.content.message_no_repeat = M.defaults.content.message_no_repeat
   -- Reset message settings
   M.message_favorites = {}
   M.message_disabled = {}
