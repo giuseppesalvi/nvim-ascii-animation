@@ -202,6 +202,49 @@ function M.get_message()
   return M.get_message_for_period(period)
 end
 
+-- Generate message ID from period and index
+local function get_message_id(period, index)
+  return period .. "_" .. index
+end
+
+-- Expose themes
+M.themes = messages.themes
+M.theme_names = messages.theme_names
+
+-- Get all messages with IDs for a period
+function M.get_messages_with_ids(period)
+  local result = {}
+  local period_messages = messages.get_messages_for_period(period)
+  for i, msg in ipairs(period_messages) do
+    table.insert(result, {
+      id = get_message_id(period, i),
+      text = msg.text,
+      theme = msg.theme,
+      period = period,
+      index = i,
+    })
+  end
+  return result
+end
+
+-- Get all messages with IDs across all periods
+function M.get_all_messages_with_ids()
+  local all = {}
+  local periods = { "morning", "afternoon", "evening", "night", "weekend" }
+  for _, period in ipairs(periods) do
+    local period_msgs = M.get_messages_with_ids(period)
+    for _, msg in ipairs(period_msgs) do
+      table.insert(all, msg)
+    end
+  end
+  return all
+end
+
+-- Get message count for a theme
+function M.get_message_count_for_theme(theme)
+  return messages.get_message_count_for_theme(theme)
+end
+
 -- Get a random message for a specific period
 function M.get_message_for_period(period)
   ensure_random_seed()
@@ -209,11 +252,19 @@ function M.get_message_for_period(period)
   local opts = config.options.content or {}
   local all_messages = {}
 
-  -- Add built-in messages if enabled
+  -- Add built-in messages if enabled, filtering disabled ones and themes
   if opts.builtin_messages ~= false then
     local builtin = messages.get_messages_for_period(period)
-    for _, m in ipairs(builtin) do
-      table.insert(all_messages, m)
+    for i, m in ipairs(builtin) do
+      local msg_id = get_message_id(period, i)
+      -- Check if message is disabled OR theme is disabled
+      if not config.is_message_disabled(msg_id) and not config.is_theme_disabled(m.theme) then
+        -- Add with weighting for favorites
+        local weight = config.is_message_favorite(msg_id) and 3 or 1
+        for _ = 1, weight do
+          table.insert(all_messages, m.text)
+        end
+      end
     end
   end
 
@@ -221,6 +272,23 @@ function M.get_message_for_period(period)
   if opts.custom_messages and opts.custom_messages[period] then
     for _, m in ipairs(opts.custom_messages[period]) do
       table.insert(all_messages, m)
+    end
+  end
+
+  -- If all messages in this period are disabled, try other periods
+  if #all_messages == 0 then
+    local periods = { "morning", "afternoon", "evening", "night", "weekend" }
+    for _, p in ipairs(periods) do
+      if p ~= period then
+        local fallback = messages.get_messages_for_period(p)
+        for i, m in ipairs(fallback) do
+          local msg_id = get_message_id(p, i)
+          if not config.is_message_disabled(msg_id) and not config.is_theme_disabled(m.theme) then
+            table.insert(all_messages, m.text)
+          end
+        end
+        if #all_messages > 0 then break end
+      end
     end
   end
 

@@ -116,6 +116,14 @@ M.defaults = {
     -- true: Don't repeat the last shown art
     -- number N: Don't repeat any of the last N shown arts
     no_repeat = false,
+
+  },
+
+  -- Footer settings
+  footer = {
+    enabled = true,
+    template = "{message}",  -- Available: {message}, {date}, {time}, {version}, {plugins}, {name}, {project}
+    alignment = "center",    -- "left" | "center" | "right"
   },
 }
 
@@ -142,6 +150,15 @@ M.favorites = {}
 -- Favorites weight (0-100): chance of picking a favorite when available
 M.favorites_weight = 70
 
+-- Message favorites (message IDs like "morning_1", "afternoon_5")
+M.message_favorites = {}
+
+-- Disabled messages (message IDs)
+M.message_disabled = {}
+
+-- Disabled themes (theme names like "cryptic", "philosophical")
+M.themes_disabled = {}
+
 -- Save current settings to disk
 function M.save()
   -- Only save settings that can be changed via UI
@@ -164,6 +181,14 @@ function M.save()
     },
     content = {
       styles = M.options.content.styles,
+    },
+    message_favorites = M.message_favorites,
+    message_disabled = M.message_disabled,
+    themes_disabled = M.themes_disabled,
+    footer = {
+      enabled = M.options.footer.enabled,
+      template = M.options.footer.template,
+      alignment = M.options.footer.alignment,
     },
     favorites = M.favorites,
     favorites_weight = M.favorites_weight,
@@ -201,6 +226,14 @@ function M.clear_saved()
   M.options.animation.ambient_interval = M.defaults.animation.ambient_interval
   -- Reset content settings
   M.options.content.styles = M.defaults.content.styles
+  -- Reset message settings
+  M.message_favorites = {}
+  M.message_disabled = {}
+  M.themes_disabled = {}
+  -- Reset footer settings
+  M.options.footer.enabled = M.defaults.footer.enabled
+  M.options.footer.template = M.defaults.footer.template
+  M.options.footer.alignment = M.defaults.footer.alignment
 end
 
 -- Toggle favorite status for an art ID
@@ -227,6 +260,78 @@ function M.is_favorite(art_id)
   return false
 end
 
+-- Toggle favorite status for a message ID
+function M.toggle_message_favorite(msg_id)
+  for i, id in ipairs(M.message_favorites) do
+    if id == msg_id then
+      table.remove(M.message_favorites, i)
+      M.save()
+      return false -- removed
+    end
+  end
+  table.insert(M.message_favorites, msg_id)
+  M.save()
+  return true -- added
+end
+
+-- Check if a message is favorited
+function M.is_message_favorite(msg_id)
+  for _, id in ipairs(M.message_favorites) do
+    if id == msg_id then
+      return true
+    end
+  end
+  return false
+end
+
+-- Toggle disabled status for a message ID
+function M.toggle_message_disabled(msg_id)
+  for i, id in ipairs(M.message_disabled) do
+    if id == msg_id then
+      table.remove(M.message_disabled, i)
+      M.save()
+      return false -- now enabled
+    end
+  end
+  table.insert(M.message_disabled, msg_id)
+  M.save()
+  return true -- now disabled
+end
+
+-- Check if a message is disabled
+function M.is_message_disabled(msg_id)
+  for _, id in ipairs(M.message_disabled) do
+    if id == msg_id then
+      return true
+    end
+  end
+  return false
+end
+
+-- Toggle disabled status for a theme
+function M.toggle_theme_disabled(theme)
+  for i, t in ipairs(M.themes_disabled) do
+    if t == theme then
+      table.remove(M.themes_disabled, i)
+      M.save()
+      return false -- now enabled
+    end
+  end
+  table.insert(M.themes_disabled, theme)
+  M.save()
+  return true -- now disabled
+end
+
+-- Check if a theme is disabled
+function M.is_theme_disabled(theme)
+  for _, t in ipairs(M.themes_disabled) do
+    if t == theme then
+      return true
+    end
+  end
+  return false
+end
+
 function M.setup(opts)
   -- Load saved settings (from UI changes)
   local saved = M.load_saved()
@@ -239,6 +344,16 @@ function M.setup(opts)
   end
   if saved.favorites_weight then
     M.favorites_weight = saved.favorites_weight
+  end
+  -- Load message settings
+  if saved.message_favorites then
+    M.message_favorites = saved.message_favorites
+  end
+  if saved.message_disabled then
+    M.message_disabled = saved.message_disabled
+  end
+  if saved.themes_disabled then
+    M.themes_disabled = saved.themes_disabled
   end
 end
 

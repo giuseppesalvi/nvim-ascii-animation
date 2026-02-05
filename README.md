@@ -22,7 +22,9 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 - **Ease-in-out** timing: slow start → fast middle → slow finish
 - **140+ built-in ASCII arts** in 7 styles: blocks, gradient, isometric, box, minimal, pixel, braille
 - **Time-aware content**: morning, afternoon, evening, night, weekend themes
-- **200+ motivational taglines** that match the time of day
+- **280+ motivational taglines** that match the time of day
+- **Message browser**: browse, preview, favorite, and disable individual messages or entire themes
+- **Customizable footer**: template-based footer with placeholders and alignment
 - **Personalization placeholders**: `{name}`, `{project}`, `{time}`, `{date}`, `{version}`, `{plugin_count}`
 - **Daily/session seed**: same art all day or per session for consistency
 - **Favorites system**: boost selection probability of preferred arts
@@ -232,6 +234,49 @@ The plugin includes a built-in content system with **140+ ASCII arts** and **200
 }
 ```
 
+### Using Footer with snacks.nvim
+
+```lua
+{
+  "folke/snacks.nvim",
+  opts = function()
+    local ascii = require("ascii-animation")
+    local header = ascii.get_header()
+    local footer_lines = ascii.get_footer_lines()
+
+    return {
+      dashboard = {
+        preset = {
+          header = table.concat(header.art, "\n"),
+        },
+        sections = {
+          { section = "header" },
+          -- ... your menu items ...
+          { section = "startup" },
+          { text = footer_lines, align = "center" },  -- Footer at bottom
+        },
+      },
+    }
+  end,
+},
+
+-- Configure footer template
+{
+  "giuseppesalvi/nvim-ascii-animation",
+  event = "VimEnter",
+  config = function()
+    require("ascii-animation").setup({
+      footer = {
+        enabled = true,
+        template = "{message} • {date}",
+        alignment = "center",
+      },
+      snacks = { header_lines = 20 },
+    })
+  end,
+}
+```
+
 ### Using Content with alpha-nvim
 
 ```lua
@@ -299,6 +344,13 @@ require("ascii-animation").setup({
       morning = { "My custom message!", "Another one" },
     },
   },
+
+  -- Footer settings
+  footer = {
+    enabled = true,
+    template = "{message}",       -- Available: {message}, {date}, {time}, {version}, {plugins}, {name}, {project}
+    alignment = "center",         -- "left" | "center" | "right"
+  },
 })
 ```
 
@@ -351,6 +403,9 @@ Opens an interactive settings panel with **live preview**:
 - `m`/`M`: cycle random mode (always/daily/session)
 - `n`: toggle no-repeat
 - `w`/`W`: adjust favorites weight (±10%)
+- `y`: open styles filter
+- `g`: open themes/messages settings
+- `f`: open footer settings
 - `Space`: replay preview animation
 - `R`: reset to defaults
 - `q`/`Esc`: close
@@ -386,6 +441,36 @@ Opens an interactive settings panel with **live preview**:
 - `v`: toggle loop reverse
 - `i`/`I`: adjust ambient interval (±100ms)
 - `Backspace`: back to main menu
+
+**Styles Filter (press `y`):**
+- `1`-`7`: toggle individual styles (blocks, gradient, isometric, box, minimal, pixel, braille)
+- `Backspace`: back to main menu
+
+**Themes (press `g`):**
+- `1`-`7`: toggle theme on/off (disables all messages of that theme)
+- `b`: browse individual messages
+- `Backspace`: back to main menu
+
+Available themes: Motivational, Personalized, Philosophical, Cryptic, Poetic, Zen, Witty
+
+**Message Browser (press `b` from Themes):**
+- `j`/`k`: navigate up/down through messages
+- `n`/`N`: next/previous page
+- `1`-`5`: filter by period (morning, afternoon, evening, night, weekend)
+- `c`: clear filter
+- `F`: toggle favorite (favorites appear 3x more often)
+- `d`: disable/enable individual message
+- `p`: preview full message
+- `t`: back to themes
+- `Backspace`: back to main menu
+
+**Footer Settings (press `f`):**
+- `e`: toggle footer enabled/disabled
+- `a`/`A`: cycle alignment (left, center, right)
+- `t`: edit template (opens input prompt)
+- `Backspace`: back to main menu
+
+Available footer placeholders: `{message}`, `{date}`, `{time}`, `{version}`, `{plugins}`, `{name}`, `{project}`
 
 ### `:AsciiRefresh`
 
@@ -524,6 +609,16 @@ animation = {
 | `content.favorite_weight` | number | `2` | Multiplier for favorites in selection pool |
 | `content.no_repeat` | boolean/number | `false` | Don't repeat last N arts: `false`, `true` (1), or number |
 
+Message favorites and disabled states are managed via `:AsciiSettings` → `g` (Message Browser) and persist automatically.
+
+### Footer Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `footer.enabled` | boolean | `true` | Enable/disable footer |
+| `footer.template` | string | `"{message}"` | Template with placeholders: `{message}`, `{date}`, `{time}`, `{version}`, `{plugins}`, `{name}`, `{project}` |
+| `footer.alignment` | string | `"center"` | Footer alignment: `"left"`, `"center"`, or `"right"` |
+
 ## API
 
 ### Manual Animation
@@ -548,10 +643,18 @@ local header = ascii.get_header()
 -- Returns: {
 --   art = { "line1", "line2", ... },  -- ASCII art lines
 --   message = "Rise and shine!",       -- Tagline
+--   footer = "Rise and shine!",        -- Rendered footer (from template)
 --   period = "morning",                -- Current period
 --   art_id = "morning_blocks_1",       -- Art identifier
 --   art_name = "Good Morning",         -- Art display name
 -- }
+
+-- Get rendered footer string
+local footer = ascii.get_footer()  -- "Rise and shine! • February 05, 2026"
+
+-- Get footer lines aligned for dashboard integration
+local footer_lines = ascii.get_footer_lines(80)  -- width optional, defaults to terminal width
+-- Returns: { "                    Rise and shine!" }  -- center-aligned
 
 -- Get current time period
 ascii.get_current_period()  -- "morning" | "afternoon" | "evening" | "night" | "weekend"
