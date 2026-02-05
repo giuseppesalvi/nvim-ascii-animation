@@ -17,6 +17,21 @@ M.char_presets = {
 -- Ordered list of preset names for cycling
 M.char_preset_names = { "default", "minimal", "matrix", "blocks", "braille", "stars", "geometric", "binary", "dots" }
 
+-- Presets that require Unicode font support (not pure ASCII)
+M.char_presets_unicode = {
+  minimal = true,
+  matrix = true,
+  blocks = true,
+  braille = true,
+  stars = true,
+  geometric = true,
+}
+
+-- Check if a preset requires Unicode font support
+function M.preset_requires_unicode(preset)
+  return M.char_presets_unicode[preset] or false
+end
+
 -- Get the current chaos characters (resolves preset to actual string)
 function M.get_chaos_chars()
   local preset = M.options.animation and M.options.animation.char_preset or "default"
