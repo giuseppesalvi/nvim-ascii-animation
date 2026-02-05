@@ -4,6 +4,10 @@
 local blocks = require("ascii-animation.content.arts.blocks")
 local gradient = require("ascii-animation.content.arts.gradient")
 local isometric = require("ascii-animation.content.arts.isometric")
+local box = require("ascii-animation.content.arts.box")
+local minimal = require("ascii-animation.content.arts.minimal")
+local pixel = require("ascii-animation.content.arts.pixel")
+local braille = require("ascii-animation.content.arts.braille")
 
 local M = {}
 
@@ -12,13 +16,17 @@ M.styles = {
   blocks = blocks.arts,
   gradient = gradient.arts,
   isometric = isometric.arts,
+  box = box.arts,
+  minimal = minimal.arts,
+  pixel = pixel.arts,
+  braille = braille.arts,
 }
 
 -- Get all arts for a specific period, optionally filtered by styles
 function M.get_arts_for_period(period, style_filter)
   local arts = {}
 
-  local styles_to_use = style_filter or { "blocks", "gradient", "isometric" }
+  local styles_to_use = style_filter or { "blocks", "gradient", "isometric", "box", "minimal", "pixel", "braille" }
 
   for _, style in ipairs(styles_to_use) do
     local style_arts = M.styles[style]
@@ -80,7 +88,7 @@ end
 
 -- Get available styles
 function M.get_styles()
-  return { "blocks", "gradient", "isometric" }
+  return { "blocks", "gradient", "isometric", "box", "minimal", "pixel", "braille" }
 end
 
 -- Calculate the display width of an art
