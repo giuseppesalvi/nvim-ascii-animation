@@ -160,7 +160,9 @@ local chaos_chars_cache = {
 
 -- Get chaos chars as a table (handles UTF-8 multi-byte characters)
 local function get_chaos_chars_table()
-  local current = config.get_chaos_chars()
+  local current = current_effect_name
+    and config.get_chars_for_effect(current_effect_name)
+    or config.get_chaos_chars()
   if chaos_chars_cache.str ~= current then
     chaos_chars_cache.str = current
     chaos_chars_cache.chars = vim.fn.split(current, "\\zs")
@@ -179,6 +181,9 @@ local cursor_trail_state = { line = 1, col = 0 }
 
 -- State for scanline highlight creation
 local scanline_hl_created = false
+
+-- Track current effect name for per-effect charset resolution
+local current_effect_name = nil
 
 -- State for tracking current animation
 local animation_state = {
@@ -1532,6 +1537,7 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
     frame_delay = get_frame_delay(actual_step, total_steps)
   end
 
+  current_effect_name = effect
   local effect_fn = effects[effect] or effects.chaos
 
   for i = 1, header_end do
