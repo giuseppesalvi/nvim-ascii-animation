@@ -22,6 +22,15 @@ M.defaults = {
         block_size = 5,        -- Maximum size of glitch blocks
         resolve_speed = 1.0,   -- Speed of glitch resolution (higher = faster)
       },
+      -- Scramble effect options
+      stagger = "left",        -- "left" | "right" | "center" | "random"
+      cycles = 5,              -- Number of scramble cycles before settling
+      -- Spiral effect options
+      direction = "outward",   -- "outward" | "inward"
+      rotation = "clockwise",  -- "clockwise" | "counter"
+      tightness = 1.0,         -- Spiral tightness (0.5-2.0)
+      -- Fade effect options
+      highlight_count = 10,    -- Number of brightness levels (5-20)
     },
     -- Total steps in the animation
     steps = 40,
@@ -139,9 +148,15 @@ function M.save()
   local to_save = {
     animation = {
       effect = M.options.animation.effect,
+      effect_options = M.options.animation.effect_options,
       ambient = M.options.animation.ambient,
       loop = M.options.animation.loop,
+      loop_delay = M.options.animation.loop_delay,
+      loop_reverse = M.options.animation.loop_reverse,
       steps = M.options.animation.steps,
+      min_delay = M.options.animation.min_delay,
+      max_delay = M.options.animation.max_delay,
+      ambient_interval = M.options.animation.ambient_interval,
     },
     selection = {
       random_mode = M.options.selection.random_mode,
@@ -170,6 +185,17 @@ function M.clear_saved()
   M.favorites_weight = 70
   M.options.selection.random_mode = M.defaults.selection.random_mode
   M.options.selection.no_repeat = M.defaults.selection.no_repeat
+  -- Reset animation settings
+  M.options.animation.effect = M.defaults.animation.effect
+  M.options.animation.effect_options = vim.deepcopy(M.defaults.animation.effect_options)
+  M.options.animation.ambient = M.defaults.animation.ambient
+  M.options.animation.loop = M.defaults.animation.loop
+  M.options.animation.loop_delay = M.defaults.animation.loop_delay
+  M.options.animation.loop_reverse = M.defaults.animation.loop_reverse
+  M.options.animation.steps = M.defaults.animation.steps
+  M.options.animation.min_delay = M.defaults.animation.min_delay
+  M.options.animation.max_delay = M.defaults.animation.max_delay
+  M.options.animation.ambient_interval = M.defaults.animation.ambient_interval
 end
 
 -- Toggle favorite status for an art ID

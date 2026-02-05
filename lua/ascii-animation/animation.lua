@@ -10,7 +10,7 @@ local ambient_timer = nil
 
 -- Fade effect state
 local fade_state = {
-  highlight_count = 10,     -- Number of brightness levels
+  highlight_count = nil,    -- Number of brightness levels (from config)
   base_highlight = nil,     -- Track which highlight was used to create groups
 }
 
@@ -233,10 +233,16 @@ end
 
 -- Create fade highlight groups with varying brightness
 local function create_fade_highlights(base_highlight)
-  -- Check if we need to recreate (different base highlight)
-  if fade_state.base_highlight == base_highlight then
+  -- Get highlight count from config
+  local effect_opts = config.options.animation.effect_options or {}
+  local new_count = effect_opts.highlight_count or 10
+
+  -- Check if we need to recreate (different base highlight or count changed)
+  if fade_state.base_highlight == base_highlight and fade_state.highlight_count == new_count then
     return
   end
+
+  fade_state.highlight_count = new_count
 
   -- Get the base highlight's foreground color
   local hl_name = base_highlight or "Normal"
