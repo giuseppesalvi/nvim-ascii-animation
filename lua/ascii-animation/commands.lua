@@ -1111,6 +1111,7 @@ local function update_settings_content()
       charset_warning,
       string.format("  [p] Phase HL: %s", config.use_phase_highlights() and "ON " or "OFF"),
       config.use_phase_highlights() and string.format("  [P] Colors... (%s)", opts.animation.color_theme or "default") or "",
+      string.format("  [z] Period:   %s", opts.animation.period_colors and ("ON  (" .. time.get_current_period() .. " - " .. (config.period_moods[time.get_current_period()] or "") .. ")") or "OFF"),
       string.format("  [C] Color:    %-10s ◀ %d/%d ▶%s", color_mode, color_mode_idx, #config.color_mode_names, color_mode_detail),
       "  [t] Timing...",
       "",
@@ -2291,6 +2292,17 @@ local function setup_settings_keybindings(buf)
     elseif not settings_state.submenu then
       config.options.animation.use_phase_highlights = not config.options.animation.use_phase_highlights
       config.save()
+      update_settings_content()
+      replay_preview()
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  -- Period colors toggle (z key)
+  vim.keymap.set("n", "z", function()
+    if not settings_state.submenu then
+      config.options.animation.period_colors = not config.options.animation.period_colors
+      config.save()
+      animation.refresh_phase_highlights()
       update_settings_content()
       replay_preview()
     end

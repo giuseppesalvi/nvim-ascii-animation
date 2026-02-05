@@ -48,6 +48,44 @@ M.gradient_preset_names = { "sunset", "ocean", "forest", "fire", "purple", "pink
 -- Color mode names for cycling
 M.color_mode_names = { "default", "rainbow", "gradient" }
 
+-- Period-based color schemes for phase highlights
+M.period_color_schemes = {
+  morning = {
+    chaos = "#1a0a00",
+    revealing = "#ff9500",
+    revealed = "#ffcc00",
+  },
+  afternoon = {
+    chaos = "#001a1a",
+    revealing = "#00aa88",
+    revealed = "#00ffcc",
+  },
+  evening = {
+    chaos = "#0a0015",
+    revealing = "#ff6b9d",
+    revealed = "#ffa07a",
+  },
+  night = {
+    chaos = "#0a0a1a",
+    revealing = "#6666ff",
+    revealed = "#aaaaff",
+  },
+  weekend = {
+    chaos = "#0a1a0a",
+    revealing = "#66ff66",
+    revealed = "#aaffaa",
+  },
+}
+
+-- Period mood labels for display
+M.period_moods = {
+  morning = "warm",
+  afternoon = "teal",
+  evening = "soft",
+  night = "cool",
+  weekend = "fresh",
+}
+
 -- Character set presets for animation effects
 M.char_presets = {
   default = "@#$%&*+=-:;!?/\\|[]{}()<>~`'^",
@@ -87,6 +125,31 @@ end
 
 -- Get effective phase colors (theme colors merged with custom overrides)
 function M.get_phase_colors()
+  -- Check if period colors are enabled
+  if M.options.animation and M.options.animation.period_colors then
+    local time = require("ascii-animation.time")
+    local period = time.get_current_period()
+    local period_scheme = M.period_color_schemes[period]
+
+    if period_scheme then
+      -- Get base theme for cursor and glitch (not in period schemes)
+      local theme_name = M.options.animation.color_theme
+      local theme = theme_name and M.color_themes[theme_name] or M.color_themes.default
+
+      -- Apply period-specific overrides
+      local overrides = M.options.animation.period_color_overrides or {}
+      local period_overrides = overrides[period] or {}
+
+      return {
+        chaos = period_overrides.chaos or period_scheme.chaos,
+        revealing = period_overrides.revealing or period_scheme.revealing,
+        revealed = period_overrides.revealed or period_scheme.revealed,
+        cursor = period_overrides.cursor or theme.cursor,
+        glitch = period_overrides.glitch or theme.glitch,
+      }
+    end
+  end
+
   local theme_name = M.options.animation and M.options.animation.color_theme
   local theme = theme_name and M.color_themes[theme_name] or M.color_themes.default
   local custom = M.options.animation and M.options.animation.phase_colors or {}
@@ -100,10 +163,10 @@ function M.get_phase_colors()
   }
 end
 
--- Check if phase highlights should be active (explicit setting or theme set)
+-- Check if phase highlights should be active (explicit setting, theme set, or period colors)
 function M.use_phase_highlights()
   local opts = M.options.animation or {}
-  return opts.use_phase_highlights or opts.color_theme ~= nil
+  return opts.use_phase_highlights or opts.color_theme ~= nil or opts.period_colors
 end
 
 -- Get current color mode
@@ -237,6 +300,9 @@ M.defaults = {
       start = nil,          -- Custom start color (overrides preset)
       stop = nil,           -- Custom stop color (overrides preset)
     },
+    -- Period-based color schemes (auto-changes phase colors by time of day)
+    period_colors = false,          -- Enable period-based colors
+    period_color_overrides = {},    -- Override specific period colors: { morning = { revealed = "#ff6600" } }
   },
 
   -- Content selection settings
@@ -270,7 +336,8 @@ M.defaults = {
     custom_messages = {},        -- User-defined messages by period
 
     -- Personalization placeholders
-    -- Supported: {name}, {project}, {time}, {date}, {version}, {plugin_count}
+    -- Supported: {name}, {project}, {time}, {date}, {version}, {plugin_count},
+    --            {day}, {hour}, {greeting}, {git_branch}, {uptime}, {streak}, {random_emoji}
     placeholders = {
       -- name = "Developer",     -- Override auto-detected git user.name
       -- project = nil,          -- Override auto-detected project name
@@ -376,6 +443,8 @@ function M.save()
       color_mode = M.options.animation.color_mode,
       rainbow = M.options.animation.rainbow,
       gradient = M.options.animation.gradient,
+      period_colors = M.options.animation.period_colors,
+      period_color_overrides = M.options.animation.period_color_overrides,
     },
     selection = {
       random_mode = M.options.selection.random_mode,
@@ -434,6 +503,8 @@ function M.clear_saved()
   M.options.animation.color_mode = M.defaults.animation.color_mode
   M.options.animation.rainbow = vim.deepcopy(M.defaults.animation.rainbow)
   M.options.animation.gradient = vim.deepcopy(M.defaults.animation.gradient)
+  M.options.animation.period_colors = M.defaults.animation.period_colors
+  M.options.animation.period_color_overrides = vim.deepcopy(M.defaults.animation.period_color_overrides)
   -- Reset content settings
   M.options.content.styles = M.defaults.content.styles
   M.options.content.message_no_repeat = M.defaults.content.message_no_repeat
