@@ -549,6 +549,85 @@ local function get_phase_colors_submenu_lines()
   }
 end
 
+-- Get color mode submenu lines
+local function get_color_mode_submenu_lines()
+  local opts = config.options.animation
+  local color_mode = opts.color_mode or "default"
+
+  -- Find indices
+  local mode_idx = 1
+  for i, m in ipairs(config.color_mode_names) do
+    if m == color_mode then mode_idx = i break end
+  end
+
+  local lines = {
+    "",
+    "  Color Mode",
+    "  " .. string.rep("─", 38),
+    "",
+    string.format("  [m] Mode: %-10s ◀ %d/%d ▶", color_mode, mode_idx, #config.color_mode_names),
+    "",
+  }
+
+  if color_mode == "rainbow" then
+    local rainbow = opts.rainbow or {}
+    local palette = rainbow.palette or "default"
+    local palette_idx = 1
+    for i, p in ipairs(config.rainbow_palette_names) do
+      if p == palette then palette_idx = i break end
+    end
+
+    table.insert(lines, string.format("  [p] Palette: %-10s ◀ %d/%d ▶", palette, palette_idx, #config.rainbow_palette_names))
+    table.insert(lines, "")
+
+    -- Show palette colors
+    local colors = config.get_rainbow_colors()
+    table.insert(lines, "  Colors:")
+    for i, color in ipairs(colors) do
+      table.insert(lines, string.format("    %d. %s ██", i, color))
+    end
+    table.insert(lines, "")
+    table.insert(lines, "  Keys:")
+    table.insert(lines, "    m: cycle mode")
+    table.insert(lines, "    p: cycle palette")
+    table.insert(lines, "    Backspace: back")
+  elseif color_mode == "gradient" then
+    local gradient = opts.gradient or {}
+    local preset = gradient.preset or "sunset"
+    local preset_idx = 1
+    for i, p in ipairs(config.gradient_preset_names) do
+      if p == preset then preset_idx = i break end
+    end
+
+    local grad_colors = config.get_gradient_colors()
+
+    table.insert(lines, string.format("  [g] Preset: %-10s ◀ %d/%d ▶", preset, preset_idx, #config.gradient_preset_names))
+    table.insert(lines, "")
+    table.insert(lines, string.format("  Start: %s ██", grad_colors.start))
+    table.insert(lines, string.format("  Stop:  %s ██", grad_colors.stop))
+    table.insert(lines, "")
+    table.insert(lines, "  [1] Edit start color")
+    table.insert(lines, "  [2] Edit stop color")
+    table.insert(lines, "  [r] Reset to preset")
+    table.insert(lines, "")
+    table.insert(lines, "  Keys:")
+    table.insert(lines, "    m: cycle mode")
+    table.insert(lines, "    g: cycle preset")
+    table.insert(lines, "    1/2: edit start/stop color")
+    table.insert(lines, "    r: reset custom colors")
+    table.insert(lines, "    Backspace: back")
+  else
+    table.insert(lines, "  (default uses base highlight)")
+    table.insert(lines, "")
+    table.insert(lines, "  Keys:")
+    table.insert(lines, "    m: cycle mode")
+    table.insert(lines, "    Backspace: back")
+  end
+
+  table.insert(lines, "")
+  return lines
+end
+
 -- All available styles
 local ALL_STYLES = { "blocks", "gradient", "isometric", "box", "minimal", "pixel", "braille" }
 
@@ -945,6 +1024,8 @@ local function update_settings_content()
       lines = get_footer_submenu_lines()
     elseif settings_state.submenu == "phase_colors" then
       lines = get_phase_colors_submenu_lines()
+    elseif settings_state.submenu == "color_mode" then
+      lines = get_color_mode_submenu_lines()
     else
       lines = get_effect_submenu_lines(settings_state.submenu)
     end
@@ -999,6 +1080,23 @@ local function update_settings_content()
       charset_warning = "      (requires Unicode font)"
     end
 
+    -- Color mode options
+    local color_mode = opts.animation.color_mode or "default"
+    local color_mode_idx = 1
+    for i, m in ipairs(config.color_mode_names) do
+      if m == color_mode then color_mode_idx = i break end
+    end
+
+    -- Color mode detail (shows palette or gradient preset)
+    local color_mode_detail = ""
+    if color_mode == "rainbow" then
+      local palette = opts.animation.rainbow and opts.animation.rainbow.palette or "default"
+      color_mode_detail = string.format(" (%s)", palette)
+    elseif color_mode == "gradient" then
+      local preset = opts.animation.gradient and opts.animation.gradient.preset or "sunset"
+      color_mode_detail = string.format(" (%s)", preset)
+    end
+
     lines = {
       "",
       "  Animation",
@@ -1013,6 +1111,7 @@ local function update_settings_content()
       charset_warning,
       string.format("  [p] Phase HL: %s", config.use_phase_highlights() and "ON " or "OFF"),
       config.use_phase_highlights() and string.format("  [P] Colors... (%s)", opts.animation.color_theme or "default") or "",
+      string.format("  [C] Color:    %-10s ◀ %d/%d ▶%s", color_mode, color_mode_idx, #config.color_mode_names, color_mode_detail),
       "  [t] Timing...",
       "",
       "  Content",
@@ -1663,6 +1762,19 @@ local function setup_settings_keybindings(buf)
       cycle_random_mode(1)
     elseif settings_state.submenu == "timing" then
       adjust_min_delay(10)
+    elseif settings_state.submenu == "color_mode" then
+      -- Cycle color mode forward
+      local current = config.options.animation.color_mode or "default"
+      local idx = 1
+      for i, m in ipairs(config.color_mode_names) do
+        if m == current then idx = i break end
+      end
+      idx = (idx % #config.color_mode_names) + 1
+      config.options.animation.color_mode = config.color_mode_names[idx]
+      config.save()
+      animation.refresh_color_mode_highlights()
+      update_settings_content()
+      replay_preview()
     end
   end, { buffer = buf, nowait = true, silent = true })
 
@@ -1671,6 +1783,20 @@ local function setup_settings_keybindings(buf)
       cycle_random_mode(-1)
     elseif settings_state.submenu == "timing" then
       adjust_min_delay(-10)
+    elseif settings_state.submenu == "color_mode" then
+      -- Cycle color mode backward
+      local current = config.options.animation.color_mode or "default"
+      local idx = 1
+      for i, m in ipairs(config.color_mode_names) do
+        if m == current then idx = i break end
+      end
+      idx = idx - 1
+      if idx < 1 then idx = #config.color_mode_names end
+      config.options.animation.color_mode = config.color_mode_names[idx]
+      config.save()
+      animation.refresh_color_mode_highlights()
+      update_settings_content()
+      replay_preview()
     end
   end, { buffer = buf, nowait = true, silent = true })
 
@@ -1755,6 +1881,17 @@ local function setup_settings_keybindings(buf)
       update_settings_content()
       replay_preview()
       vim.notify("Custom colors cleared, using theme colors", vim.log.levels.INFO)
+    elseif settings_state.submenu == "color_mode" then
+      -- Reset gradient custom colors (revert to preset)
+      if config.options.animation.gradient then
+        config.options.animation.gradient.start = nil
+        config.options.animation.gradient.stop = nil
+      end
+      config.save()
+      animation.refresh_color_mode_highlights()
+      update_settings_content()
+      replay_preview()
+      vim.notify("Custom gradient colors cleared, using preset", vim.log.levels.INFO)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
@@ -1840,9 +1977,29 @@ local function setup_settings_keybindings(buf)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
-  -- Messages/Themes submenu - starts with Themes view
+  -- Messages/Themes submenu - starts with Themes view / Gradient preset cycle
   vim.keymap.set("n", "g", function()
-    if not settings_state.submenu then
+    if settings_state.submenu == "color_mode" then
+      -- Cycle gradient preset
+      if config.options.animation.color_mode == "gradient" then
+        local gradient = config.options.animation.gradient or {}
+        local current = gradient.preset or "sunset"
+        local idx = 1
+        for i, p in ipairs(config.gradient_preset_names) do
+          if p == current then idx = i break end
+        end
+        idx = (idx % #config.gradient_preset_names) + 1
+        config.options.animation.gradient = config.options.animation.gradient or {}
+        config.options.animation.gradient.preset = config.gradient_preset_names[idx]
+        -- Clear custom colors when changing preset
+        config.options.animation.gradient.start = nil
+        config.options.animation.gradient.stop = nil
+        config.save()
+        animation.refresh_color_mode_highlights()
+        update_settings_content()
+        replay_preview()
+      end
+    elseif not settings_state.submenu then
       settings_state.submenu = "messages"
       message_browser.period_filter = nil
       message_browser.theme_filter = nil
@@ -2025,6 +2182,14 @@ local function setup_settings_keybindings(buf)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
+  -- Color mode submenu (C key - opens submenu from main menu)
+  vim.keymap.set("n", "C", function()
+    if not settings_state.submenu then
+      settings_state.submenu = "color_mode"
+      update_settings_content()
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
   -- Theme cycling (T key - in phase_colors submenu) / Spiral tightness (T key - in spiral submenu)
   vim.keymap.set("n", "T", function()
     if settings_state.submenu == "phase_colors" then
@@ -2095,7 +2260,7 @@ local function setup_settings_keybindings(buf)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
-  -- Message preview (show full message in notification) / Phase highlights toggle
+  -- Message preview (show full message in notification) / Phase highlights toggle / Rainbow palette cycle
   vim.keymap.set("n", "p", function()
     if settings_state.submenu == "messages" then
       local msg = message_browser.filtered[message_browser.index]
@@ -2105,6 +2270,23 @@ local function setup_settings_keybindings(buf)
         vim.notify(processed, vim.log.levels.INFO)
       else
         vim.notify("No message selected", vim.log.levels.WARN)
+      end
+    elseif settings_state.submenu == "color_mode" then
+      -- Cycle rainbow palette
+      if config.options.animation.color_mode == "rainbow" then
+        local rainbow = config.options.animation.rainbow or {}
+        local current = rainbow.palette or "default"
+        local idx = 1
+        for i, p in ipairs(config.rainbow_palette_names) do
+          if p == current then idx = i break end
+        end
+        idx = (idx % #config.rainbow_palette_names) + 1
+        config.options.animation.rainbow = config.options.animation.rainbow or {}
+        config.options.animation.rainbow.palette = config.rainbow_palette_names[idx]
+        config.save()
+        animation.refresh_color_mode_highlights()
+        update_settings_content()
+        replay_preview()
       end
     elseif not settings_state.submenu then
       config.options.animation.use_phase_highlights = not config.options.animation.use_phase_highlights
@@ -2162,6 +2344,28 @@ local function setup_settings_keybindings(buf)
               config.options.animation.phase_colors[key] = input
               config.save()
               animation.refresh_phase_highlights()
+              update_settings_content()
+              replay_preview()
+            elseif input then
+              vim.notify("Invalid hex color. Use format: #rrggbb", vim.log.levels.WARN)
+            end
+          end)
+        end
+      elseif settings_state.submenu == "color_mode" then
+        -- 1-2 edit gradient start/stop colors (only in gradient mode)
+        if config.options.animation.color_mode == "gradient" and i <= 2 then
+          local gradient = config.get_gradient_colors()
+          local key = i == 1 and "start" or "stop"
+          local current = config.options.animation.gradient and config.options.animation.gradient[key]
+          vim.ui.input({
+            prompt = string.format("Gradient %s color (hex): ", key),
+            default = current or gradient[key],
+          }, function(input)
+            if input and input:match("^#%x%x%x%x%x%x$") then
+              config.options.animation.gradient = config.options.animation.gradient or {}
+              config.options.animation.gradient[key] = input
+              config.save()
+              animation.refresh_color_mode_highlights()
               update_settings_content()
               replay_preview()
             elseif input then

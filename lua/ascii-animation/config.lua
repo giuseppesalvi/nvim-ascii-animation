@@ -17,6 +17,37 @@ M.color_themes = {
 -- Ordered list of theme names for cycling
 M.color_theme_names = { "default", "cyberpunk", "matrix", "ocean", "sunset", "forest", "monochrome", "dracula", "nord" }
 
+-- Rainbow color palettes
+M.rainbow_palettes = {
+  default = { "#ff0000", "#ff7f00", "#ffff00", "#00ff00", "#0000ff", "#4b0082", "#9400d3" },
+  pastel = { "#ffb3ba", "#ffdfba", "#ffffba", "#baffc9", "#bae1ff", "#e0bbff", "#ffb3de" },
+  neon = { "#ff00ff", "#00ffff", "#ff00aa", "#00ff00", "#ffff00", "#ff5500", "#aa00ff" },
+  warm = { "#ff0000", "#ff4400", "#ff8800", "#ffbb00", "#ffee00", "#ffff44", "#ffffaa" },
+  cool = { "#0000ff", "#0044ff", "#0088ff", "#00bbff", "#00eeff", "#44ffff", "#aaffff" },
+  mono = { "#ffffff", "#dddddd", "#bbbbbb", "#999999", "#777777", "#555555", "#333333" },
+}
+
+-- Ordered list of rainbow palette names
+M.rainbow_palette_names = { "default", "pastel", "neon", "warm", "cool", "mono" }
+
+-- Gradient presets (start -> stop colors)
+M.gradient_presets = {
+  sunset = { start = "#ff6b35", stop = "#f7931e" },
+  ocean = { start = "#00c6ff", stop = "#0072ff" },
+  forest = { start = "#11998e", stop = "#38ef7d" },
+  fire = { start = "#f12711", stop = "#f5af19" },
+  purple = { start = "#8e2de2", stop = "#4a00e0" },
+  pink = { start = "#ee9ca7", stop = "#ffdde1" },
+  midnight = { start = "#232526", stop = "#414345" },
+  aurora = { start = "#00c9ff", stop = "#92fe9d" },
+}
+
+-- Ordered list of gradient preset names
+M.gradient_preset_names = { "sunset", "ocean", "forest", "fire", "purple", "pink", "midnight", "aurora" }
+
+-- Color mode names for cycling
+M.color_mode_names = { "default", "rainbow", "gradient" }
+
 -- Character set presets for animation effects
 M.char_presets = {
   default = "@#$%&*+=-:;!?/\\|[]{}()<>~`'^",
@@ -73,6 +104,62 @@ end
 function M.use_phase_highlights()
   local opts = M.options.animation or {}
   return opts.use_phase_highlights or opts.color_theme ~= nil
+end
+
+-- Get current color mode
+function M.get_color_mode()
+  local opts = M.options.animation or {}
+  return opts.color_mode or "default"
+end
+
+-- Get rainbow colors (palette or custom)
+function M.get_rainbow_colors()
+  local opts = M.options.animation or {}
+  local rainbow = opts.rainbow or {}
+  if rainbow.custom_colors and #rainbow.custom_colors > 0 then
+    return rainbow.custom_colors
+  end
+  local palette_name = rainbow.palette or "default"
+  return M.rainbow_palettes[palette_name] or M.rainbow_palettes.default
+end
+
+-- Get gradient colors (preset or custom)
+function M.get_gradient_colors()
+  local opts = M.options.animation or {}
+  local gradient = opts.gradient or {}
+  local preset_name = gradient.preset or "sunset"
+  local preset = M.gradient_presets[preset_name] or M.gradient_presets.sunset
+  return {
+    start = gradient.start or preset.start,
+    stop = gradient.stop or preset.stop,
+  }
+end
+
+-- Interpolate between two hex colors
+function M.interpolate_color(start_hex, end_hex, ratio)
+  -- Extract RGB from hex
+  local function hex_to_rgb(hex)
+    hex = hex:gsub("#", "")
+    return {
+      r = tonumber(hex:sub(1, 2), 16),
+      g = tonumber(hex:sub(3, 4), 16),
+      b = tonumber(hex:sub(5, 6), 16),
+    }
+  end
+
+  -- Convert RGB to hex
+  local function rgb_to_hex(r, g, b)
+    return string.format("#%02x%02x%02x", math.floor(r), math.floor(g), math.floor(b))
+  end
+
+  local start_rgb = hex_to_rgb(start_hex)
+  local end_rgb = hex_to_rgb(end_hex)
+
+  local r = start_rgb.r + (end_rgb.r - start_rgb.r) * ratio
+  local g = start_rgb.g + (end_rgb.g - start_rgb.g) * ratio
+  local b = start_rgb.b + (end_rgb.b - start_rgb.b) * ratio
+
+  return rgb_to_hex(r, g, b)
 end
 
 -- Path for persistent settings
@@ -137,6 +224,19 @@ M.defaults = {
     auto_fit = false,       -- Skip arts wider than terminal
     min_width = 60,         -- Minimum terminal width for animation
     fallback = "tagline",   -- "tagline" | "none" | art_id
+    -- Color mode for line coloring
+    color_mode = "default", -- "default" | "rainbow" | "gradient"
+    -- Rainbow mode options
+    rainbow = {
+      palette = "default",  -- "default" | "pastel" | "neon" | "warm" | "cool" | "mono"
+      custom_colors = nil,  -- Custom color array (overrides palette)
+    },
+    -- Gradient mode options
+    gradient = {
+      preset = "sunset",    -- "sunset" | "ocean" | "forest" | "fire" | "purple" | "pink" | "midnight" | "aurora"
+      start = nil,          -- Custom start color (overrides preset)
+      stop = nil,           -- Custom stop color (overrides preset)
+    },
   },
 
   -- Content selection settings
@@ -267,6 +367,9 @@ function M.save()
       use_phase_highlights = M.options.animation.use_phase_highlights,
       color_theme = M.options.animation.color_theme,
       phase_colors = M.options.animation.phase_colors,
+      color_mode = M.options.animation.color_mode,
+      rainbow = M.options.animation.rainbow,
+      gradient = M.options.animation.gradient,
     },
     selection = {
       random_mode = M.options.selection.random_mode,
@@ -321,6 +424,9 @@ function M.clear_saved()
   M.options.animation.use_phase_highlights = M.defaults.animation.use_phase_highlights
   M.options.animation.color_theme = M.defaults.animation.color_theme
   M.options.animation.phase_colors = vim.deepcopy(M.defaults.animation.phase_colors)
+  M.options.animation.color_mode = M.defaults.animation.color_mode
+  M.options.animation.rainbow = vim.deepcopy(M.defaults.animation.rainbow)
+  M.options.animation.gradient = vim.deepcopy(M.defaults.animation.gradient)
   -- Reset content settings
   M.options.content.styles = M.defaults.content.styles
   -- Reset message settings
