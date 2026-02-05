@@ -16,7 +16,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 
 ## Features
 
-- Eight **animation effects**: chaos, typewriter, diagonal, lines, matrix, wave, fade, and random
+- 14 **animation effects**: chaos, typewriter, diagonal, lines, matrix, wave, fade, scramble, rain, spiral, explode, implode, glitch, and random
 - **Loop mode**: continuous animation replay with optional reverse
 - **Ambient effects**: subtle glitch or shimmer after animation completes
 - **Ease-in-out** timing: slow start → fast middle → slow finish
@@ -48,10 +48,29 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
   opts = {
     animation = {
       enabled = true,
-      effect = "chaos",  -- "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "wave" | "fade" | "random"
+      -- Effect: "chaos" | "typewriter" | "diagonal" | "lines" | "matrix" | "wave" |
+      --         "fade" | "scramble" | "rain" | "spiral" | "explode" | "implode" | "glitch" | "random"
+      effect = "chaos",
       effect_options = {
-        origin = "center",  -- Wave origin: "center" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "top" | "bottom" | "left" | "right"
+        -- Wave options
+        origin = "center",  -- "center" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "top" | "bottom" | "left" | "right"
         speed = 1.0,        -- Wave propagation speed multiplier
+        -- Glitch options
+        glitch = {
+          intensity = 0.5,       -- Glitch amount (0.0-1.0)
+          block_chance = 0.2,    -- Probability of block glitching
+          block_size = 5,        -- Max size of glitch blocks
+          resolve_speed = 1.0,   -- Resolution speed
+        },
+        -- Scramble options
+        stagger = "left",   -- "left" | "right" | "center" | "random"
+        cycles = 5,         -- Scramble cycles before settling
+        -- Spiral options
+        direction = "outward",   -- "outward" | "inward"
+        rotation = "clockwise",  -- "clockwise" | "counter"
+        tightness = 1.0,         -- Spiral tightness (0.5-2.0)
+        -- Fade options
+        highlight_count = 10,    -- Brightness levels (5-20)
       },
       steps = 40,        -- Total animation steps
       min_delay = 20,    -- Fastest frame delay (ms)
@@ -304,29 +323,65 @@ Interactive keybindings:
 
 ### `:AsciiSettings`
 
-Opens an interactive settings panel:
+Opens an interactive settings panel with **live preview**:
 
 ```vim
 :AsciiSettings
 ```
 
-Features:
-- View library stats (arts, taglines, styles)
+**Features:**
+- **Live preview panel**: See animation changes instantly in a side-by-side preview
 - Change animation effect, ambient effect, loop mode, steps
+- **Effect-specific options**: Configure wave origin, glitch intensity, spiral direction, and more
+- **Timing settings**: Adjust min/max delays, loop delay, ambient interval
 - Settings are automatically saved and persist across sessions
 - Press `R` to reset to defaults
 
-Keybindings:
-- `e`/`E`: cycle effect
-- `a`/`A`: cycle ambient
+**Main Menu Keybindings:**
+- `e`/`E`: cycle effect (14 effects)
+- `o`: open effect options (for wave, glitch, scramble, spiral, fade)
+- `a`/`A`: cycle ambient effect
 - `l`: toggle loop
-- `s`/`S`: adjust steps
+- `s`/`S`: adjust steps (±5)
+- `t`: open timing settings
 - `m`/`M`: cycle random mode (always/daily/session)
 - `n`: toggle no-repeat
-- `w`/`W`: adjust favorites weight
-- `r`: refresh dashboard
+- `w`/`W`: adjust favorites weight (±10%)
+- `Space`: replay preview animation
 - `R`: reset to defaults
-- `p`: open preview
+- `q`/`Esc`: close
+
+**Effect Options (press `o`):**
+
+*Wave:*
+- `o`/`O`: cycle origin (center, top, bottom, left, right, corners)
+- `s`/`S`: adjust speed (±0.1)
+
+*Glitch:*
+- `i`/`I`: adjust intensity (±0.1)
+- `b`/`B`: adjust block chance (±0.1)
+- `s`/`S`: adjust block size (±1)
+- `r`: adjust resolve speed (±0.1)
+
+*Scramble:*
+- `s`/`S`: cycle stagger (left, right, center, random)
+- `c`/`C`: adjust cycles (±1)
+
+*Spiral:*
+- `d`/`D`: cycle direction (outward, inward)
+- `r`: cycle rotation (clockwise, counter)
+- `t`/`T`: adjust tightness (±0.1)
+
+*Fade:*
+- `h`/`H`: adjust highlight levels (±1, range 5-20)
+
+**Timing Settings (press `t`):**
+- `m`/`M`: adjust min delay (±10ms)
+- `x`/`X`: adjust max delay (±10ms)
+- `d`/`D`: adjust loop delay (±100ms)
+- `v`: toggle loop reverse
+- `i`/`I`: adjust ambient interval (±100ms)
+- `Backspace`: back to main menu
 
 ### `:AsciiRefresh`
 
@@ -418,9 +473,19 @@ animation = {
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `animation.enabled` | boolean | `true` | Enable/disable animation |
-| `animation.effect` | string | `"chaos"` | Animation effect: `"chaos"`, `"typewriter"`, `"diagonal"`, `"lines"`, `"matrix"`, `"wave"`, `"fade"`, or `"random"` |
-| `animation.effect_options.origin` | string | `"center"` | Wave effect origin point (see Wave Effect below) |
-| `animation.effect_options.speed` | number | `1.0` | Wave propagation speed multiplier |
+| `animation.effect` | string | `"chaos"` | Animation effect (see Effects section) |
+| `animation.effect_options.origin` | string | `"center"` | Wave origin point |
+| `animation.effect_options.speed` | number | `1.0` | Wave propagation speed |
+| `animation.effect_options.glitch.intensity` | number | `0.5` | Glitch amount (0-1) |
+| `animation.effect_options.glitch.block_chance` | number | `0.2` | Block glitch probability |
+| `animation.effect_options.glitch.block_size` | number | `5` | Max glitch block size |
+| `animation.effect_options.glitch.resolve_speed` | number | `1.0` | Glitch resolution speed |
+| `animation.effect_options.stagger` | string | `"left"` | Scramble stagger direction |
+| `animation.effect_options.cycles` | number | `5` | Scramble cycles |
+| `animation.effect_options.direction` | string | `"outward"` | Spiral direction |
+| `animation.effect_options.rotation` | string | `"clockwise"` | Spiral rotation |
+| `animation.effect_options.tightness` | number | `1.0` | Spiral tightness |
+| `animation.effect_options.highlight_count` | number | `10` | Fade brightness levels |
 | `animation.steps` | number | `40` | Total animation steps (more = smoother) |
 | `animation.min_delay` | number | `20` | Fastest frame delay in ms (middle of animation) |
 | `animation.max_delay` | number | `120` | Slowest frame delay in ms (start/end) |
@@ -600,9 +665,42 @@ animation = {
 1. **Brightness**: Text fades in from dim to bright using dynamic highlight groups
 2. **Stagger**: Top lines fade in first, creating a cascading brightness wave
 3. **Smooth**: Uses ease-in-out timing for a cinematic feel
+4. **Configurable**: Adjust `highlight_count` (5-20) for smoother or more stepped fade
+
+### Scramble Effect
+1. **Slot machine**: Characters cycle through random symbols before settling
+2. **Stagger**: Characters settle in order based on stagger direction (left, right, center, random)
+3. **Configurable**: Adjust `cycles` for longer/shorter scramble duration
+
+### Rain Effect
+1. **Falling**: Characters "rain" down and stack from the bottom up
+2. **Column-based**: Each column has unique timing for natural rain feel
+3. **Atmospheric**: Creates a digital rain aesthetic
+
+### Spiral Effect
+1. **Geometric**: Characters reveal in a spiral pattern from center or edges
+2. **Direction**: Choose `outward` (center→edge) or `inward` (edge→center)
+3. **Rotation**: Select `clockwise` or `counter`-clockwise spiral
+4. **Tightness**: Adjust spiral coil density (0.5-2.0)
+
+### Explode Effect
+1. **Outward**: Characters reveal from center outward like an explosion
+2. **Radial**: Creates expanding ring pattern from the middle
+3. **Dynamic**: Fast middle, slowing at edges
+
+### Implode Effect
+1. **Inward**: Characters reveal from edges inward, opposite of explode
+2. **Converging**: Creates collapsing effect toward center
+3. **Dramatic**: Good for attention-grabbing reveals
+
+### Glitch Effect
+1. **Cyberpunk**: Characters progressively stabilize through digital corruption
+2. **Block glitches**: Random rectangular areas show corrupted characters
+3. **Multi-highlight**: Glitched sections use varied error colors
+4. **Configurable**: Adjust intensity, block chance, block size, and resolve speed
 
 ### Random Effect
-1. **Variety**: Randomly selects one of the six effects each time animation starts
+1. **Variety**: Randomly selects one of the 13 effects each time animation starts
 2. **Loop variety**: When looping, picks a new random effect for each cycle
 
 All effects use Neovim's extmarks with virtual text overlay, preserving your original buffer content and highlights.
