@@ -246,6 +246,7 @@ Animation:
 - `ambient` - Ambient effect (none, glitch, shimmer)
 - `loop` - Loop mode toggle
 - `steps` - Animation steps (10-100)
+- `period_colors` - Period-based color schemes (morning=warm, night=cool)
 
 Selection:
 - `random_mode` - Art selection mode (always, daily, session)

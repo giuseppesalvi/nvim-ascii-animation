@@ -41,6 +41,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 - Fully configurable animation speed, characters, and timing
 - Respects your colorscheme and dashboard highlights
 - **Phase-based highlighting**: Customize colors for chaos, revealing, and revealed states
+- **Period-based color schemes**: Automatic warm/cool colors based on time of day
 - **User commands**: `:AsciiPreview`, `:AsciiSettings`, `:AsciiRefresh`, `:AsciiStop`, `:AsciiRestart`, `:AsciiCharset`
 
 ## Installation
@@ -104,6 +105,8 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
       gradient = {
         preset = "sunset", -- "sunset" | "ocean" | "forest" | "fire" | "purple" | "pink" | "midnight" | "aurora"
       },
+      -- Period-based color schemes (auto-changes phase colors by time of day)
+      period_colors = false, -- Enable period-based colors (morning=warm, night=cool)
     },
     chaos_chars = "@#$%&*+=-:;!?/\\|[]{}()<>~`'^", -- Custom chars (overrides preset)
   },
@@ -503,6 +506,7 @@ Opens an interactive settings panel with **live preview**:
 - `s`/`S`: adjust steps (±5)
 - `c`: cycle charset preset forward (9 presets)
 - `p`: toggle phase highlights
+- `z`: toggle period-based colors (morning=warm, night=cool)
 - `P`: open phase colors (when phase highlights enabled)
 - `C`: open color mode settings (rainbow/gradient)
 - `t`: open timing settings
@@ -678,6 +682,13 @@ Taglines support placeholder tokens that get replaced at render time:
 | `{date}` | Current date | Formatted date |
 | `{version}` | Neovim version | e.g., `v0.10.0` |
 | `{plugin_count}` | Number of loaded plugins | From lazy.nvim/packer |
+| `{day}` | Day of the week | e.g., "Monday", "Friday" |
+| `{hour}` | Current hour (12h format) | e.g., "9 AM", "11 PM" |
+| `{greeting}` | Natural greeting | "Good morning" / "Good afternoon" / "Good evening" / "Hey" |
+| `{git_branch}` | Current git branch | From `git branch --show-current` |
+| `{uptime}` | Session uptime | e.g., "1h 23m", "5m" |
+| `{streak}` | Consecutive usage days | e.g., "3" |
+| `{random_emoji}` | Random themed emoji | Session-stable pick |
 
 #### Example Taglines with Placeholders
 
@@ -687,6 +698,12 @@ Taglines support placeholder tokens that get replaced at render time:
 "Welcome back to {project}."     -- "Welcome back to my-project."
 "Neovim {version} • {plugin_count} plugins loaded."  -- "Neovim v0.10.0 • 42 plugins loaded."
 "{date} — Make it count."        -- "February 04, 2026 — Make it count."
+"{greeting}, {name}!"            -- "Good afternoon, John!"
+"Happy {day}! Let's code."       -- "Happy Friday! Let's code."
+"Working on {git_branch}?"       -- "Working on feat/new-feature?"
+"You've been coding for {uptime}!" -- "You've been coding for 1h 23m!"
+"{streak} day streak! Keep going." -- "3 day streak! Keep going."
+"{random_emoji} Time to code!"   -- "🚀 Time to code!"
 ```
 
 #### Custom Messages with Placeholders
@@ -777,6 +794,8 @@ animation = {
 | `animation.gradient.preset` | string | `"sunset"` | Gradient preset: `"sunset"`, `"ocean"`, `"forest"`, `"fire"`, `"purple"`, `"pink"`, `"midnight"`, `"aurora"` |
 | `animation.gradient.start` | string | `nil` | Custom gradient start color (hex, overrides preset) |
 | `animation.gradient.stop` | string | `nil` | Custom gradient stop color (hex, overrides preset) |
+| `animation.period_colors` | boolean | `false` | Enable period-based color schemes (auto-enables phase highlights) |
+| `animation.period_color_overrides` | table | `{}` | Override specific period colors: `{ morning = { revealed = "#ff6600" } }` |
 | `animation.auto_fit` | boolean | `false` | Skip arts wider than terminal width |
 | `animation.min_width` | number | `60` | Minimum terminal width for animation |
 | `animation.fallback` | string | `"tagline"` | Fallback when terminal too narrow: `"tagline"`, `"none"`, or art ID |
@@ -1196,6 +1215,48 @@ animation = {
 - Press `m` to cycle through color modes (default, rainbow, gradient)
 - In rainbow mode: press `p` to cycle palettes
 - In gradient mode: press `g` to cycle presets, `1`/`2` to edit start/stop colors
+
+### Period-Based Color Schemes
+
+Automatically apply different color schemes based on the time of day. Morning feels warm and energetic, night feels cool and calm.
+
+**Enable in config:**
+
+```lua
+animation = {
+  period_colors = true, -- Auto-enables phase highlights
+}
+```
+
+**Default period color mapping:**
+
+| Period | Chaos | Revealing | Revealed | Mood |
+|--------|-------|-----------|----------|------|
+| Morning | `#1a0a00` | `#ff9500` (warm orange) | `#ffcc00` (golden yellow) | warm |
+| Afternoon | `#001a1a` | `#00aa88` (teal) | `#00ffcc` (bright cyan) | teal |
+| Evening | `#0a0015` | `#ff6b9d` (soft pink) | `#ffa07a` (light salmon) | soft |
+| Night | `#0a0a1a` | `#6666ff` (soft blue) | `#aaaaff` (light purple) | cool |
+| Weekend | `#0a1a0a` | `#66ff66` (light green) | `#aaffaa` (pale green) | fresh |
+
+**Override specific periods:**
+
+```lua
+animation = {
+  period_colors = true,
+  period_color_overrides = {
+    morning = {
+      revealed = "#ff6600", -- Custom morning revealed color
+    },
+    night = {
+      chaos = "#000033",
+      revealing = "#4444cc",
+      revealed = "#8888ff",
+    },
+  },
+}
+```
+
+**Using `:AsciiSettings`:** Press `z` to toggle period colors on/off. The current period and mood are shown next to the setting.
 
 ## Credits
 
