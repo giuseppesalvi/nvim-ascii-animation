@@ -37,7 +37,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
   - [lazy.nvim](https://github.com/folke/lazy.nvim) starter screen
 - Fully configurable animation speed, characters, and timing
 - Respects your colorscheme and dashboard highlights
-- **User commands**: `:AsciiPreview`, `:AsciiSettings`, `:AsciiRefresh`, `:AsciiStop`, `:AsciiRestart`
+- **User commands**: `:AsciiPreview`, `:AsciiSettings`, `:AsciiRefresh`, `:AsciiStop`, `:AsciiRestart`, `:AsciiCharset`
 
 ## Installation
 
@@ -84,8 +84,10 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
       -- Ambient effect (when not looping)
       ambient = "none",      -- "none" | "glitch" | "shimmer"
       ambient_interval = 2000,
+      -- Character set preset
+      char_preset = "default", -- "default" | "minimal" | "matrix" | "blocks" | "braille" | "stars" | "geometric" | "binary" | "dots"
     },
-    chaos_chars = "@#$%&*+=-:;!?/\\|[]{}()<>~`'^",
+    chaos_chars = "@#$%&*+=-:;!?/\\|[]{}()<>~`'^", -- Custom chars (overrides preset)
   },
 }
 ```
@@ -399,6 +401,7 @@ Opens an interactive settings panel with **live preview**:
 - `a`/`A`: cycle ambient effect
 - `l`: toggle loop
 - `s`/`S`: adjust steps (±5)
+- `c`/`C`: cycle charset preset (9 presets)
 - `t`: open timing settings
 - `m`/`M`: cycle random mode (always/daily/session)
 - `n`: toggle no-repeat
@@ -495,6 +498,29 @@ Restarts the animation from the beginning. Useful for demos or presentations.
 ```vim
 :AsciiRestart
 ```
+
+### `:AsciiCharset [preset]`
+
+Change or view the character set used for animation effects.
+
+```vim
+:AsciiCharset           " Show current charset
+:AsciiCharset matrix    " Use matrix-style characters
+:AsciiCharset minimal   " Use minimal dots/circles
+```
+
+**Available presets:**
+| Preset | Characters |
+|--------|-----------|
+| `default` | `@#$%&*+=-:;!?/\|[]{}()<>~\`'^` |
+| `minimal` | `·•○◦◌░` |
+| `matrix` | `ｱｲｳｴｵｶｷｸｹｺ01` |
+| `blocks` | `█▓▒░▄▀▌▐■□` |
+| `braille` | `⠁⠂⠃⠄⠅⠆⠇⠈⠉⠊⠋⠌⠍⠎⠏` |
+| `stars` | `✦✧★☆✴✵✶✷⋆` |
+| `geometric` | `◆◇○●□■△▲▽▼` |
+| `binary` | `01` |
+| `dots` | `.:;+*` |
 
 ### `:checkhealth ascii-animation`
 
@@ -617,6 +643,7 @@ animation = {
 | `animation.loop_reverse` | boolean | `false` | Play animation in reverse before next loop |
 | `animation.ambient` | string | `"none"` | Ambient effect after animation: `"none"`, `"glitch"`, or `"shimmer"` |
 | `animation.ambient_interval` | number | `2000` | How often ambient effect triggers in ms |
+| `animation.char_preset` | string | `"default"` | Character preset: `"default"`, `"minimal"`, `"matrix"`, `"blocks"`, `"braille"`, `"stars"`, `"geometric"`, `"binary"`, `"dots"` |
 | `animation.auto_fit` | boolean | `false` | Skip arts wider than terminal width |
 | `animation.min_width` | number | `60` | Minimum terminal width for animation |
 | `animation.fallback` | string | `"tagline"` | Fallback when terminal too narrow: `"tagline"`, `"none"`, or art ID |

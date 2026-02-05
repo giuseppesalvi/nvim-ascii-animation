@@ -1,6 +1,28 @@
 -- Default configuration for ascii-animation
 local M = {}
 
+-- Character set presets for animation effects
+M.char_presets = {
+  default = "@#$%&*+=-:;!?/\\|[]{}()<>~`'^",
+  minimal = "·•○◦◌░",
+  matrix = "ｱｲｳｴｵｶｷｸｹｺ01",
+  blocks = "█▓▒░▄▀▌▐■□",
+  braille = "⠁⠂⠃⠄⠅⠆⠇⠈⠉⠊⠋⠌⠍⠎⠏",
+  stars = "✦✧★☆✴✵✶✷⋆",
+  geometric = "◆◇○●□■△▲▽▼",
+  binary = "01",
+  dots = ".:;+*",
+}
+
+-- Ordered list of preset names for cycling
+M.char_preset_names = { "default", "minimal", "matrix", "blocks", "braille", "stars", "geometric", "binary", "dots" }
+
+-- Get the current chaos characters (resolves preset to actual string)
+function M.get_chaos_chars()
+  local preset = M.options.animation and M.options.animation.char_preset or "default"
+  return M.char_presets[preset] or M.char_presets.default
+end
+
 -- Path for persistent settings
 local data_path = vim.fn.stdpath("data") .. "/ascii-animation.json"
 
@@ -44,6 +66,8 @@ M.defaults = {
     -- Ambient effect (when not looping)
     ambient = "none",       -- "none" | "glitch" | "shimmer"
     ambient_interval = 2000, -- How often ambient effect triggers (ms)
+    -- Character set preset for chaos/scramble effects
+    char_preset = "default", -- "default" | "minimal" | "matrix" | "blocks" | "braille" | "stars" | "geometric" | "binary" | "dots"
     -- Terminal width handling
     auto_fit = false,       -- Skip arts wider than terminal
     min_width = 60,         -- Minimum terminal width for animation
@@ -174,6 +198,7 @@ function M.save()
       min_delay = M.options.animation.min_delay,
       max_delay = M.options.animation.max_delay,
       ambient_interval = M.options.animation.ambient_interval,
+      char_preset = M.options.animation.char_preset,
     },
     selection = {
       random_mode = M.options.selection.random_mode,
@@ -224,6 +249,7 @@ function M.clear_saved()
   M.options.animation.min_delay = M.defaults.animation.min_delay
   M.options.animation.max_delay = M.defaults.animation.max_delay
   M.options.animation.ambient_interval = M.defaults.animation.ambient_interval
+  M.options.animation.char_preset = M.defaults.animation.char_preset
   -- Reset content settings
   M.options.content.styles = M.defaults.content.styles
   -- Reset message settings

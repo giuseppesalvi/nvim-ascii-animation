@@ -1,5 +1,5 @@
 -- User commands for ascii-animation
--- Provides :AsciiPreview, :AsciiList, :AsciiSettings, :AsciiRefresh, :AsciiStop, :AsciiRestart
+-- Provides :AsciiPreview, :AsciiList, :AsciiSettings, :AsciiRefresh, :AsciiStop, :AsciiRestart, :AsciiCharset
 
 local config = require("ascii-animation.config")
 local animation = require("ascii-animation.animation")
@@ -931,6 +931,13 @@ local function update_settings_content()
       if m == opts.selection.random_mode then random_idx = i break end
     end
 
+    -- Charset preset options
+    local char_preset = opts.animation.char_preset or "default"
+    local charset_idx = 1
+    for i, p in ipairs(config.char_preset_names) do
+      if p == char_preset then charset_idx = i break end
+    end
+
     -- Build options indicator
     local has_opts = effect_has_options(effect)
     local opts_hint = has_opts and "  [o] Options..." or ""
@@ -952,6 +959,7 @@ local function update_settings_content()
       string.format("  [a] Ambient:  %-10s ◀ %d/%d ▶", opts.animation.ambient, ambient_idx, #ambients),
       string.format("  [l] Loop:     %s", opts.animation.loop and "ON " or "OFF"),
       string.format("  [s] Steps:    %d", opts.animation.steps),
+      string.format("  [c] Charset:  %-10s ◀ %d/%d ▶", char_preset, charset_idx, #config.char_preset_names),
       "  [t] Timing...",
       "",
       "  Content",
@@ -1046,6 +1054,23 @@ local function adjust_steps(delta)
     update_settings_content()
     replay_preview()
   end
+end
+
+-- Cycle through charset presets
+local function cycle_charset(delta)
+  local presets = config.char_preset_names
+  local current = config.options.animation.char_preset or "default"
+  local idx = 1
+  for i, p in ipairs(presets) do
+    if p == current then idx = i break end
+  end
+  idx = idx + delta
+  if idx < 1 then idx = #presets
+  elseif idx > #presets then idx = 1 end
+  config.options.animation.char_preset = presets[idx]
+  config.save()
+  update_settings_content()
+  replay_preview()
 end
 
 -- Cycle through random mode options
@@ -1661,15 +1686,27 @@ local function setup_settings_keybindings(buf)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
-  -- Scramble-specific keys
+  -- Charset cycling (main menu) / Scramble cycles / Message browser clear filter
   vim.keymap.set("n", "c", function()
-    if settings_state.submenu == "scramble" then
+    if not settings_state.submenu then
+      cycle_charset(1)
+    elseif settings_state.submenu == "scramble" then
       adjust_scramble_cycles(1)
+    elseif settings_state.submenu == "messages" and message_browser.view == "messages" then
+      message_browser.period_filter = nil
+      message_browser.theme_filter = nil
+      message_browser.index = 1
+      message_browser.page = 1
+      refresh_message_list()
+      update_settings_content()
+      update_preview_with_message()
     end
   end, { buffer = buf, nowait = true, silent = true })
 
   vim.keymap.set("n", "C", function()
-    if settings_state.submenu == "scramble" then
+    if not settings_state.submenu then
+      cycle_charset(-1)
+    elseif settings_state.submenu == "scramble" then
       adjust_scramble_cycles(-1)
     end
   end, { buffer = buf, nowait = true, silent = true })
@@ -1790,20 +1827,7 @@ local function setup_settings_keybindings(buf)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
-  -- Clear all filters in message browser
-  vim.keymap.set("n", "c", function()
-    if settings_state.submenu == "messages" and message_browser.view == "messages" then
-      message_browser.period_filter = nil
-      message_browser.theme_filter = nil
-      message_browser.index = 1
-      message_browser.page = 1
-      refresh_message_list()
-      update_settings_content()
-      update_preview_with_message()
-    elseif settings_state.submenu == "scramble" then
-      adjust_scramble_cycles(1)
-    end
-  end, { buffer = buf, nowait = true, silent = true })
+  -- Clear all filters in message browser (note: 'c' for main menu charset is handled above)
 
   -- Message browser navigation (j/k)
   vim.keymap.set("n", "j", function()
@@ -2211,6 +2235,37 @@ function M.register_commands()
     vim.notify("Animation restarted", vim.log.levels.INFO)
   end, {
     desc = "Restart ASCII animation from beginning",
+  })
+
+  vim.api.nvim_create_user_command("AsciiCharset", function(opts)
+    local preset = opts.args
+    if preset == "" then
+      -- Show current preset
+      local current = config.options.animation.char_preset or "default"
+      vim.notify("Current charset: " .. current .. " (" .. config.get_chaos_chars() .. ")", vim.log.levels.INFO)
+      return
+    end
+    -- Validate preset name
+    if not config.char_presets[preset] then
+      local valid = table.concat(config.char_preset_names, ", ")
+      vim.notify("Invalid charset preset. Valid options: " .. valid, vim.log.levels.WARN)
+      return
+    end
+    config.options.animation.char_preset = preset
+    config.save()
+    vim.notify("Charset set to: " .. preset, vim.log.levels.INFO)
+  end, {
+    nargs = "?",
+    complete = function(arg_lead)
+      local matches = {}
+      for _, name in ipairs(config.char_preset_names) do
+        if name:find(arg_lead, 1, true) then
+          table.insert(matches, name)
+        end
+      end
+      return matches
+    end,
+    desc = "Set character set preset for animation",
   })
 end
 
