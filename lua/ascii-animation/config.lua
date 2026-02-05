@@ -266,8 +266,35 @@ M.defaults = {
     loop_delay = 2000,      -- Delay between loops (ms)
     loop_reverse = false,   -- Play reverse before next loop
     -- Ambient effect (when not looping)
-    ambient = "none",       -- "none" | "glitch" | "shimmer"
+    ambient = "none",       -- "none" | "glitch" | "shimmer" | "cursor_trail" | "sparkle" | "scanlines" | "noise" | "shake" | "sound"
     ambient_interval = 2000, -- How often ambient effect triggers (ms)
+    -- Per-effect ambient options
+    ambient_options = {
+      cursor_trail = {
+        trail_chars = "▓▒░",  -- Trail characters (brightest to dimmest)
+        trail_length = 3,      -- Number of trail chars
+        move_speed = 1,        -- Chars to move per tick
+      },
+      sparkle = {
+        chars = "✦✧★·",       -- Sparkle characters
+        density = 0.05,        -- % of non-space chars to sparkle (0.05 = 5%)
+      },
+      scanlines = {
+        spacing = 2,           -- Every Nth line gets dimmed
+        dim_amount = 0.5,      -- Brightness reduction (0.5 = 50% dimmer)
+      },
+      noise = {
+        intensity = 0.1,       -- % of non-space chars affected (0.1 = 10%)
+      },
+      shake = {
+        max_offset = 2,        -- Maximum chars to offset
+        line_probability = 0.3, -- Probability each line shakes (0.3 = 30%)
+      },
+      sound = {
+        file_path = nil,       -- Path to sound file (required for sound effect)
+        volume = 50,           -- Volume 0-100 (macOS: afplay, Linux: paplay)
+      },
+    },
     -- Character set preset for chaos/scramble effects
     char_preset = "default", -- "default" | "minimal" | "matrix" | "blocks" | "braille" | "stars" | "geometric" | "binary" | "dots"
     -- Phase-based highlighting (uses AsciiAnimation* highlight groups)
@@ -429,6 +456,7 @@ function M.save()
       effect = M.options.animation.effect,
       effect_options = M.options.animation.effect_options,
       ambient = M.options.animation.ambient,
+      ambient_options = M.options.animation.ambient_options,
       loop = M.options.animation.loop,
       loop_delay = M.options.animation.loop_delay,
       loop_reverse = M.options.animation.loop_reverse,
@@ -489,6 +517,7 @@ function M.clear_saved()
   M.options.animation.effect = M.defaults.animation.effect
   M.options.animation.effect_options = vim.deepcopy(M.defaults.animation.effect_options)
   M.options.animation.ambient = M.defaults.animation.ambient
+  M.options.animation.ambient_options = vim.deepcopy(M.defaults.animation.ambient_options)
   M.options.animation.loop = M.defaults.animation.loop
   M.options.animation.loop_delay = M.defaults.animation.loop_delay
   M.options.animation.loop_reverse = M.defaults.animation.loop_reverse

@@ -174,6 +174,12 @@ local function random_chaos_char()
   return chars[math.random(1, #chars)]
 end
 
+-- State for cursor trail ambient effect
+local cursor_trail_state = { line = 1, col = 0 }
+
+-- State for scanline highlight creation
+local scanline_hl_created = false
+
 -- State for tracking current animation
 local animation_state = {
   running = false,
@@ -1163,6 +1169,170 @@ local function apply_shimmer(line, char_index)
   return table.concat(chars)
 end
 
+-- Apply cursor trail effect: moving cursor with fading trail
+local function apply_cursor_trail(buf, lines, header_end, highlight)
+  local opts = config.options.animation.ambient_options.cursor_trail
+  local trail_chars = vim.fn.split(opts.trail_chars, "\\zs")
+
+  -- Advance cursor position
+  cursor_trail_state.col = cursor_trail_state.col + opts.move_speed
+  local current_line = lines[cursor_trail_state.line]
+
+  if not current_line or cursor_trail_state.col >= #vim.fn.split(current_line, "\\zs") then
+    cursor_trail_state.line = cursor_trail_state.line + 1
+    cursor_trail_state.col = 0
+    if cursor_trail_state.line > header_end then
+      cursor_trail_state.line = 1
+    end
+    return
+  end
+
+  -- Build modified line with trail
+  local chars = vim.fn.split(current_line, "\\zs")
+  for i = 0, math.min(opts.trail_length, #trail_chars) - 1 do
+    local trail_col = cursor_trail_state.col - i
+    if trail_col >= 1 and trail_col <= #chars and chars[trail_col] ~= " " then
+      chars[trail_col] = trail_chars[i + 1] or trail_chars[#trail_chars]
+    end
+  end
+
+  local transformed = table.concat(chars)
+  local line_hl = get_line_highlight(cursor_trail_state.line, highlight or "Normal")
+  pcall(vim.api.nvim_buf_set_extmark, buf, M.ns_id, cursor_trail_state.line - 1, 0, {
+    virt_text = { { transformed, line_hl } },
+    virt_text_pos = "overlay",
+    hl_mode = "combine",
+  })
+end
+
+-- Apply sparkle effect: random sparkle chars at random positions
+local function apply_sparkle(buf, lines, header_end, highlight)
+  local opts = config.options.animation.ambient_options.sparkle
+  local sparkle_chars = vim.fn.split(opts.chars, "\\zs")
+
+  for i = 1, header_end do
+    local line = lines[i]
+    if line and #line > 0 then
+      local chars = vim.fn.split(line, "\\zs")
+      local modified = false
+      for col = 1, #chars do
+        if chars[col] ~= " " and chars[col] ~= "" and math.random() < opts.density then
+          chars[col] = sparkle_chars[math.random(1, #sparkle_chars)]
+          modified = true
+        end
+      end
+      if modified then
+        local transformed = table.concat(chars)
+        pcall(vim.api.nvim_buf_set_extmark, buf, M.ns_id, i - 1, 0, {
+          virt_text = { { transformed, "Special" } },
+          virt_text_pos = "overlay",
+          hl_mode = "combine",
+        })
+      end
+    end
+  end
+end
+
+-- Apply scanlines effect: CRT-style dimmed overlay on every Nth line
+local function apply_scanlines(buf, lines, header_end, highlight)
+  local opts = config.options.animation.ambient_options.scanlines
+
+  -- Create scanline highlight group once
+  if not scanline_hl_created then
+    local dim = opts.dim_amount
+    local ok, base_hl = pcall(vim.api.nvim_get_hl, 0, { name = highlight or "Normal", link = false })
+    if ok and base_hl.fg then
+      local fg = base_hl.fg
+      local r = math.floor((math.floor(fg / 65536) % 256) * dim)
+      local g = math.floor((math.floor(fg / 256) % 256) * dim)
+      local b = math.floor((fg % 256) * dim)
+      local dimmed = r * 65536 + g * 256 + b
+      vim.api.nvim_set_hl(0, "AsciiScanline", { fg = string.format("#%06x", dimmed) })
+    else
+      vim.api.nvim_set_hl(0, "AsciiScanline", { fg = "#555555" })
+    end
+    scanline_hl_created = true
+  end
+
+  -- Overlay every Nth line with dimmed version
+  for i = 1, header_end, opts.spacing do
+    local line = lines[i]
+    if line and #line > 0 then
+      pcall(vim.api.nvim_buf_set_extmark, buf, M.ns_id, i - 1, 0, {
+        virt_text = { { line, "AsciiScanline" } },
+        virt_text_pos = "overlay",
+        hl_mode = "replace",
+      })
+    end
+  end
+end
+
+-- Apply noise effect: random chaos chars replace some chars briefly
+local function apply_noise(buf, lines, header_end, highlight)
+  local opts = config.options.animation.ambient_options.noise
+
+  for i = 1, header_end do
+    local line = lines[i]
+    if line and #line > 0 then
+      local chars = vim.fn.split(line, "\\zs")
+      local modified = false
+      for col = 1, #chars do
+        if chars[col] ~= " " and chars[col] ~= "" and math.random() < opts.intensity then
+          chars[col] = random_chaos_char()
+          modified = true
+        end
+      end
+      if modified then
+        local transformed = table.concat(chars)
+        local line_hl = get_line_highlight(i, highlight or "Normal")
+        pcall(vim.api.nvim_buf_set_extmark, buf, M.ns_id, i - 1, 0, {
+          virt_text = { { transformed, line_hl } },
+          virt_text_pos = "overlay",
+          hl_mode = "combine",
+        })
+      end
+    end
+  end
+end
+
+-- Apply shake effect: offset lines horizontally by prepending spaces
+local function apply_shake(buf, lines, header_end, highlight)
+  local opts = config.options.animation.ambient_options.shake
+
+  for i = 1, header_end do
+    local line = lines[i]
+    if line and #line > 0 and math.random() < opts.line_probability then
+      local offset = math.random(1, opts.max_offset)
+      local shifted = string.rep(" ", offset) .. line
+      local line_hl = get_line_highlight(i, highlight or "Normal")
+      pcall(vim.api.nvim_buf_set_extmark, buf, M.ns_id, i - 1, 0, {
+        virt_text = { { shifted, line_hl } },
+        virt_text_pos = "overlay",
+        hl_mode = "combine",
+      })
+    end
+  end
+end
+
+-- Play sound effect: uses system sound player
+local function play_sound()
+  local opts = config.options.animation.ambient_options.sound
+  if not opts.file_path then return end
+
+  local cmd
+  if vim.fn.has("mac") == 1 then
+    local volume = tostring(opts.volume / 100)
+    cmd = { "afplay", "-v", volume, vim.fn.expand(opts.file_path) }
+  elseif vim.fn.has("unix") == 1 then
+    local volume = tostring(math.floor(opts.volume / 100 * 65536))
+    cmd = { "paplay", "--volume", volume, vim.fn.expand(opts.file_path) }
+  else
+    return
+  end
+
+  pcall(vim.fn.jobstart, cmd, { detach = true })
+end
+
 -- Stop ambient effects timer
 local function stop_ambient()
   if ambient_timer then
@@ -1170,6 +1340,10 @@ local function stop_ambient()
     ambient_timer:close()
     ambient_timer = nil
   end
+  -- Reset ambient state
+  cursor_trail_state.line = 1
+  cursor_trail_state.col = 0
+  scanline_hl_created = false
 end
 
 -- Start ambient effects after animation completes
@@ -1216,14 +1390,29 @@ local function start_ambient(buf, header_end, highlight)
           hl_mode = "combine",
         })
       end
+    elseif opts.ambient == "cursor_trail" then
+      apply_cursor_trail(buf, lines, header_end, highlight)
+    elseif opts.ambient == "sparkle" then
+      apply_sparkle(buf, lines, header_end, highlight)
+    elseif opts.ambient == "scanlines" then
+      apply_scanlines(buf, lines, header_end, highlight)
+    elseif opts.ambient == "noise" then
+      apply_noise(buf, lines, header_end, highlight)
+    elseif opts.ambient == "shake" then
+      apply_shake(buf, lines, header_end, highlight)
+    elseif opts.ambient == "sound" then
+      play_sound()
+      return -- No visual effect, no clear needed
     end
 
-    -- Clear effect after brief display
-    vim.defer_fn(function()
-      if vim.api.nvim_buf_is_valid(buf) then
-        vim.api.nvim_buf_clear_namespace(buf, M.ns_id, 0, -1)
-      end
-    end, 100)
+    -- Clear effect after brief display (scanlines are persistent)
+    if opts.ambient ~= "scanlines" then
+      vim.defer_fn(function()
+        if vim.api.nvim_buf_is_valid(buf) then
+          vim.api.nvim_buf_clear_namespace(buf, M.ns_id, 0, -1)
+        end
+      end, 100)
+    end
   end
 
   ambient_timer = vim.uv.new_timer()

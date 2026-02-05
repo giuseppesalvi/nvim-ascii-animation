@@ -1043,7 +1043,7 @@ local function update_settings_content()
     end
 
     -- Ambient options
-    local ambients = { "none", "glitch", "shimmer" }
+    local ambients = { "none", "glitch", "shimmer", "cursor_trail", "sparkle", "scanlines", "noise", "shake", "sound" }
     local ambient_idx = 1
     for i, a in ipairs(ambients) do
       if a == opts.animation.ambient then ambient_idx = i break end
@@ -1181,7 +1181,7 @@ end
 
 -- Cycle through ambient options
 local function cycle_ambient(delta)
-  local ambients = { "none", "glitch", "shimmer" }
+  local ambients = { "none", "glitch", "shimmer", "cursor_trail", "sparkle", "scanlines", "noise", "shake", "sound" }
   local current = config.options.animation.ambient
   local idx = 1
   for i, a in ipairs(ambients) do

@@ -243,7 +243,7 @@ end
 
 Animation:
 - `effect` - Animation effect (chaos, typewriter, diagonal, lines, matrix, wave, random)
-- `ambient` - Ambient effect (none, glitch, shimmer)
+- `ambient` - Ambient effect (none, glitch, shimmer, cursor_trail, sparkle, scanlines, noise, shake, sound)
 - `loop` - Loop mode toggle
 - `steps` - Animation steps (10-100)
 - `period_colors` - Period-based color schemes (morning=warm, night=cool)
