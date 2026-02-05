@@ -83,6 +83,16 @@ M.defaults = {
     ambient_interval = 2000, -- How often ambient effect triggers (ms)
     -- Character set preset for chaos/scramble effects
     char_preset = "default", -- "default" | "minimal" | "matrix" | "blocks" | "braille" | "stars" | "geometric" | "binary" | "dots"
+    -- Phase-based highlighting (uses AsciiAnimation* highlight groups)
+    use_phase_highlights = false,
+    -- Custom colors for phase highlights (nil = use defaults)
+    phase_colors = {
+      chaos = nil,      -- Default: #555555
+      revealing = nil,  -- Default: #888888
+      revealed = nil,   -- Default: #ffffff
+      cursor = nil,     -- Default: #00ff00
+      glitch = nil,     -- Default: #ff0055
+    },
     -- Terminal width handling
     auto_fit = false,       -- Skip arts wider than terminal
     min_width = 60,         -- Minimum terminal width for animation
@@ -214,6 +224,8 @@ function M.save()
       max_delay = M.options.animation.max_delay,
       ambient_interval = M.options.animation.ambient_interval,
       char_preset = M.options.animation.char_preset,
+      use_phase_highlights = M.options.animation.use_phase_highlights,
+      phase_colors = M.options.animation.phase_colors,
     },
     selection = {
       random_mode = M.options.selection.random_mode,
@@ -265,6 +277,8 @@ function M.clear_saved()
   M.options.animation.max_delay = M.defaults.animation.max_delay
   M.options.animation.ambient_interval = M.defaults.animation.ambient_interval
   M.options.animation.char_preset = M.defaults.animation.char_preset
+  M.options.animation.use_phase_highlights = M.defaults.animation.use_phase_highlights
+  M.options.animation.phase_colors = vim.deepcopy(M.defaults.animation.phase_colors)
   -- Reset content settings
   M.options.content.styles = M.defaults.content.styles
   -- Reset message settings

@@ -19,6 +19,87 @@ local glitch_chars = "█▓▒░▀▄▌▐▊▋▍▎▏┃┆┇┊┋╎�
 local glitch_chars_table = vim.fn.split(glitch_chars, "\\zs")
 local glitch_highlights = { "ErrorMsg", "WarningMsg", "DiffDelete", "DiffChange", "Special" }
 
+-- Default highlight definitions for animation phases
+local default_phase_highlights = {
+  AsciiAnimationChaos = { fg = "#555555" },
+  AsciiAnimationRevealing = { fg = "#888888" },
+  AsciiAnimationRevealed = { fg = "#ffffff" },
+  AsciiAnimationCursor = { fg = "#00ff00", bold = true },
+  AsciiAnimationGlitch = { fg = "#ff0055" },
+}
+
+-- Map config keys to highlight group names
+local phase_config_map = {
+  chaos = "AsciiAnimationChaos",
+  revealing = "AsciiAnimationRevealing",
+  revealed = "AsciiAnimationRevealed",
+  cursor = "AsciiAnimationCursor",
+  glitch = "AsciiAnimationGlitch",
+}
+
+-- Track last applied colors to detect changes
+local last_applied_colors = {}
+
+-- Setup phase highlights with colors from config (or defaults)
+local function setup_phase_highlights()
+  local phase_colors = config.options.animation.phase_colors or {}
+
+  -- Check if colors changed since last setup
+  local colors_changed = false
+  for key, hl_name in pairs(phase_config_map) do
+    local custom_color = phase_colors[key]
+    if last_applied_colors[key] ~= custom_color then
+      colors_changed = true
+      break
+    end
+  end
+
+  -- Skip if no changes and already initialized
+  if not colors_changed and next(last_applied_colors) ~= nil then
+    return
+  end
+
+  -- Apply highlights
+  for key, hl_name in pairs(phase_config_map) do
+    local custom_color = phase_colors[key]
+    local def
+    if custom_color then
+      -- Use custom color from config
+      if key == "cursor" then
+        def = { fg = custom_color, bold = true }
+      else
+        def = { fg = custom_color }
+      end
+    else
+      -- Use default
+      def = default_phase_highlights[hl_name]
+    end
+    vim.api.nvim_set_hl(0, hl_name, def)
+    last_applied_colors[key] = custom_color
+  end
+end
+
+-- Force refresh of phase highlights (called when colors change)
+local function refresh_phase_highlights()
+  last_applied_colors = {}
+  setup_phase_highlights()
+end
+
+-- Get phase highlight name based on reveal ratio
+local function get_phase_highlight(reveal_ratio, is_cursor, is_glitch)
+  if is_glitch then
+    return "AsciiAnimationGlitch"
+  elseif is_cursor then
+    return "AsciiAnimationCursor"
+  elseif reveal_ratio >= 0.9 then
+    return "AsciiAnimationRevealed"
+  elseif reveal_ratio >= 0.3 then
+    return "AsciiAnimationRevealing"
+  else
+    return "AsciiAnimationChaos"
+  end
+end
+
 -- Cache for split chaos chars (to handle UTF-8 properly)
 local chaos_chars_cache = {
   str = nil,
@@ -70,66 +151,181 @@ end
 
 -- Create chaotic version of a line (preserving spaces for alignment)
 local function chaos_line(line, reveal_ratio, line_idx, total_lines)
-  local result = {}
+  local use_phases = config.options.animation.use_phase_highlights
   local chars = vim.fn.split(line, "\\zs")
 
-  for _, char in ipairs(chars) do
-    if char == " " or char == "" then
-      table.insert(result, char)
-    elseif math.random() < reveal_ratio then
-      table.insert(result, char)
-    else
-      table.insert(result, random_chaos_char())
+  if not use_phases then
+    local result = {}
+    for _, char in ipairs(chars) do
+      if char == " " or char == "" then
+        table.insert(result, char)
+      elseif math.random() < reveal_ratio then
+        table.insert(result, char)
+      else
+        table.insert(result, random_chaos_char())
+      end
+    end
+    return table.concat(result)
+  end
+
+  -- Phase highlight mode: return segments
+  local segments = {}
+  local current_text = ""
+  local current_phase = nil
+
+  local function flush_segment()
+    if #current_text > 0 then
+      table.insert(segments, { current_text, current_phase })
+      current_text = ""
     end
   end
 
-  return table.concat(result)
+  for _, char in ipairs(chars) do
+    if char == " " or char == "" then
+      current_text = current_text .. char
+    else
+      local is_revealed = math.random() < reveal_ratio
+      local output_char, phase
+      if is_revealed then
+        output_char = char
+        phase = get_phase_highlight(reveal_ratio, false, false)
+      else
+        output_char = random_chaos_char()
+        phase = "AsciiAnimationChaos"
+      end
+      if phase ~= current_phase then
+        flush_segment()
+        current_phase = phase
+      end
+      current_text = current_text .. output_char
+    end
+  end
+  flush_segment()
+
+  return { is_segments = true, segments = segments }
 end
 
 -- Create typewriter version of a line (left-to-right reveal with cursor)
 local function typewriter_line(line, reveal_ratio, line_idx, total_lines)
+  local use_phases = config.options.animation.use_phase_highlights
   local chars = vim.fn.split(line, "\\zs")
-  local result = {}
   local cursor_pos = math.floor(#chars * reveal_ratio)
 
-  for idx, char in ipairs(chars) do
-    if char == " " or char == "" then
-      table.insert(result, char)
-    elseif idx == cursor_pos then
-      table.insert(result, "▌")  -- Cursor at typing position
-    elseif idx < cursor_pos then
-      table.insert(result, char)  -- Revealed
-    else
-      -- Hidden: show chaos char
-      table.insert(result, random_chaos_char())
+  if not use_phases then
+    local result = {}
+    for idx, char in ipairs(chars) do
+      if char == " " or char == "" then
+        table.insert(result, char)
+      elseif idx == cursor_pos then
+        table.insert(result, "▌")  -- Cursor at typing position
+      elseif idx < cursor_pos then
+        table.insert(result, char)  -- Revealed
+      else
+        table.insert(result, random_chaos_char())
+      end
+    end
+    return table.concat(result)
+  end
+
+  -- Phase highlight mode: return segments
+  local segments = {}
+  local current_text = ""
+  local current_phase = nil
+
+  local function flush_segment()
+    if #current_text > 0 then
+      table.insert(segments, { current_text, current_phase })
+      current_text = ""
     end
   end
 
-  return table.concat(result)
+  for idx, char in ipairs(chars) do
+    if char == " " or char == "" then
+      current_text = current_text .. char
+    else
+      local output_char, phase
+      if idx == cursor_pos then
+        output_char = "▌"
+        phase = "AsciiAnimationCursor"
+      elseif idx < cursor_pos then
+        output_char = char
+        phase = "AsciiAnimationRevealed"
+      else
+        output_char = random_chaos_char()
+        phase = "AsciiAnimationChaos"
+      end
+      if phase ~= current_phase then
+        flush_segment()
+        current_phase = phase
+      end
+      current_text = current_text .. output_char
+    end
+  end
+  flush_segment()
+
+  return { is_segments = true, segments = segments }
 end
 
 -- Create diagonal sweep version (top-left to bottom-right)
 local function diagonal_line(line, reveal_ratio, line_idx, total_lines)
+  local use_phases = config.options.animation.use_phase_highlights
   local chars = vim.fn.split(line, "\\zs")
-  local result = {}
   -- Offset reveal based on line position (top lines reveal first)
   local line_offset = (line_idx - 1) / total_lines * 0.3
   local adjusted_ratio = math.max(0, reveal_ratio - line_offset) / 0.7
 
-  for idx, char in ipairs(chars) do
-    if char == " " or char == "" then
-      table.insert(result, char)
-    else
-      local char_ratio = (idx - 1) / #chars
-      if char_ratio < adjusted_ratio then
+  if not use_phases then
+    local result = {}
+    for idx, char in ipairs(chars) do
+      if char == " " or char == "" then
         table.insert(result, char)
       else
-        -- Not yet revealed: show chaos char
-        table.insert(result, random_chaos_char())
+        local char_ratio = (idx - 1) / #chars
+        if char_ratio < adjusted_ratio then
+          table.insert(result, char)
+        else
+          table.insert(result, random_chaos_char())
+        end
       end
     end
+    return table.concat(result)
   end
-  return table.concat(result)
+
+  -- Phase highlight mode: return segments
+  local segments = {}
+  local current_text = ""
+  local current_phase = nil
+
+  local function flush_segment()
+    if #current_text > 0 then
+      table.insert(segments, { current_text, current_phase })
+      current_text = ""
+    end
+  end
+
+  for idx, char in ipairs(chars) do
+    if char == " " or char == "" then
+      current_text = current_text .. char
+    else
+      local char_ratio = (idx - 1) / #chars
+      local output_char, phase
+      if char_ratio < adjusted_ratio then
+        output_char = char
+        phase = "AsciiAnimationRevealed"
+      else
+        output_char = random_chaos_char()
+        phase = "AsciiAnimationChaos"
+      end
+      if phase ~= current_phase then
+        flush_segment()
+        current_phase = phase
+      end
+      current_text = current_text .. output_char
+    end
+  end
+  flush_segment()
+
+  return { is_segments = true, segments = segments }
 end
 
 -- Create line-by-line sequential reveal
@@ -150,32 +346,70 @@ end
 
 -- Create matrix rain effect (characters fall and settle)
 local function matrix_line(line, reveal_ratio, line_idx, total_lines)
+  local use_phases = config.options.animation.use_phase_highlights
   local chars = vim.fn.split(line, "\\zs")
-  local result = {}
+
+  if not use_phases then
+    local result = {}
+    for idx, char in ipairs(chars) do
+      if char == " " or char == "" then
+        table.insert(result, char)
+      else
+        local seed = (line_idx * 100 + idx) % 50
+        local char_progress = reveal_ratio + seed / 100
+        if char_progress >= 0.8 then
+          table.insert(result, char)
+        else
+          table.insert(result, random_chaos_char())
+        end
+      end
+    end
+    return table.concat(result)
+  end
+
+  -- Phase highlight mode: return segments
+  local segments = {}
+  local current_text = ""
+  local current_phase = nil
+
+  local function flush_segment()
+    if #current_text > 0 then
+      table.insert(segments, { current_text, current_phase })
+      current_text = ""
+    end
+  end
 
   for idx, char in ipairs(chars) do
     if char == " " or char == "" then
-      table.insert(result, char)
+      current_text = current_text .. char
     else
-      -- Each character has its own "fall" timing based on position
       local seed = (line_idx * 100 + idx) % 50
       local char_progress = reveal_ratio + seed / 100
-
+      local output_char, phase
       if char_progress >= 0.8 then
-        table.insert(result, char)  -- Settled
+        output_char = char
+        phase = "AsciiAnimationRevealed"
       else
-        -- Falling or waiting: show random matrix character
-        table.insert(result, random_chaos_char())
+        output_char = random_chaos_char()
+        -- Use revealing phase for chars close to settling
+        phase = char_progress >= 0.5 and "AsciiAnimationRevealing" or "AsciiAnimationChaos"
       end
+      if phase ~= current_phase then
+        flush_segment()
+        current_phase = phase
+      end
+      current_text = current_text .. output_char
     end
   end
-  return table.concat(result)
+  flush_segment()
+
+  return { is_segments = true, segments = segments }
 end
 
 -- Create wave effect (ripple reveal from origin point)
 local function wave_line(line, reveal_ratio, line_idx, total_lines)
+  local use_phases = config.options.animation.use_phase_highlights
   local chars = vim.fn.split(line, "\\zs")
-  local result = {}
 
   -- Get wave options with defaults
   local effect_opts = config.options.animation.effect_options or {}
@@ -219,29 +453,66 @@ local function wave_line(line, reveal_ratio, line_idx, total_lines)
   -- Extra margin (1.2) ensures complete coverage
   local wave_radius = reveal_ratio * max_dist * speed * 1.2
 
-  for idx, char in ipairs(chars) do
-    if char == " " or char == "" then
-      table.insert(result, char)
-    else
-      -- Normalize x position
-      local norm_x = line_width > 1 and (idx - 1) / (line_width - 1) or 0.5
-
-      -- Calculate euclidean distance from origin
-      local dx = norm_x - origin_x
-      local dy = norm_y - origin_y
-      local dist = math.sqrt(dx * dx + dy * dy)
-
-      -- Reveal if within wave radius
-      if dist <= wave_radius then
+  if not use_phases then
+    local result = {}
+    for idx, char in ipairs(chars) do
+      if char == " " or char == "" then
         table.insert(result, char)
       else
-        -- Show chaos char
-        table.insert(result, random_chaos_char())
+        local norm_x = line_width > 1 and (idx - 1) / (line_width - 1) or 0.5
+        local dx = norm_x - origin_x
+        local dy = norm_y - origin_y
+        local dist = math.sqrt(dx * dx + dy * dy)
+        if dist <= wave_radius then
+          table.insert(result, char)
+        else
+          table.insert(result, random_chaos_char())
+        end
       end
+    end
+    return table.concat(result)
+  end
+
+  -- Phase highlight mode: return segments
+  local segments = {}
+  local current_text = ""
+  local current_phase = nil
+
+  local function flush_segment()
+    if #current_text > 0 then
+      table.insert(segments, { current_text, current_phase })
+      current_text = ""
     end
   end
 
-  return table.concat(result)
+  for idx, char in ipairs(chars) do
+    if char == " " or char == "" then
+      current_text = current_text .. char
+    else
+      local norm_x = line_width > 1 and (idx - 1) / (line_width - 1) or 0.5
+      local dx = norm_x - origin_x
+      local dy = norm_y - origin_y
+      local dist = math.sqrt(dx * dx + dy * dy)
+      local output_char, phase
+      if dist <= wave_radius then
+        output_char = char
+        phase = "AsciiAnimationRevealed"
+      else
+        output_char = random_chaos_char()
+        -- Characters near the wave front are "revealing"
+        local proximity = (dist - wave_radius) / max_dist
+        phase = proximity < 0.2 and "AsciiAnimationRevealing" or "AsciiAnimationChaos"
+      end
+      if phase ~= current_phase then
+        flush_segment()
+        current_phase = phase
+      end
+      current_text = current_text .. output_char
+    end
+  end
+  flush_segment()
+
+  return { is_segments = true, segments = segments }
 end
 
 -- Create fade highlight groups with varying brightness
@@ -312,6 +583,7 @@ end
 
 -- Create scramble version (password reveal / slot machine effect)
 local function scramble_line(line, reveal_ratio, line_idx, total_lines)
+  local use_phases = config.options.animation.use_phase_highlights
   local effect_opts = config.options.animation.effect_options or {}
   local stagger = effect_opts.stagger or "left"
   -- Use custom charset if provided, otherwise use chaos chars table
@@ -319,7 +591,6 @@ local function scramble_line(line, reveal_ratio, line_idx, total_lines)
   local charset_table = charset_str and vim.fn.split(charset_str, "\\zs") or get_chaos_chars_table()
 
   local chars = vim.fn.split(line, "\\zs")
-  local result = {}
   local num_chars = #chars
   if num_chars == 0 then return "" end
 
@@ -341,46 +612,129 @@ local function scramble_line(line, reveal_ratio, line_idx, total_lines)
     end
   end
 
+  if not use_phases then
+    local result = {}
+    for idx, char in ipairs(chars) do
+      if char == " " or char == "" then
+        table.insert(result, char)
+      else
+        local stagger_offset = get_stagger_offset(idx)
+        local settle_time = stagger_offset * stagger_spread + settle_duration
+        if reveal_ratio >= settle_time then
+          table.insert(result, char)
+        else
+          table.insert(result, charset_table[math.random(1, #charset_table)])
+        end
+      end
+    end
+    return table.concat(result)
+  end
+
+  -- Phase highlight mode: return segments
+  local segments = {}
+  local current_text = ""
+  local current_phase = nil
+
+  local function flush_segment()
+    if #current_text > 0 then
+      table.insert(segments, { current_text, current_phase })
+      current_text = ""
+    end
+  end
+
   for idx, char in ipairs(chars) do
     if char == " " or char == "" then
-      table.insert(result, char)
+      current_text = current_text .. char
     else
       local stagger_offset = get_stagger_offset(idx)
       local settle_time = stagger_offset * stagger_spread + settle_duration
+      local output_char, phase
       if reveal_ratio >= settle_time then
-        table.insert(result, char)
+        output_char = char
+        phase = "AsciiAnimationRevealed"
       else
-        table.insert(result, charset_table[math.random(1, #charset_table)])
+        output_char = charset_table[math.random(1, #charset_table)]
+        -- Characters close to settling are "revealing"
+        local progress = reveal_ratio / settle_time
+        phase = progress >= 0.7 and "AsciiAnimationRevealing" or "AsciiAnimationChaos"
       end
+      if phase ~= current_phase then
+        flush_segment()
+        current_phase = phase
+      end
+      current_text = current_text .. output_char
     end
   end
-  return table.concat(result)
+  flush_segment()
+
+  return { is_segments = true, segments = segments }
 end
 
 -- Create rain/drip effect (characters fall and stack from bottom)
 local function rain_line(line, reveal_ratio, line_idx, total_lines)
+  local use_phases = config.options.animation.use_phase_highlights
   local chars = vim.fn.split(line, "\\zs")
-  local result = {}
 
   local inverted_pos = (total_lines - line_idx + 1) / total_lines
   local line_threshold = inverted_pos * 0.6
   local line_progress = math.max(0, (reveal_ratio - line_threshold) / (1 - line_threshold))
 
+  if not use_phases then
+    local result = {}
+    for idx, char in ipairs(chars) do
+      if char == " " or char == "" then
+        table.insert(result, char)
+      else
+        local col_seed = ((idx * 17 + line_idx * 7) % 100) / 100
+        local char_delay = col_seed * 0.25
+        local char_progress = math.max(0, (line_progress - char_delay) / (1 - char_delay))
+        if char_progress >= 0.7 then
+          table.insert(result, char)
+        else
+          table.insert(result, random_chaos_char())
+        end
+      end
+    end
+    return table.concat(result)
+  end
+
+  -- Phase highlight mode: return segments
+  local segments = {}
+  local current_text = ""
+  local current_phase = nil
+
+  local function flush_segment()
+    if #current_text > 0 then
+      table.insert(segments, { current_text, current_phase })
+      current_text = ""
+    end
+  end
+
   for idx, char in ipairs(chars) do
     if char == " " or char == "" then
-      table.insert(result, char)
+      current_text = current_text .. char
     else
       local col_seed = ((idx * 17 + line_idx * 7) % 100) / 100
       local char_delay = col_seed * 0.25
       local char_progress = math.max(0, (line_progress - char_delay) / (1 - char_delay))
+      local output_char, phase
       if char_progress >= 0.7 then
-        table.insert(result, char)
+        output_char = char
+        phase = "AsciiAnimationRevealed"
       else
-        table.insert(result, random_chaos_char())
+        output_char = random_chaos_char()
+        phase = char_progress >= 0.4 and "AsciiAnimationRevealing" or "AsciiAnimationChaos"
       end
+      if phase ~= current_phase then
+        flush_segment()
+        current_phase = phase
+      end
+      current_text = current_text .. output_char
     end
   end
-  return table.concat(result)
+  flush_segment()
+
+  return { is_segments = true, segments = segments }
 end
 
 -- State for spiral effect
@@ -398,8 +752,8 @@ end
 
 -- Create spiral reveal effect
 local function spiral_line(line, reveal_ratio, line_idx, total_lines)
+  local use_phases = config.options.animation.use_phase_highlights
   local chars = vim.fn.split(line, "\\zs")
-  local result = {}
 
   local effect_opts = config.options.animation.effect_options or {}
   local direction = effect_opts.direction or "outward"
@@ -407,88 +761,222 @@ local function spiral_line(line, reveal_ratio, line_idx, total_lines)
   local tightness = (effect_opts.tightness or 1.0) * 3
   local clockwise = rotation == "clockwise"
 
+  if not use_phases then
+    local result = {}
+    for idx, char in ipairs(chars) do
+      if char == " " or char == "" then
+        table.insert(result, char)
+      else
+        local spiral_dist = get_spiral_distance(idx, line_idx, spiral_state.center_x, spiral_state.center_y, clockwise, tightness)
+        local normalized_dist = spiral_dist / spiral_state.max_spiral_dist
+        if direction == "inward" then normalized_dist = 1 - normalized_dist end
+        if normalized_dist <= reveal_ratio then
+          table.insert(result, char)
+        else
+          table.insert(result, random_chaos_char())
+        end
+      end
+    end
+    return table.concat(result)
+  end
+
+  -- Phase highlight mode: return segments
+  local segments = {}
+  local current_text = ""
+  local current_phase = nil
+
+  local function flush_segment()
+    if #current_text > 0 then
+      table.insert(segments, { current_text, current_phase })
+      current_text = ""
+    end
+  end
+
   for idx, char in ipairs(chars) do
     if char == " " or char == "" then
-      table.insert(result, char)
+      current_text = current_text .. char
     else
       local spiral_dist = get_spiral_distance(idx, line_idx, spiral_state.center_x, spiral_state.center_y, clockwise, tightness)
       local normalized_dist = spiral_dist / spiral_state.max_spiral_dist
       if direction == "inward" then normalized_dist = 1 - normalized_dist end
+      local output_char, phase
       if normalized_dist <= reveal_ratio then
-        table.insert(result, char)
+        output_char = char
+        phase = "AsciiAnimationRevealed"
       else
-        table.insert(result, random_chaos_char())
+        output_char = random_chaos_char()
+        local proximity = normalized_dist - reveal_ratio
+        phase = proximity < 0.15 and "AsciiAnimationRevealing" or "AsciiAnimationChaos"
       end
+      if phase ~= current_phase then
+        flush_segment()
+        current_phase = phase
+      end
+      current_text = current_text .. output_char
     end
   end
-  return table.concat(result)
+  flush_segment()
+
+  return { is_segments = true, segments = segments }
 end
 
 -- Create explode effect (center-outward reveal)
 local function explode_line(line, reveal_ratio, line_idx, total_lines)
+  local use_phases = config.options.animation.use_phase_highlights
   local chaos_chars_tbl = get_chaos_chars_table()
   local chars = vim.fn.split(line, "\\zs")
-  local result = {}
   local len = #chars
   local center = len / 2
   local line_center = total_lines / 2
   local line_dist = math.abs(line_idx - line_center) / total_lines
   local line_offset = line_dist * 0.2
 
+  if not use_phases then
+    local result = {}
+    for idx, char in ipairs(chars) do
+      if char == " " or char == "" then
+        table.insert(result, char)
+      else
+        local dist_from_center = math.abs(idx - center) / (len / 2 + 0.001)
+        local threshold = dist_from_center + line_offset
+        local adjusted_ratio = reveal_ratio < 0.8 and reveal_ratio * 1.1 or (0.88 + (reveal_ratio - 0.8) * 0.6)
+        if adjusted_ratio > threshold then
+          table.insert(result, char)
+        else
+          local seed = (line_idx * 17 + idx * 31) % #chaos_chars_tbl + 1
+          local rand_offset = math.floor(reveal_ratio * 10) % #chaos_chars_tbl
+          local chaos_idx = ((seed + rand_offset - 1) % #chaos_chars_tbl) + 1
+          table.insert(result, chaos_chars_tbl[chaos_idx])
+        end
+      end
+    end
+    return table.concat(result)
+  end
+
+  -- Phase highlight mode: return segments
+  local segments = {}
+  local current_text = ""
+  local current_phase = nil
+
+  local function flush_segment()
+    if #current_text > 0 then
+      table.insert(segments, { current_text, current_phase })
+      current_text = ""
+    end
+  end
+
   for idx, char in ipairs(chars) do
     if char == " " or char == "" then
-      table.insert(result, char)
+      current_text = current_text .. char
     else
       local dist_from_center = math.abs(idx - center) / (len / 2 + 0.001)
       local threshold = dist_from_center + line_offset
       local adjusted_ratio = reveal_ratio < 0.8 and reveal_ratio * 1.1 or (0.88 + (reveal_ratio - 0.8) * 0.6)
+      local output_char, phase
       if adjusted_ratio > threshold then
-        table.insert(result, char)
+        output_char = char
+        phase = "AsciiAnimationRevealed"
       else
         local seed = (line_idx * 17 + idx * 31) % #chaos_chars_tbl + 1
         local rand_offset = math.floor(reveal_ratio * 10) % #chaos_chars_tbl
         local chaos_idx = ((seed + rand_offset - 1) % #chaos_chars_tbl) + 1
-        table.insert(result, chaos_chars_tbl[chaos_idx])
+        output_char = chaos_chars_tbl[chaos_idx]
+        local proximity = threshold - adjusted_ratio
+        phase = proximity < 0.15 and "AsciiAnimationRevealing" or "AsciiAnimationChaos"
       end
+      if phase ~= current_phase then
+        flush_segment()
+        current_phase = phase
+      end
+      current_text = current_text .. output_char
     end
   end
-  return table.concat(result)
+  flush_segment()
+
+  return { is_segments = true, segments = segments }
 end
 
 -- Create implode effect (edge-inward reveal)
 local function implode_line(line, reveal_ratio, line_idx, total_lines)
+  local use_phases = config.options.animation.use_phase_highlights
   local chaos_chars_tbl = get_chaos_chars_table()
   local chars = vim.fn.split(line, "\\zs")
-  local result = {}
   local len = #chars
   local center = len / 2
   local line_center = total_lines / 2
   local line_dist = 1 - math.abs(line_idx - line_center) / total_lines
   local line_offset = line_dist * 0.2
 
+  if not use_phases then
+    local result = {}
+    for idx, char in ipairs(chars) do
+      if char == " " or char == "" then
+        table.insert(result, char)
+      else
+        local dist_from_center = math.abs(idx - center) / (len / 2 + 0.001)
+        local dist_from_edge = 1 - dist_from_center
+        local threshold = dist_from_edge + line_offset
+        local adjusted_ratio = reveal_ratio < 0.8 and reveal_ratio * 1.1 or (0.88 + (reveal_ratio - 0.8) * 0.6)
+        if adjusted_ratio > threshold then
+          table.insert(result, char)
+        else
+          local seed = (line_idx * 17 + idx * 31) % #chaos_chars_tbl + 1
+          local rand_offset = math.floor(reveal_ratio * 10) % #chaos_chars_tbl
+          local chaos_idx = ((seed + rand_offset - 1) % #chaos_chars_tbl) + 1
+          table.insert(result, chaos_chars_tbl[chaos_idx])
+        end
+      end
+    end
+    return table.concat(result)
+  end
+
+  -- Phase highlight mode: return segments
+  local segments = {}
+  local current_text = ""
+  local current_phase = nil
+
+  local function flush_segment()
+    if #current_text > 0 then
+      table.insert(segments, { current_text, current_phase })
+      current_text = ""
+    end
+  end
+
   for idx, char in ipairs(chars) do
     if char == " " or char == "" then
-      table.insert(result, char)
+      current_text = current_text .. char
     else
       local dist_from_center = math.abs(idx - center) / (len / 2 + 0.001)
       local dist_from_edge = 1 - dist_from_center
       local threshold = dist_from_edge + line_offset
       local adjusted_ratio = reveal_ratio < 0.8 and reveal_ratio * 1.1 or (0.88 + (reveal_ratio - 0.8) * 0.6)
+      local output_char, phase
       if adjusted_ratio > threshold then
-        table.insert(result, char)
+        output_char = char
+        phase = "AsciiAnimationRevealed"
       else
         local seed = (line_idx * 17 + idx * 31) % #chaos_chars_tbl + 1
         local rand_offset = math.floor(reveal_ratio * 10) % #chaos_chars_tbl
         local chaos_idx = ((seed + rand_offset - 1) % #chaos_chars_tbl) + 1
-        table.insert(result, chaos_chars_tbl[chaos_idx])
+        output_char = chaos_chars_tbl[chaos_idx]
+        local proximity = threshold - adjusted_ratio
+        phase = proximity < 0.15 and "AsciiAnimationRevealing" or "AsciiAnimationChaos"
       end
+      if phase ~= current_phase then
+        flush_segment()
+        current_phase = phase
+      end
+      current_text = current_text .. output_char
     end
   end
-  return table.concat(result)
+  flush_segment()
+
+  return { is_segments = true, segments = segments }
 end
 
 -- Create glitch reveal effect (cyberpunk-style with corruption)
 local function glitch_line(line, reveal_ratio, line_idx, total_lines)
+  local use_phases = config.options.animation.use_phase_highlights
   local opts = config.options.animation.effect_options.glitch or {}
   local intensity = opts.intensity or 0.5
   local block_chance = opts.block_chance or 0.2
@@ -514,23 +1002,18 @@ local function glitch_line(line, reveal_ratio, line_idx, total_lines)
 
   -- Track segments for multi-highlight rendering
   local current_text = ""
-  local current_is_glitch = false
+  local current_phase = nil
 
   local function flush_segment()
     if #current_text > 0 then
-      if current_is_glitch then
-        local hl = glitch_highlights[math.random(1, #glitch_highlights)]
-        table.insert(segments, { current_text, hl })
-      else
-        table.insert(segments, { current_text, nil })
-      end
+      table.insert(segments, { current_text, current_phase })
       current_text = ""
     end
   end
 
   for idx, char in ipairs(chars) do
     local output_char = char
-    local is_glitched = false
+    local phase = nil
 
     if char == " " or char == "" then
       table.insert(result, char)
@@ -540,28 +1023,28 @@ local function glitch_line(line, reveal_ratio, line_idx, total_lines)
 
       if is_revealed then
         output_char = char
-        is_glitched = false
+        phase = use_phases and "AsciiAnimationRevealed" or nil
       else
         local effect_roll = math.random()
         if has_block and idx >= block_start and idx <= block_end then
           output_char = glitch_chars_table[math.random(1, #glitch_chars_table)]
-          is_glitched = true
+          phase = use_phases and "AsciiAnimationGlitch" or glitch_highlights[math.random(1, #glitch_highlights)]
         elseif effect_roll < effective_intensity * 0.6 then
           output_char = glitch_chars_table[math.random(1, #glitch_chars_table)]
-          is_glitched = true
+          phase = use_phases and "AsciiAnimationGlitch" or glitch_highlights[math.random(1, #glitch_highlights)]
         elseif effect_roll < effective_intensity then
           output_char = chaos_chars_tbl[math.random(1, #chaos_chars_tbl)]
-          is_glitched = true
+          phase = use_phases and "AsciiAnimationChaos" or glitch_highlights[math.random(1, #glitch_highlights)]
         else
           output_char = char
-          is_glitched = false
+          phase = use_phases and "AsciiAnimationRevealing" or nil
         end
       end
 
       -- Handle segment transitions
-      if is_glitched ~= current_is_glitch then
+      if phase ~= current_phase then
         flush_segment()
-        current_is_glitch = is_glitched
+        current_phase = phase
       end
 
       table.insert(result, output_char)
@@ -861,6 +1344,11 @@ function M.start(buf, header_lines, highlight)
   -- Stop any existing animation/ambient
   M.stop()
 
+  -- Setup phase highlights if enabled
+  if config.options.animation.use_phase_highlights then
+    setup_phase_highlights()
+  end
+
   local win = vim.api.nvim_get_current_win()
   if not vim.api.nvim_buf_is_valid(buf) then return end
 
@@ -887,5 +1375,9 @@ function M.start(buf, header_lines, highlight)
 
   animate(buf, win, 0, config.options.animation.steps, highlight, header_end, false)
 end
+
+-- Export for manual highlight setup
+M.setup_phase_highlights = setup_phase_highlights
+M.refresh_phase_highlights = refresh_phase_highlights
 
 return M
