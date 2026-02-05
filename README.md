@@ -37,6 +37,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
   - [lazy.nvim](https://github.com/folke/lazy.nvim) starter screen
 - Fully configurable animation speed, characters, and timing
 - Respects your colorscheme and dashboard highlights
+- **Phase-based highlighting**: Customize colors for chaos, revealing, and revealed states
 - **User commands**: `:AsciiPreview`, `:AsciiSettings`, `:AsciiRefresh`, `:AsciiStop`, `:AsciiRestart`, `:AsciiCharset`
 
 ## Installation
@@ -86,6 +87,8 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
       ambient_interval = 2000,
       -- Character set preset
       char_preset = "default", -- "default" | "minimal" | "matrix" | "blocks" | "braille" | "stars" | "geometric" | "binary" | "dots"
+      -- Phase-based highlighting (see Highlight Groups section)
+      use_phase_highlights = false,
     },
     chaos_chars = "@#$%&*+=-:;!?/\\|[]{}()<>~`'^", -- Custom chars (overrides preset)
   },
@@ -402,6 +405,8 @@ Opens an interactive settings panel with **live preview**:
 - `l`: toggle loop
 - `s`/`S`: adjust steps (±5)
 - `c`/`C`: cycle charset preset (9 presets)
+- `p`: toggle phase highlights
+- `P`: open phase colors (when phase highlights enabled)
 - `t`: open timing settings
 - `m`/`M`: cycle random mode (always/daily/session)
 - `n`: toggle no-repeat
@@ -443,6 +448,16 @@ Opens an interactive settings panel with **live preview**:
 - `d`/`D`: adjust loop delay (±100ms)
 - `v`: toggle loop reverse
 - `i`/`I`: adjust ambient interval (±100ms)
+- `Backspace`: back to main menu
+
+**Phase Colors (press `P` when phase highlights enabled):**
+- `P`: cycle through color presets (Default, Cyberpunk, Ocean, Sunset, Forest, Monochrome)
+- `1`: edit Chaos color (hex input)
+- `2`: edit Revealing color (hex input)
+- `3`: edit Revealed color (hex input)
+- `4`: edit Cursor color (hex input)
+- `5`: edit Glitch color (hex input)
+- `r`: reset to default colors
 - `Backspace`: back to main menu
 
 **Styles Filter (press `y`):**
@@ -644,6 +659,7 @@ animation = {
 | `animation.ambient` | string | `"none"` | Ambient effect after animation: `"none"`, `"glitch"`, or `"shimmer"` |
 | `animation.ambient_interval` | number | `2000` | How often ambient effect triggers in ms |
 | `animation.char_preset` | string | `"default"` | Character preset: `"default"`, `"minimal"`, `"matrix"`, `"blocks"`, `"braille"`, `"stars"`, `"geometric"`, `"binary"`, `"dots"` |
+| `animation.use_phase_highlights` | boolean | `false` | Enable phase-based highlight groups (see Highlight Groups section) |
 | `animation.auto_fit` | boolean | `false` | Skip arts wider than terminal width |
 | `animation.min_width` | number | `60` | Minimum terminal width for animation |
 | `animation.fallback` | string | `"tagline"` | Fallback when terminal too narrow: `"tagline"`, `"none"`, or art ID |
@@ -900,6 +916,69 @@ animation = {
   ambient_interval = 2000, -- Trigger every 2 seconds
 }
 ```
+
+### Highlight Groups
+
+When `use_phase_highlights` is enabled, the animation uses dedicated highlight groups for different character states. This allows you to customize colors based on whether a character is in the chaos, revealing, or revealed phase.
+
+**Enable phase highlights:**
+
+```lua
+animation = {
+  use_phase_highlights = true,
+}
+```
+
+**Available highlight groups:**
+
+| Highlight Group | Default | Description |
+|-----------------|---------|-------------|
+| `AsciiAnimationChaos` | `#555555` | Unrevealed chaos characters |
+| `AsciiAnimationRevealing` | `#888888` | Characters about to reveal |
+| `AsciiAnimationRevealed` | `#ffffff` | Fully revealed characters |
+| `AsciiAnimationCursor` | `#00ff00` bold | Typewriter cursor |
+| `AsciiAnimationGlitch` | `#ff0055` | Glitch effect corruption |
+
+**Customize in your colorscheme or config:**
+
+```lua
+-- In your Neovim config (after colorscheme is loaded)
+vim.api.nvim_set_hl(0, "AsciiAnimationChaos", { fg = "#1a1a2e" })
+vim.api.nvim_set_hl(0, "AsciiAnimationRevealing", { fg = "#4a4a6a" })
+vim.api.nvim_set_hl(0, "AsciiAnimationRevealed", { link = "Title" })
+vim.api.nvim_set_hl(0, "AsciiAnimationCursor", { fg = "#00ff41", bold = true })
+vim.api.nvim_set_hl(0, "AsciiAnimationGlitch", { fg = "#ff0066", bold = true })
+```
+
+**Colorscheme integration example:**
+
+```lua
+-- In your custom colorscheme file
+local colors = {
+  chaos = "#2d2d44",
+  revealing = "#5a5a8a",
+  revealed = "#e0e0e0",
+  cursor = "#00ff41",
+  glitch = "#ff3366",
+}
+
+vim.api.nvim_set_hl(0, "AsciiAnimationChaos", { fg = colors.chaos })
+vim.api.nvim_set_hl(0, "AsciiAnimationRevealing", { fg = colors.revealing })
+vim.api.nvim_set_hl(0, "AsciiAnimationRevealed", { fg = colors.revealed })
+vim.api.nvim_set_hl(0, "AsciiAnimationCursor", { fg = colors.cursor, bold = true })
+vim.api.nvim_set_hl(0, "AsciiAnimationGlitch", { fg = colors.glitch })
+```
+
+**Using `:AsciiSettings` (recommended for quick customization):**
+
+Press `P` in the settings panel to access the Phase Colors submenu, where you can:
+- Cycle through 6 built-in presets: Default, Cyberpunk, Ocean, Sunset, Forest, Monochrome
+- Edit individual colors by pressing `1`-`5` and entering a hex color
+- Reset to defaults with `r`
+
+Settings are automatically persisted across sessions.
+
+**Note:** The plugin applies custom colors from `:AsciiSettings` first. If you want to override via your colorscheme, define the highlight groups before the animation runs. When `use_phase_highlights` is disabled (default), the animation uses the dashboard's base highlight for all characters.
 
 ## Credits
 
