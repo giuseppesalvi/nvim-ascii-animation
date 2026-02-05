@@ -261,9 +261,7 @@ local function check_commands()
   local commands = {
     "AsciiPreview",
     "AsciiSettings",
-    "AsciiRandom",
-    "AsciiBrowse",
-    "AsciiMessageBrowse",
+    "AsciiRefresh",
   }
 
   local all_ok = true
