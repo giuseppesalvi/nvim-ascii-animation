@@ -8,6 +8,7 @@ local box = require("ascii-animation.content.arts.box")
 local minimal = require("ascii-animation.content.arts.minimal")
 local pixel = require("ascii-animation.content.arts.pixel")
 local braille = require("ascii-animation.content.arts.braille")
+local holiday = require("ascii-animation.content.arts.holiday")
 
 local M = {}
 
@@ -20,6 +21,7 @@ M.styles = {
   minimal = minimal.arts,
   pixel = pixel.arts,
   braille = braille.arts,
+  holiday = holiday.arts,
 }
 
 -- Get all arts for a specific period, optionally filtered by styles
@@ -88,7 +90,7 @@ end
 
 -- Get available styles
 function M.get_styles()
-  return { "blocks", "gradient", "isometric", "box", "minimal", "pixel", "braille" }
+  return { "blocks", "gradient", "isometric", "box", "minimal", "pixel", "braille", "holiday" }
 end
 
 -- Calculate the display width of an art
