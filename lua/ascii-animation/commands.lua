@@ -1,5 +1,6 @@
 -- User commands for ascii-animation
--- Provides :AsciiPreview, :AsciiList, :AsciiSettings, :AsciiRefresh, :AsciiStop, :AsciiRestart, :AsciiCharset
+-- Provides :AsciiPreview, :AsciiList, :AsciiSettings, :AsciiRefresh, :AsciiStop, :AsciiRestart, :AsciiCharset,
+-- :AsciiPause, :AsciiResume, :AsciiNext, :AsciiEffect
 
 local config = require("ascii-animation.config")
 local animation = require("ascii-animation.animation")
@@ -2690,6 +2691,55 @@ function M.register_commands()
       return matches
     end,
     desc = "Set character set preset for animation",
+  })
+
+  vim.api.nvim_create_user_command("AsciiPause", function()
+    if animation.pause() then
+      vim.notify("Animation paused", vim.log.levels.INFO)
+    else
+      vim.notify("No animation to pause", vim.log.levels.WARN)
+    end
+  end, { desc = "Pause current ASCII animation" })
+
+  vim.api.nvim_create_user_command("AsciiResume", function()
+    if animation.resume() then
+      vim.notify("Animation resumed", vim.log.levels.INFO)
+    else
+      vim.notify("No paused animation to resume", vim.log.levels.WARN)
+    end
+  end, { desc = "Resume paused ASCII animation" })
+
+  vim.api.nvim_create_user_command("AsciiNext", function()
+    local effect = animation.next_effect()
+    if effect then
+      vim.notify("Effect: " .. effect, vim.log.levels.INFO)
+    end
+  end, { desc = "Switch to next animation effect" })
+
+  vim.api.nvim_create_user_command("AsciiEffect", function(opts)
+    local name = opts.args
+    if name == "" then
+      vim.notify("Current effect: " .. (config.options.animation.effect or "chaos"), vim.log.levels.INFO)
+      return
+    end
+    if animation.set_effect(name) then
+      vim.notify("Effect set to: " .. name, vim.log.levels.INFO)
+    else
+      vim.notify("Invalid effect. Valid: chaos, typewriter, diagonal, lines, matrix, wave, fade, scramble, rain, spiral, explode, implode, glitch, random", vim.log.levels.WARN)
+    end
+  end, {
+    nargs = "?",
+    complete = function(arg_lead)
+      local valid_effects = { "chaos", "typewriter", "diagonal", "lines", "matrix", "wave", "fade", "scramble", "rain", "spiral", "explode", "implode", "glitch", "random" }
+      local matches = {}
+      for _, name in ipairs(valid_effects) do
+        if name:find(arg_lead, 1, true) then
+          table.insert(matches, name)
+        end
+      end
+      return matches
+    end,
+    desc = "Set animation effect",
   })
 end
 

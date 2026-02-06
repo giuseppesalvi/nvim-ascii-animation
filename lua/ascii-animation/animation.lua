@@ -188,10 +188,15 @@ local current_effect_name = nil
 -- State for tracking current animation
 local animation_state = {
   running = false,
+  paused = false,
   buf = nil,
   header_end = nil,
   highlight = nil,
   effect = nil,  -- Resolved effect (for "random" mode)
+  step = nil,           -- Current step when paused
+  total_steps = nil,    -- Total steps for resume
+  win = nil,            -- Window for resume
+  reverse = nil,        -- Direction for resume
 }
 
 -- Ease-in-out cubic function for smooth acceleration/deceleration
@@ -1465,6 +1470,14 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
     return
   end
 
+  if animation_state.paused then
+    animation_state.step = step
+    animation_state.total_steps = total_steps
+    animation_state.win = win
+    animation_state.reverse = reverse
+    return
+  end
+
   -- Check if animation is complete
   local animation_done = (not reverse and step > total_steps) or (reverse and step < 0)
 
@@ -1584,9 +1597,56 @@ end
 function M.stop()
   stop_ambient()
   animation_state.running = false
+  animation_state.paused = false
   if animation_state.buf and vim.api.nvim_buf_is_valid(animation_state.buf) then
     vim.api.nvim_buf_clear_namespace(animation_state.buf, M.ns_id, 0, -1)
   end
+end
+
+-- Pause a running animation (keeps current frame visible)
+function M.pause()
+  if not animation_state.running or animation_state.paused then return false end
+  animation_state.paused = true
+  stop_ambient()
+  return true
+end
+
+-- Resume a paused animation from where it left off
+function M.resume()
+  if not animation_state.paused then return false end
+  animation_state.paused = false
+  local s = animation_state
+  if s.buf and vim.api.nvim_buf_is_valid(s.buf) and s.win and vim.api.nvim_win_is_valid(s.win) then
+    animate(s.buf, s.win, s.step, s.total_steps, s.highlight, s.header_end, s.reverse)
+  end
+  return true
+end
+
+-- Cycle to the next animation effect
+function M.next_effect()
+  local current = config.options.animation.effect
+  local idx = 1
+  for i, name in ipairs(effect_names) do
+    if name == current then idx = i break end
+  end
+  idx = idx % #effect_names + 1
+  config.options.animation.effect = effect_names[idx]
+  config.save()
+  if animation_state.buf and vim.api.nvim_buf_is_valid(animation_state.buf) then
+    M.start(animation_state.buf, animation_state.header_end, animation_state.highlight)
+  end
+  return effect_names[idx]
+end
+
+-- Set a specific animation effect by name
+function M.set_effect(name)
+  if not effects[name] and name ~= "random" then return false end
+  config.options.animation.effect = name
+  config.save()
+  if animation_state.buf and vim.api.nvim_buf_is_valid(animation_state.buf) then
+    M.start(animation_state.buf, animation_state.header_end, animation_state.highlight)
+  end
+  return true
 end
 
 -- Start animation on a buffer
