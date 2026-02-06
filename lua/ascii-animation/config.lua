@@ -61,7 +61,7 @@ M.theme_presets = {
 M.theme_preset_names = { "retro", "zen", "cyberpunk", "cinematic", "hacker" }
 
 -- Screensaver display mode names for cycling
-M.screensaver_display_names = { "static", "bounce", "tile", "marquee", "zoom", "random" }
+M.screensaver_display_names = { "static", "bounce", "tile", "marquee", "zoom", "pulse", "waves", "rain", "shatter", "fireworks", "heartbeat", "random" }
 
 -- Period-based color schemes for phase highlights
 M.period_color_schemes = {
@@ -494,7 +494,8 @@ M.defaults = {
     timeout = 1000 * 60 * 5,  -- Idle timeout in ms (default: 5 minutes)
     effect = "random",        -- Animation effect or "random"
     dismiss = "any",          -- "any" key or "escape" only
-    display = "static",       -- Display mode: "static" | "bounce" | "tile" | "marquee" | "zoom" | "random"
+    display = "static",       -- Display mode: "static" | "bounce" | "tile" | "marquee" | "zoom" | "pulse" | "random"
+    audio_reactive = false,   -- Enable audio-reactive mode (requires sox)
   },
 }
 
@@ -582,6 +583,7 @@ function M.save()
       effect = M.options.screensaver.effect,
       dismiss = M.options.screensaver.dismiss,
       display = M.options.screensaver.display,
+      audio_reactive = M.options.screensaver.audio_reactive,
     },
     favorites = M.favorites,
     favorites_weight = M.favorites_weight,
