@@ -10,6 +10,96 @@ local placeholders = require("ascii-animation.placeholders")
 
 local M = {}
 
+-- Cache for arts loaded from custom_arts_dir
+local loaded_dir_arts = nil -- { by_period = { morning = {}, ... }, all = {} }
+
+-- Parse a .txt art file with optional metadata header
+local function parse_art_file(filepath)
+  local ok, file_lines = pcall(vim.fn.readfile, filepath)
+  if not ok or not file_lines then return nil end
+
+  local metadata = {}
+  local art_lines = {}
+  local in_header = true
+
+  for _, line in ipairs(file_lines) do
+    if in_header and line:match("^#%s+(%w+):%s*(.+)") then
+      local key, value = line:match("^#%s+(%w+):%s*(.+)")
+      metadata[key] = vim.trim(value)
+    else
+      in_header = false
+      table.insert(art_lines, line)
+    end
+  end
+
+  -- Strip trailing empty lines
+  while #art_lines > 0 and art_lines[#art_lines]:match("^%s*$") do
+    table.remove(art_lines)
+  end
+
+  if #art_lines == 0 then return nil end
+
+  -- Generate ID from filename
+  local filename = vim.fn.fnamemodify(filepath, ":t:r")
+  local id = "custom_" .. filename:gsub("[^%w_]", "_")
+
+  return {
+    id = metadata.id or id,
+    name = metadata.name or filename,
+    lines = art_lines,
+    period = metadata.period,
+    style = metadata.style or "custom",
+    tags = metadata.tags,
+  }
+end
+
+-- Load arts from custom_arts_dir (cached after first call)
+local valid_periods = { morning = true, afternoon = true, evening = true, night = true, weekend = true }
+
+local function load_arts_from_dir()
+  if loaded_dir_arts then return loaded_dir_arts end
+
+  loaded_dir_arts = { by_period = {}, all = {} }
+  local opts = config.options.content or {}
+  local dir = opts.custom_arts_dir
+  if not dir then return loaded_dir_arts end
+
+  dir = vim.fn.expand(dir)
+  if vim.fn.isdirectory(dir) ~= 1 then return loaded_dir_arts end
+
+  -- Load .txt files from root directory
+  local files = vim.fn.glob(dir .. "/*.txt", false, true)
+  for _, filepath in ipairs(files) do
+    local art = parse_art_file(filepath)
+    if art then
+      table.insert(loaded_dir_arts.all, art)
+      if art.period and valid_periods[art.period] then
+        loaded_dir_arts.by_period[art.period] = loaded_dir_arts.by_period[art.period] or {}
+        table.insert(loaded_dir_arts.by_period[art.period], art)
+      end
+    end
+  end
+
+  -- Load from period subdirectories (morning/, night/, etc.)
+  for period_name in pairs(valid_periods) do
+    local subdir = dir .. "/" .. period_name
+    if vim.fn.isdirectory(subdir) == 1 then
+      local sub_files = vim.fn.glob(subdir .. "/*.txt", false, true)
+      for _, filepath in ipairs(sub_files) do
+        local art = parse_art_file(filepath)
+        if art then
+          art.period = period_name
+          table.insert(loaded_dir_arts.all, art)
+          loaded_dir_arts.by_period[period_name] = loaded_dir_arts.by_period[period_name] or {}
+          table.insert(loaded_dir_arts.by_period[period_name], art)
+        end
+      end
+    end
+  end
+
+  return loaded_dir_arts
+end
+
 -- Track if seed was set this session (for 'session' mode)
 local session_seed_set = false
 
@@ -147,6 +237,20 @@ function M.get_art_for_period(period)
   -- Add custom arts if configured
   if opts.custom_arts and opts.custom_arts[period] then
     for _, a in ipairs(opts.custom_arts[period]) do
+      table.insert(all_arts, a)
+    end
+  end
+
+  -- Add arts loaded from custom_arts_dir
+  local dir_arts = load_arts_from_dir()
+  if dir_arts.by_period[period] then
+    for _, a in ipairs(dir_arts.by_period[period]) do
+      table.insert(all_arts, a)
+    end
+  end
+  -- Add period-less dir arts (available for all periods)
+  for _, a in ipairs(dir_arts.all) do
+    if not a.period then
       table.insert(all_arts, a)
     end
   end
@@ -422,35 +526,72 @@ end
 -- List all art IDs (respects style filter)
 function M.list_arts()
   local style_filter = get_style_filter()
-  if style_filter == nil then
-    return arts.list_art_ids()
-  end
-
-  -- Collect IDs from all periods with style filtering
   local all_ids = {}
   local seen = {}
-  local periods = { "morning", "afternoon", "evening", "night", "weekend" }
-  for _, period in ipairs(periods) do
-    local period_ids = arts.list_art_ids_for_period(period, style_filter)
-    for _, id in ipairs(period_ids) do
+
+  if style_filter == nil then
+    for _, id in ipairs(arts.list_art_ids()) do
       if not seen[id] then
         seen[id] = true
         table.insert(all_ids, id)
       end
     end
+  else
+    -- Collect IDs from all periods with style filtering
+    local periods = { "morning", "afternoon", "evening", "night", "weekend" }
+    for _, period in ipairs(periods) do
+      local period_ids = arts.list_art_ids_for_period(period, style_filter)
+      for _, id in ipairs(period_ids) do
+        if not seen[id] then
+          seen[id] = true
+          table.insert(all_ids, id)
+        end
+      end
+    end
   end
+
+  -- Add custom dir art IDs
+  local dir_arts = load_arts_from_dir()
+  for _, art in ipairs(dir_arts.all) do
+    if not seen[art.id] then
+      seen[art.id] = true
+      table.insert(all_ids, art.id)
+    end
+  end
+
   return all_ids
 end
 
 -- List art IDs for a specific period
 function M.list_arts_for_period(period)
   local style_filter = get_style_filter()
-  return arts.list_art_ids_for_period(period, style_filter)
+  local ids = arts.list_art_ids_for_period(period, style_filter)
+  -- Add custom dir arts for this period
+  local dir_arts = load_arts_from_dir()
+  if dir_arts.by_period[period] then
+    for _, art in ipairs(dir_arts.by_period[period]) do
+      table.insert(ids, art.id)
+    end
+  end
+  -- Add period-less arts
+  for _, art in ipairs(dir_arts.all) do
+    if not art.period then
+      table.insert(ids, art.id)
+    end
+  end
+  return ids
 end
 
 -- Get a specific art by ID
 function M.get_art_by_id(id)
-  return arts.get_art_by_id(id)
+  local result = arts.get_art_by_id(id)
+  if result then return result end
+  -- Search custom dir arts
+  local dir_arts = load_arts_from_dir()
+  for _, art in ipairs(dir_arts.all) do
+    if art.id == id then return art end
+  end
+  return nil
 end
 
 -- Get available styles
