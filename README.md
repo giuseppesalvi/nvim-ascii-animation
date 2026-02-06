@@ -371,6 +371,10 @@ require("ascii-animation").setup({
 
     -- Message no-repeat: avoid showing the same message repeatedly
     message_no_repeat = 5,        -- Don't repeat any of the last 5 messages
+
+    -- Message category filtering
+    message_categories = nil,     -- Include-list: only these themes (e.g. {"zen", "witty"})
+    exclude_categories = nil,     -- Exclude-list: disable these themes (e.g. {"cryptic"})
   },
 
   -- Footer settings
@@ -826,6 +830,8 @@ animation = {
 | `content.favorite_weight` | number | `2` | Multiplier for favorites in selection pool |
 | `content.no_repeat` | boolean/number | `false` | Don't repeat last N arts: `false`, `true` (1), or number |
 | `content.message_no_repeat` | boolean/number | `false` | Don't repeat last N messages: `false`, `true` (1), or number |
+| `content.message_categories` | table/nil | `nil` | Include-list: only show messages from these theme categories (e.g. `{"zen", "witty"}`) |
+| `content.exclude_categories` | table/nil | `nil` | Exclude-list: hide messages from these theme categories (e.g. `{"cryptic"}`) |
 
 Message favorites and disabled states are managed via `:AsciiSettings` → `g` (Message Browser) and persist automatically.
 

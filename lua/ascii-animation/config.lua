@@ -418,6 +418,12 @@ M.defaults = {
     -- number N: Don't repeat any of the last N shown messages
     message_no_repeat = false,
 
+    -- Message category filtering (by theme name)
+    -- Include-list: only these theme categories (nil = all)
+    message_categories = nil,
+    -- Exclude-list: disable these theme categories (nil = none)
+    exclude_categories = nil,
+
   },
 
   -- Footer settings
@@ -555,6 +561,20 @@ function M.clear_saved()
   M.message_favorites = {}
   M.message_disabled = {}
   M.themes_disabled = {}
+  -- Re-apply config-based category filtering
+  local content_opts = M.options.content or {}
+  if content_opts.message_categories then
+    local include = {}
+    for _, cat in ipairs(content_opts.message_categories) do include[cat] = true end
+    local taglines = require("ascii-animation.content.messages.taglines")
+    for _, theme in ipairs(taglines.themes) do
+      if not include[theme] then table.insert(M.themes_disabled, theme) end
+    end
+  elseif content_opts.exclude_categories then
+    for _, cat in ipairs(content_opts.exclude_categories) do
+      table.insert(M.themes_disabled, cat)
+    end
+  end
   -- Reset footer settings
   M.options.footer.enabled = M.defaults.footer.enabled
   M.options.footer.template = M.defaults.footer.template
@@ -679,6 +699,21 @@ function M.setup(opts)
   end
   if saved.themes_disabled then
     M.themes_disabled = saved.themes_disabled
+  else
+    -- Apply config-based category filtering when no saved UI prefs exist
+    local content_opts = M.options.content or {}
+    if content_opts.message_categories then
+      local include = {}
+      for _, cat in ipairs(content_opts.message_categories) do include[cat] = true end
+      local taglines = require("ascii-animation.content.messages.taglines")
+      for _, theme in ipairs(taglines.themes) do
+        if not include[theme] then table.insert(M.themes_disabled, theme) end
+      end
+    elseif content_opts.exclude_categories then
+      for _, cat in ipairs(content_opts.exclude_categories) do
+        table.insert(M.themes_disabled, cat)
+      end
+    end
   end
 end
 
