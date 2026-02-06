@@ -1,6 +1,6 @@
 -- User commands for ascii-animation
 -- Provides :AsciiPreview, :AsciiList, :AsciiSettings, :AsciiRefresh, :AsciiStop, :AsciiRestart, :AsciiCharset,
--- :AsciiPause, :AsciiResume, :AsciiNext, :AsciiEffect, :AsciiPreset
+-- :AsciiPause, :AsciiResume, :AsciiNext, :AsciiEffect, :AsciiPreset, :AsciiScreensaver
 
 local config = require("ascii-animation.config")
 local animation = require("ascii-animation.animation")
@@ -1003,6 +1003,83 @@ local function effect_has_options(effect)
   return effect == "wave" or effect == "glitch" or effect == "scramble" or effect == "spiral" or effect == "fade"
 end
 
+-- Screensaver timeout presets (ms)
+local screensaver_timeout_presets = {
+  1000 * 60 * 1,   -- 1m
+  1000 * 60 * 2,   -- 2m
+  1000 * 60 * 3,   -- 3m
+  1000 * 60 * 5,   -- 5m
+  1000 * 60 * 10,  -- 10m
+  1000 * 60 * 15,  -- 15m
+  1000 * 60 * 30,  -- 30m
+  1000 * 60 * 60,  -- 60m
+}
+
+-- Format timeout in ms to "Xm Ys" string
+local function format_timeout(ms)
+  local total_secs = math.floor(ms / 1000)
+  local mins = math.floor(total_secs / 60)
+  local secs = total_secs % 60
+  if secs > 0 then
+    return string.format("%dm %ds", mins, secs)
+  end
+  return string.format("%dm", mins)
+end
+
+-- Build screensaver submenu lines
+local function get_screensaver_submenu_lines()
+  local ss_opts = config.options.screensaver or {}
+  local enabled = ss_opts.enabled
+
+  -- Timeout index
+  local timeout = ss_opts.timeout or (1000 * 60 * 5)
+  local timeout_idx = 4  -- default to 5m
+  for i, t in ipairs(screensaver_timeout_presets) do
+    if t == timeout then timeout_idx = i break end
+  end
+
+  -- Effect index
+  local effects = { "chaos", "typewriter", "diagonal", "lines", "matrix", "wave", "fade", "scramble", "rain", "spiral", "explode", "implode", "glitch", "random" }
+  local ss_effect = ss_opts.effect or "random"
+  local effect_idx = #effects  -- default to "random"
+  for i, e in ipairs(effects) do
+    if e == ss_effect then effect_idx = i break end
+  end
+
+  -- Dismiss mode
+  local dismiss = ss_opts.dismiss or "any"
+  local dismiss_modes = { "any", "escape" }
+  local dismiss_idx = 1
+  for i, d in ipairs(dismiss_modes) do
+    if d == dismiss then dismiss_idx = i break end
+  end
+
+  -- Display mode
+  local display_names = config.screensaver_display_names
+  local display = ss_opts.display or "static"
+  local display_idx = 1
+  for i, dn in ipairs(display_names) do
+    if dn == display then display_idx = i break end
+  end
+
+  local lines = {
+    "",
+    "  Screensaver Settings",
+    "  " .. string.rep("─", 38),
+    "",
+    string.format("  [e] Enabled:  %s", enabled and "ON " or "OFF"),
+    string.format("  [h] Timeout:  %-10s ◀ %d/%d ▶", format_timeout(timeout), timeout_idx, #screensaver_timeout_presets),
+    string.format("  [f] Effect:   %-10s ◀ %d/%d ▶", ss_effect, effect_idx, #effects),
+    string.format("  [m] Display:  %-10s ◀ %d/%d ▶", display, display_idx, #display_names),
+    string.format("  [d] Dismiss:  %-10s ◀ %d/%d ▶", dismiss, dismiss_idx, #dismiss_modes),
+    "",
+    "  [Space] Test  Backspace: back",
+    "",
+  }
+
+  return lines
+end
+
 -- Update settings panel content
 local function update_settings_content()
   if not settings_state.settings_buf or not vim.api.nvim_buf_is_valid(settings_state.settings_buf) then
@@ -1027,6 +1104,8 @@ local function update_settings_content()
       lines = get_phase_colors_submenu_lines()
     elseif settings_state.submenu == "color_mode" then
       lines = get_color_mode_submenu_lines()
+    elseif settings_state.submenu == "screensaver" then
+      lines = get_screensaver_submenu_lines()
     else
       lines = get_effect_submenu_lines(settings_state.submenu)
     end
@@ -1074,6 +1153,10 @@ local function update_settings_content()
     -- Footer info
     local footer_opts = opts.footer or {}
     local footer_label = footer_opts.enabled and footer_opts.alignment or "OFF"
+
+    -- Screensaver info
+    local ss_opts = opts.screensaver or {}
+    local ss_label = ss_opts.enabled and "ON" or "OFF"
 
     -- Unicode warning for charset
     local charset_warning = ""
@@ -1160,6 +1243,10 @@ local function update_settings_content()
       "  Footer",
       "  " .. string.rep("─", 38),
       string.format("  [f] Footer...  (%s)", footer_label),
+      "",
+      "  Screensaver",
+      "  " .. string.rep("─", 38),
+      string.format("  [V] Screensaver...  (%s)", ss_label),
       "",
       string.format("  Arts: %d (%d favs)", art_count, fav_count),
       "",
@@ -1815,13 +1902,22 @@ local function setup_settings_keybindings(buf)
   local common_keymaps = {
     { "q", close_settings },
     { "<Esc>", close_settings },
-    { "<Space>", replay_preview },
     { "R", reset_to_defaults },
   }
 
   for _, map in ipairs(common_keymaps) do
     vim.keymap.set("n", map[1], map[2], { buffer = buf, nowait = true, silent = true })
   end
+
+  -- Space: test screensaver in submenu, replay preview otherwise
+  vim.keymap.set("n", "<Space>", function()
+    if settings_state.submenu == "screensaver" then
+      local screensaver = require("ascii-animation.screensaver")
+      screensaver.trigger()
+    else
+      replay_preview()
+    end
+  end, { buffer = buf, nowait = true, silent = true })
 
   -- Context-aware keybindings
   -- Main menu keys
@@ -1858,6 +1954,18 @@ local function setup_settings_keybindings(buf)
   vim.keymap.set("n", "m", function()
     if not settings_state.submenu then
       cycle_random_mode(1)
+    elseif settings_state.submenu == "screensaver" then
+      local display_names = config.screensaver_display_names
+      local ss_opts = config.options.screensaver or {}
+      local current = ss_opts.display or "static"
+      local idx = 1
+      for i, dn in ipairs(display_names) do
+        if dn == current then idx = i break end
+      end
+      idx = (idx % #display_names) + 1
+      config.options.screensaver.display = display_names[idx]
+      config.save()
+      update_settings_content()
     elseif settings_state.submenu == "timing" then
       adjust_min_delay(10)
     elseif settings_state.submenu == "color_mode" then
@@ -1879,6 +1987,19 @@ local function setup_settings_keybindings(buf)
   vim.keymap.set("n", "M", function()
     if not settings_state.submenu then
       cycle_random_mode(-1)
+    elseif settings_state.submenu == "screensaver" then
+      local display_names = config.screensaver_display_names
+      local ss_opts = config.options.screensaver or {}
+      local current = ss_opts.display or "static"
+      local idx = 1
+      for i, dn in ipairs(display_names) do
+        if dn == current then idx = i break end
+      end
+      idx = idx - 1
+      if idx < 1 then idx = #display_names end
+      config.options.screensaver.display = display_names[idx]
+      config.save()
+      update_settings_content()
     elseif settings_state.submenu == "timing" then
       adjust_min_delay(-10)
     elseif settings_state.submenu == "color_mode" then
@@ -2052,13 +2173,41 @@ local function setup_settings_keybindings(buf)
 
   -- Fade-specific keys
   vim.keymap.set("n", "h", function()
-    if settings_state.submenu == "fade" then
+    if settings_state.submenu == "screensaver" then
+      local screensaver = require("ascii-animation.screensaver")
+      local ss_opts = config.options.screensaver or {}
+      local timeout = ss_opts.timeout or (1000 * 60 * 5)
+      local idx = 4
+      for i, t in ipairs(screensaver_timeout_presets) do
+        if t == timeout then idx = i break end
+      end
+      idx = idx + 1
+      if idx > #screensaver_timeout_presets then idx = 1 end
+      config.options.screensaver.timeout = screensaver_timeout_presets[idx]
+      config.save()
+      screensaver.restart_timer()
+      update_settings_content()
+    elseif settings_state.submenu == "fade" then
       adjust_fade_highlight_count(1)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
   vim.keymap.set("n", "H", function()
-    if settings_state.submenu == "fade" then
+    if settings_state.submenu == "screensaver" then
+      local screensaver = require("ascii-animation.screensaver")
+      local ss_opts = config.options.screensaver or {}
+      local timeout = ss_opts.timeout or (1000 * 60 * 5)
+      local idx = 4
+      for i, t in ipairs(screensaver_timeout_presets) do
+        if t == timeout then idx = i break end
+      end
+      idx = idx - 1
+      if idx < 1 then idx = #screensaver_timeout_presets end
+      config.options.screensaver.timeout = screensaver_timeout_presets[idx]
+      config.save()
+      screensaver.restart_timer()
+      update_settings_content()
+    elseif settings_state.submenu == "fade" then
       adjust_fade_highlight_count(-1)
     end
   end, { buffer = buf, nowait = true, silent = true })
@@ -2222,7 +2371,20 @@ local function setup_settings_keybindings(buf)
 
   -- Message favorite toggle (in messages submenu, 'f' key)
   vim.keymap.set("n", "F", function()
-    if settings_state.submenu == "messages" then
+    if settings_state.submenu == "screensaver" then
+      local effects = { "chaos", "typewriter", "diagonal", "lines", "matrix", "wave", "fade", "scramble", "rain", "spiral", "explode", "implode", "glitch", "random" }
+      local ss_opts = config.options.screensaver or {}
+      local current = ss_opts.effect or "random"
+      local idx = #effects
+      for i, e in ipairs(effects) do
+        if e == current then idx = i break end
+      end
+      idx = idx - 1
+      if idx < 1 then idx = #effects end
+      config.options.screensaver.effect = effects[idx]
+      config.save()
+      update_settings_content()
+    elseif settings_state.submenu == "messages" then
       local msg = message_browser.filtered[message_browser.index]
       if msg then
         local added = config.toggle_message_favorite(msg.id)
@@ -2232,9 +2394,13 @@ local function setup_settings_keybindings(buf)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
-  -- Message disable toggle (in messages submenu)
+  -- Message disable toggle / Screensaver dismiss mode toggle
   vim.keymap.set("n", "d", function()
-    if settings_state.submenu == "messages" then
+    if settings_state.submenu == "screensaver" then
+      config.options.screensaver.dismiss = config.options.screensaver.dismiss == "any" and "escape" or "any"
+      config.save()
+      update_settings_content()
+    elseif settings_state.submenu == "messages" then
       local msg = message_browser.filtered[message_browser.index]
       if msg then
         local disabled = config.toggle_message_disabled(msg.id)
@@ -2248,9 +2414,22 @@ local function setup_settings_keybindings(buf)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
-  -- Footer submenu
+  -- Footer submenu / Screensaver effect cycling
   vim.keymap.set("n", "f", function()
-    if not settings_state.submenu then
+    if settings_state.submenu == "screensaver" then
+      local effects = { "chaos", "typewriter", "diagonal", "lines", "matrix", "wave", "fade", "scramble", "rain", "spiral", "explode", "implode", "glitch", "random" }
+      local ss_opts = config.options.screensaver or {}
+      local current = ss_opts.effect or "random"
+      local idx = #effects
+      for i, e in ipairs(effects) do
+        if e == current then idx = i break end
+      end
+      idx = idx + 1
+      if idx > #effects then idx = 1 end
+      config.options.screensaver.effect = effects[idx]
+      config.save()
+      update_settings_content()
+    elseif not settings_state.submenu then
       settings_state.submenu = "footer"
       update_settings_content()
       -- Resize preview window to fit footer
@@ -2266,13 +2445,23 @@ local function setup_settings_keybindings(buf)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
-  -- Footer-specific keys
+  -- Footer-specific keys / Screensaver enabled toggle
   vim.keymap.set("n", "e", function()
     if settings_state.submenu == "footer" then
       config.options.footer.enabled = not config.options.footer.enabled
       config.save()
       update_settings_content()
       update_preview_with_footer()
+    elseif settings_state.submenu == "screensaver" then
+      local screensaver = require("ascii-animation.screensaver")
+      config.options.screensaver.enabled = not config.options.screensaver.enabled
+      config.save()
+      if config.options.screensaver.enabled then
+        screensaver.enable()
+      else
+        screensaver.disable()
+      end
+      update_settings_content()
     elseif not settings_state.submenu then
       cycle_effect(1)
     end
@@ -2419,6 +2608,14 @@ local function setup_settings_keybindings(buf)
       animation.refresh_phase_highlights()
       update_settings_content()
       replay_preview()
+    end
+  end, { buffer = buf, nowait = true, silent = true })
+
+  -- Screensaver submenu (V key)
+  vim.keymap.set("n", "V", function()
+    if not settings_state.submenu then
+      settings_state.submenu = "screensaver"
+      update_settings_content()
     end
   end, { buffer = buf, nowait = true, silent = true })
 
@@ -2819,6 +3016,30 @@ function M.register_commands()
       return matches
     end,
     desc = "Apply a theme preset",
+  })
+
+  vim.api.nvim_create_user_command("AsciiScreensaver", function(opts)
+    local screensaver = require("ascii-animation.screensaver")
+    local arg = opts.args
+    if arg == "off" then
+      screensaver.disable()
+      vim.notify("Screensaver disabled for this session", vim.log.levels.INFO)
+    elseif arg == "on" then
+      screensaver.enable()
+      vim.notify("Screensaver enabled", vim.log.levels.INFO)
+    elseif arg == "" then
+      screensaver.trigger()
+    else
+      vim.notify("Usage: :AsciiScreensaver [on|off]", vim.log.levels.WARN)
+    end
+  end, {
+    nargs = "?",
+    complete = function(arg_lead)
+      local options = { "on", "off" }
+      if arg_lead == "" then return options end
+      return vim.tbl_filter(function(o) return o:find(arg_lead, 1, true) end, options)
+    end,
+    desc = "Trigger or toggle ASCII screensaver",
   })
 end
 

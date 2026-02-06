@@ -17,6 +17,11 @@ function M.setup(opts)
   -- Register user commands
   commands.register_commands()
 
+  -- Setup screensaver if enabled
+  if config.options.screensaver and config.options.screensaver.enabled then
+    require("ascii-animation.screensaver").setup()
+  end
+
   -- Create autocommand for snacks.nvim dashboard
   if opts and opts.snacks then
     M.setup_snacks(opts.snacks)
@@ -352,6 +357,20 @@ function M.list_presets()
     table.insert(names, k)
   end
   return names
+end
+
+-- ============================================
+-- Screensaver API
+-- ============================================
+
+-- Trigger the screensaver manually
+function M.screensaver()
+  require("ascii-animation.screensaver").trigger()
+end
+
+-- Dismiss the screensaver if active
+function M.dismiss_screensaver()
+  require("ascii-animation.screensaver").dismiss()
 end
 
 -- Expose commands module
