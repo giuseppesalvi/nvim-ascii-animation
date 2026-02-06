@@ -42,7 +42,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 - Respects your colorscheme and dashboard highlights
 - **Phase-based highlighting**: Customize colors for chaos, revealing, and revealed states
 - **Period-based color schemes**: Automatic warm/cool colors based on time of day
-- **User commands**: `:AsciiPreview`, `:AsciiSettings`, `:AsciiRefresh`, `:AsciiStop`, `:AsciiRestart`, `:AsciiCharset`
+- **User commands**: `:AsciiPreview`, `:AsciiSettings`, `:AsciiRefresh`, `:AsciiStop`, `:AsciiRestart`, `:AsciiCharset`, `:AsciiPause`, `:AsciiResume`, `:AsciiNext`, `:AsciiEffect`
 
 ## Installation
 
@@ -660,6 +660,42 @@ Change or view the character set used for animation effects.
 | `binary` | `01` |
 | `dots` | `.:;+*` |
 
+### `:AsciiPause`
+
+Pauses the current animation at the current frame. The frame stays visible.
+
+```vim
+:AsciiPause
+```
+
+### `:AsciiResume`
+
+Resumes a paused animation from where it left off.
+
+```vim
+:AsciiResume
+```
+
+### `:AsciiNext`
+
+Cycles to the next animation effect and restarts the animation. The setting persists across sessions.
+
+```vim
+:AsciiNext
+```
+
+### `:AsciiEffect [name]`
+
+Set or view the current animation effect. Supports tab completion.
+
+```vim
+:AsciiEffect           " Show current effect
+:AsciiEffect wave      " Switch to wave effect
+:AsciiEffect random    " Switch to random mode
+```
+
+**Available effects:** `chaos`, `typewriter`, `diagonal`, `lines`, `matrix`, `wave`, `fade`, `scramble`, `rain`, `spiral`, `explode`, `implode`, `glitch`, `random`
+
 ### `:checkhealth ascii-animation`
 
 Run the health check to diagnose issues with the plugin:
@@ -909,6 +945,10 @@ ascii.preview("morning_blocks_1")        -- Preview art in floating window
 ascii.settings()                         -- Open settings panel
 ascii.refresh()                          -- Re-run animation on current buffer
 ascii.stop()                             -- Stop any running animation
+ascii.pause()                            -- Pause current animation
+ascii.resume()                           -- Resume paused animation
+ascii.next_effect()                      -- Cycle to next effect (returns effect name)
+ascii.set_effect("wave")                 -- Set specific effect (returns true/false)
 ```
 
 ### Placeholders API
