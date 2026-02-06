@@ -48,6 +48,18 @@ M.gradient_preset_names = { "sunset", "ocean", "forest", "fire", "purple", "pink
 -- Color mode names for cycling
 M.color_mode_names = { "default", "rainbow", "gradient" }
 
+-- Theme presets: named bundles of settings applied with a single command
+M.theme_presets = {
+  retro     = { style = "pixel",    effect = "matrix",     ambient = "glitch",    char_preset = "blocks",   color_theme = nil },
+  zen       = { style = "minimal",  effect = "fade",       ambient = "none",      char_preset = "minimal",  color_theme = nil },
+  cyberpunk = { style = "braille",  effect = "scramble",   ambient = "glitch",    char_preset = "matrix",   color_theme = "cyberpunk" },
+  cinematic = { style = "gradient", effect = "wave",       ambient = "shimmer",   char_preset = "default",  color_theme = nil },
+  hacker    = { style = "blocks",   effect = "typewriter", ambient = "scanlines", char_preset = "binary",   color_theme = "matrix" },
+}
+
+-- Ordered list of theme preset names for cycling
+M.theme_preset_names = { "retro", "zen", "cyberpunk", "cinematic", "hacker" }
+
 -- Period-based color schemes for phase highlights
 M.period_color_schemes = {
   morning = {
@@ -206,6 +218,34 @@ function M.get_gradient_colors()
     start = gradient.start or preset.start,
     stop = gradient.stop or preset.stop,
   }
+end
+
+-- Apply a named theme preset
+function M.apply_preset(name)
+  local custom = M.options.content and M.options.content.custom_presets or {}
+  local preset = custom[name] or M.theme_presets[name]
+  if not preset then return false end
+
+  if preset.style then
+    M.options.content.styles = { preset.style }
+  end
+  if preset.effect then
+    M.options.animation.effect = preset.effect
+  end
+  if preset.ambient then
+    M.options.animation.ambient = preset.ambient
+  end
+  if preset.char_preset then
+    M.options.animation.char_preset = preset.char_preset
+  end
+  if preset.color_theme then
+    M.options.animation.color_theme = preset.color_theme
+    M.options.animation.use_phase_highlights = true
+  end
+
+  M.options.content.preset = name
+  M.save()
+  return true
 end
 
 -- Interpolate between two hex colors
@@ -376,6 +416,8 @@ M.defaults = {
     custom_arts = {},            -- User-defined arts by period
     custom_arts_dir = nil,       -- Directory path to load .txt art files from
     custom_messages = {},        -- User-defined messages by period
+    preset = nil,                -- Active theme preset name
+    custom_presets = {},         -- User-defined presets: { name = { style, effect, ambient, ... } }
 
     -- Personalization placeholders
     -- Supported: {name}, {project}, {time}, {date}, {version}, {plugin_count},
@@ -504,6 +546,7 @@ function M.save()
     content = {
       styles = M.options.content.styles,
       message_no_repeat = M.options.content.message_no_repeat,
+      preset = M.options.content.preset,
     },
     message_favorites = M.message_favorites,
     message_disabled = M.message_disabled,
@@ -562,6 +605,7 @@ function M.clear_saved()
   -- Reset content settings
   M.options.content.styles = M.defaults.content.styles
   M.options.content.message_no_repeat = M.defaults.content.message_no_repeat
+  M.options.content.preset = nil
   -- Reset message settings
   M.message_favorites = {}
   M.message_disabled = {}
@@ -719,6 +763,11 @@ function M.setup(opts)
         table.insert(M.themes_disabled, cat)
       end
     end
+  end
+  -- Apply theme preset if one is active
+  local preset_name = M.options.content and M.options.content.preset
+  if preset_name then
+    M.apply_preset(preset_name)
   end
 end
 

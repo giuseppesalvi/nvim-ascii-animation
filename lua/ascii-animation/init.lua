@@ -340,6 +340,20 @@ function M.set_effect(name)
   return animation.set_effect(name)
 end
 
+-- Apply a named theme preset
+function M.apply_preset(name)
+  return config.apply_preset(name)
+end
+
+-- List all available theme preset names
+function M.list_presets()
+  local names = vim.deepcopy(config.theme_preset_names)
+  for k in pairs(config.options.content.custom_presets or {}) do
+    table.insert(names, k)
+  end
+  return names
+end
+
 -- Expose commands module
 M.commands = commands
 
