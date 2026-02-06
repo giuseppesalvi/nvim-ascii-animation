@@ -7,6 +7,9 @@ local arts = require("ascii-animation.content.arts")
 local messages = require("ascii-animation.content.messages")
 local state = require("ascii-animation.state")
 local placeholders = require("ascii-animation.placeholders")
+local holidays_mod = require("ascii-animation.holidays")
+local holiday_arts = require("ascii-animation.content.arts.holiday")
+local holiday_messages = require("ascii-animation.content.messages.holidays")
 
 local M = {}
 
@@ -255,6 +258,21 @@ function M.get_art_for_period(period)
     end
   end
 
+  -- Add holiday arts if enabled and a holiday is active
+  local holidays_cfg = opts.holidays or {}
+  if holidays_cfg.enabled ~= false then
+    local active = holidays_mod.get_active_holidays(holidays_cfg.custom)
+    local priority = holidays_cfg.priority or 3
+    for _, h in ipairs(active) do
+      local h_arts = holiday_arts.get_arts_for_holiday(h.name)
+      for _, a in ipairs(h_arts) do
+        for _ = 1, priority do
+          table.insert(all_arts, a)
+        end
+      end
+    end
+  end
+
   if #all_arts == 0 then
     return nil
   end
@@ -452,6 +470,29 @@ function M.get_message_for_period(period)
     end
   end
 
+  -- Add holiday messages if enabled and a holiday is active
+  local holidays_cfg = opts.holidays or {}
+  if holidays_cfg.enabled ~= false then
+    local active = holidays_mod.get_active_holidays(holidays_cfg.custom)
+    local priority = holidays_cfg.priority or 3
+    for _, h in ipairs(active) do
+      -- Built-in holiday messages
+      local h_msgs = holiday_messages.get_messages_for_holiday(h.name)
+      for _, m in ipairs(h_msgs) do
+        for _ = 1, priority do
+          table.insert(all_messages, { id = "holiday_" .. h.name, text = m.text })
+        end
+      end
+      -- Custom holiday message field
+      local wrapped = holiday_messages.wrap_custom_message(h)
+      if wrapped then
+        for _ = 1, priority do
+          table.insert(all_messages, { id = "holiday_custom_" .. h.name, text = wrapped.text })
+        end
+      end
+    end
+  end
+
   -- If all messages in this period are filtered out, try other periods
   if #all_messages == 0 then
     local periods = { "morning", "afternoon", "evening", "night", "weekend" }
@@ -550,6 +591,14 @@ function M.list_arts()
     end
   end
 
+  -- Add holiday art IDs
+  for _, art in ipairs(holiday_arts.get_all_arts()) do
+    if not seen[art.id] then
+      seen[art.id] = true
+      table.insert(all_ids, art.id)
+    end
+  end
+
   -- Add custom dir art IDs
   local dir_arts = load_arts_from_dir()
   for _, art in ipairs(dir_arts.all) do
@@ -586,6 +635,9 @@ end
 function M.get_art_by_id(id)
   local result = arts.get_art_by_id(id)
   if result then return result end
+  -- Search holiday arts
+  local h_art = holiday_arts.get_art_by_id(id)
+  if h_art then return h_art end
   -- Search custom dir arts
   local dir_arts = load_arts_from_dir()
   for _, art in ipairs(dir_arts.all) do

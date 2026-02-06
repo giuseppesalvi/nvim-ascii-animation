@@ -472,6 +472,13 @@ M.defaults = {
     -- Exclude-list: disable these theme categories (nil = none)
     exclude_categories = nil,
 
+    -- Holiday content settings
+    holidays = {
+      enabled = true,           -- Show holiday-themed content on holidays
+      priority = 3,             -- Weight multiplier for holiday content in selection pool
+      custom = {},              -- User-defined holidays: { { name = "...", month = N, day = N, message = "..." } }
+    },
+
   },
 
   -- Footer settings
@@ -559,6 +566,7 @@ function M.save()
       styles = M.options.content.styles,
       message_no_repeat = M.options.content.message_no_repeat,
       preset = M.options.content.preset,
+      holidays_enabled = M.options.content.holidays and M.options.content.holidays.enabled,
     },
     message_favorites = M.message_favorites,
     message_disabled = M.message_disabled,
@@ -625,6 +633,10 @@ function M.clear_saved()
   M.options.content.styles = M.defaults.content.styles
   M.options.content.message_no_repeat = M.defaults.content.message_no_repeat
   M.options.content.preset = nil
+  -- Reset holidays
+  if M.options.content.holidays then
+    M.options.content.holidays.enabled = M.defaults.content.holidays.enabled
+  end
   -- Reset message settings
   M.message_favorites = {}
   M.message_disabled = {}
@@ -784,6 +796,10 @@ function M.setup(opts)
         table.insert(M.themes_disabled, cat)
       end
     end
+  end
+  -- Apply saved holidays enabled state
+  if saved.content and saved.content.holidays_enabled ~= nil and M.options.content.holidays then
+    M.options.content.holidays.enabled = saved.content.holidays_enabled
   end
   -- Apply theme preset if one is active
   local preset_name = M.options.content and M.options.content.preset

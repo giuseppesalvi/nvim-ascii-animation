@@ -44,6 +44,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 - **Period-based color schemes**: Automatic warm/cool colors based on time of day
 - **Theme presets**: Apply bundled settings (retro, zen, cyberpunk, cinematic, hacker) with a single command
 - **Screensaver**: Full-screen animated ASCII art after idle timeout with 6 display modes (static, bounce, tile, marquee, zoom, random)
+- **Holiday content**: Auto-detected holiday-themed ASCII art and messages with higher selection priority (5 built-in holidays, user-extensible)
 - **User commands**: `:AsciiPreview`, `:AsciiSettings`, `:AsciiRefresh`, `:AsciiStop`, `:AsciiRestart`, `:AsciiCharset`, `:AsciiPause`, `:AsciiResume`, `:AsciiNext`, `:AsciiEffect`, `:AsciiPreset`, `:AsciiScreensaver`
 
 ## Installation
@@ -966,6 +967,35 @@ Message favorites and disabled states are managed via `:AsciiSettings` → `g` (
 | `screensaver.display` | string | `"static"` | Display mode: `"static"`, `"bounce"`, `"tile"`, `"marquee"`, `"zoom"`, `"random"` |
 | `screensaver.dismiss` | string | `"any"` | Dismiss trigger: `"any"` key or `"escape"` only |
 
+### Holiday Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `content.holidays.enabled` | boolean | `true` | Enable holiday-themed content on holidays |
+| `content.holidays.priority` | number | `3` | Weight multiplier for holiday content in selection pool |
+| `content.holidays.custom` | table | `{}` | User-defined holidays (see below) |
+
+**Built-in holidays:** New Year's Day (Jan 1), Valentine's Day (Feb 14), Halloween (Oct 31), Christmas (Dec 24-26), New Year's Eve (Dec 31).
+
+**Custom holidays:**
+
+```lua
+content = {
+  holidays = {
+    enabled = true,
+    priority = 3,
+    custom = {
+      { name = "birthday", month = 3, day = 15, message = "Happy Birthday!" },
+      { name = "pi_day", month = 3, day = 14, message = "Happy Pi Day! 3.14159..." },
+      -- Range: from/to for multi-day holidays
+      { name = "festival", from = { month = 7, day = 1 }, to = { month = 7, day = 4 } },
+    },
+  },
+}
+```
+
+Toggle holidays on/off via `:AsciiSettings` → `H`.
+
 ## API
 
 ### Manual Animation
@@ -1035,6 +1065,10 @@ ascii.next_effect()                      -- Cycle to next effect (returns effect
 ascii.set_effect("wave")                 -- Set specific effect (returns true/false)
 ascii.apply_preset("retro")              -- Apply a theme preset (returns true/false)
 ascii.list_presets()                     -- List all preset names (built-in + custom)
+
+-- Holidays
+ascii.is_holiday()                       -- Check if today is a holiday (boolean)
+ascii.get_active_holidays()              -- Get names of active holidays (string[])
 ```
 
 ### Placeholders API

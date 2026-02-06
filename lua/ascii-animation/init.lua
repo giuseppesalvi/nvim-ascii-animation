@@ -373,6 +373,24 @@ function M.dismiss_screensaver()
   require("ascii-animation.screensaver").dismiss()
 end
 
+-- ============================================
+-- Holidays API
+-- ============================================
+
+-- Check if today is a holiday
+function M.is_holiday()
+  local holidays = require("ascii-animation.holidays")
+  local custom = config.options.content and config.options.content.holidays and config.options.content.holidays.custom or {}
+  return holidays.is_holiday(custom)
+end
+
+-- Get names of active holidays
+function M.get_active_holidays()
+  local holidays = require("ascii-animation.holidays")
+  local custom = config.options.content and config.options.content.holidays and config.options.content.holidays.custom or {}
+  return holidays.get_active_holiday_names(custom)
+end
+
 -- Expose commands module
 M.commands = commands
 

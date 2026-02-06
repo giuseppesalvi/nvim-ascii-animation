@@ -1248,6 +1248,10 @@ local function update_settings_content()
       "  " .. string.rep("─", 38),
       string.format("  [V] Screensaver...  (%s)", ss_label),
       "",
+      "  Holidays",
+      "  " .. string.rep("─", 38),
+      string.format("  [H] Holidays:  %s", (config.options.content.holidays and config.options.content.holidays.enabled) and "ON " or "OFF"),
+      "",
       string.format("  Arts: %d (%d favs)", art_count, fav_count),
       "",
       "  [Space] Replay  [R] Reset  [q] Close",
@@ -2209,6 +2213,12 @@ local function setup_settings_keybindings(buf)
       update_settings_content()
     elseif settings_state.submenu == "fade" then
       adjust_fade_highlight_count(-1)
+    elseif not settings_state.submenu then
+      if config.options.content.holidays then
+        config.options.content.holidays.enabled = not config.options.content.holidays.enabled
+        config.save()
+        update_settings_content()
+      end
     end
   end, { buffer = buf, nowait = true, silent = true })
 
