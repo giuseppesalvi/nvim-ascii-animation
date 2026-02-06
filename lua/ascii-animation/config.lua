@@ -342,6 +342,8 @@ M.defaults = {
     -- Period-based color schemes (auto-changes phase colors by time of day)
     period_colors = false,          -- Enable period-based colors
     period_color_overrides = {},    -- Override specific period colors: { morning = { revealed = "#ff6600" } }
+    -- Reduced motion: skip animation, show final art immediately
+    reduced_motion = false,
   },
 
   -- Content selection settings
@@ -492,6 +494,7 @@ function M.save()
       gradient = M.options.animation.gradient,
       period_colors = M.options.animation.period_colors,
       period_color_overrides = M.options.animation.period_color_overrides,
+      reduced_motion = M.options.animation.reduced_motion,
     },
     selection = {
       random_mode = M.options.selection.random_mode,
@@ -554,6 +557,7 @@ function M.clear_saved()
   M.options.animation.gradient = vim.deepcopy(M.defaults.animation.gradient)
   M.options.animation.period_colors = M.defaults.animation.period_colors
   M.options.animation.period_color_overrides = vim.deepcopy(M.defaults.animation.period_color_overrides)
+  M.options.animation.reduced_motion = M.defaults.animation.reduced_motion
   -- Reset content settings
   M.options.content.styles = M.defaults.content.styles
   M.options.content.message_no_repeat = M.defaults.content.message_no_repeat

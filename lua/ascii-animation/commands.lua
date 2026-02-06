@@ -1118,6 +1118,7 @@ local function update_settings_content()
       opts_hint,
       string.format("  [a] Ambient:  %-10s ◀ %d/%d ▶", opts.animation.ambient, ambient_idx, #ambients),
       string.format("  [l] Loop:     %s", opts.animation.loop and "ON " or "OFF"),
+      string.format("  [r] Reduced motion: %s", opts.animation.reduced_motion and "ON " or "OFF"),
       string.format("  [s] Steps:    %d", opts.animation.steps),
       string.format("  [c] Charset:  %-10s ◀ %d/%d ▶", char_preset, charset_idx, #config.char_preset_names),
       charset_warning,
@@ -1211,6 +1212,14 @@ end
 -- Toggle loop
 local function toggle_loop()
   config.options.animation.loop = not config.options.animation.loop
+  config.save()
+  update_settings_content()
+  replay_preview()
+end
+
+-- Toggle reduced motion
+local function toggle_reduced_motion()
+  config.options.animation.reduced_motion = not config.options.animation.reduced_motion
   config.save()
   update_settings_content()
   replay_preview()
@@ -1907,7 +1916,9 @@ local function setup_settings_keybindings(buf)
   end, { buffer = buf, nowait = true, silent = true })
 
   vim.keymap.set("n", "r", function()
-    if settings_state.submenu == "glitch" then
+    if not settings_state.submenu then
+      toggle_reduced_motion()
+    elseif settings_state.submenu == "glitch" then
       adjust_glitch_resolve_speed(0.1)
     elseif settings_state.submenu == "spiral" then
       cycle_spiral_rotation(1)

@@ -1607,6 +1607,13 @@ function M.start(buf, header_lines, highlight)
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   local header_end = find_header_end(lines, header_lines)
 
+  -- Reduced motion: skip animation, show final art immediately
+  if config.options.animation.reduced_motion then
+    setup_color_mode_highlights(header_end)
+    start_ambient(buf, header_end, highlight)
+    return
+  end
+
   -- Resolve effect (pick random if "random")
   local effect = config.options.animation.effect
   if effect == "random" then
