@@ -1,6 +1,6 @@
 -- User commands for ascii-animation
 -- Provides :AsciiPreview, :AsciiList, :AsciiSettings, :AsciiRefresh, :AsciiStop, :AsciiRestart, :AsciiCharset,
--- :AsciiPause, :AsciiResume, :AsciiNext, :AsciiEffect
+-- :AsciiPause, :AsciiResume, :AsciiNext, :AsciiEffect, :AsciiPreset
 
 local config = require("ascii-animation.config")
 local animation = require("ascii-animation.animation")
@@ -1106,8 +1106,26 @@ local function update_settings_content()
       local palette = opts.animation.rainbow and opts.animation.rainbow.palette or "default"
       color_mode_detail = string.format(" (%s)", palette)
     elseif color_mode == "gradient" then
-      local preset = opts.animation.gradient and opts.animation.gradient.preset or "sunset"
-      color_mode_detail = string.format(" (%s)", preset)
+      local gpreset = opts.animation.gradient and opts.animation.gradient.preset or "sunset"
+      color_mode_detail = string.format(" (%s)", gpreset)
+    end
+
+    -- Theme preset options
+    local preset_names = vim.deepcopy(config.theme_preset_names)
+    for k in pairs(opts.content.custom_presets or {}) do
+      table.insert(preset_names, k)
+    end
+    local current_preset = opts.content.preset or "none"
+    local preset_idx = 0
+    for i, n in ipairs(preset_names) do
+      if n == current_preset then preset_idx = i break end
+    end
+    local preset_total = #preset_names
+    local preset_display
+    if preset_idx == 0 then
+      preset_display = string.format("  [T] Preset:   %-10s   (none)", "none")
+    else
+      preset_display = string.format("  [T] Preset:   %-10s ◀ %d/%d ▶", current_preset, preset_idx, preset_total)
     end
 
     lines = {
@@ -1129,6 +1147,7 @@ local function update_settings_content()
       string.format("  [z] Period:   %s", opts.animation.period_colors and ("ON  (" .. time.get_current_period() .. " - " .. (config.period_moods[time.get_current_period()] or "") .. ")") or "OFF"),
       string.format("  [C] Color:    %-10s ◀ %d/%d ▶%s", color_mode, color_mode_idx, #config.color_mode_names, color_mode_detail),
       "  [t] Timing...",
+      preset_display,
       "",
       "  Content",
       "  " .. string.rep("─", 38),
@@ -1190,6 +1209,31 @@ local function cycle_effect(delta)
   elseif idx > #effects then idx = 1 end
   config.options.animation.effect = effects[idx]
   config.save()
+  update_settings_content()
+  replay_preview()
+end
+
+-- Cycle through theme presets
+local function cycle_preset(delta)
+  local names = vim.deepcopy(config.theme_preset_names)
+  for k in pairs(config.options.content.custom_presets or {}) do
+    table.insert(names, k)
+  end
+  table.insert(names, 1, "none")
+  local current = config.options.content.preset or "none"
+  local idx = 1
+  for i, n in ipairs(names) do
+    if n == current then idx = i break end
+  end
+  idx = idx + delta
+  if idx < 1 then idx = #names
+  elseif idx > #names then idx = 1 end
+  if names[idx] == "none" then
+    config.options.content.preset = nil
+    config.save()
+  else
+    config.apply_preset(names[idx])
+  end
   update_settings_content()
   replay_preview()
 end
@@ -2259,9 +2303,11 @@ local function setup_settings_keybindings(buf)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
-  -- Theme cycling (T key - in phase_colors submenu) / Spiral tightness (T key - in spiral submenu)
+  -- Preset cycling (T key - main menu) / Theme cycling (T key - in phase_colors submenu) / Spiral tightness (T key - in spiral submenu)
   vim.keymap.set("n", "T", function()
-    if settings_state.submenu == "phase_colors" then
+    if not settings_state.submenu then
+      cycle_preset(1)
+    elseif settings_state.submenu == "phase_colors" then
       -- Cycle through themes
       local current_theme = config.options.animation.color_theme or "default"
       local current_idx = 1
@@ -2740,6 +2786,39 @@ function M.register_commands()
       return matches
     end,
     desc = "Set animation effect",
+  })
+
+  vim.api.nvim_create_user_command("AsciiPreset", function(opts)
+    local name = opts.args
+    if name == "" then
+      local current = config.options.content and config.options.content.preset or "none"
+      vim.notify("Current preset: " .. current, vim.log.levels.INFO)
+      return
+    end
+    if config.apply_preset(name) then
+      vim.notify("Preset applied: " .. name, vim.log.levels.INFO)
+    else
+      local valid = vim.list_extend(
+        vim.deepcopy(config.theme_preset_names),
+        vim.tbl_keys(config.options.content.custom_presets or {})
+      )
+      vim.notify("Invalid preset. Valid: " .. table.concat(valid, ", "), vim.log.levels.WARN)
+    end
+  end, {
+    nargs = "?",
+    complete = function(arg_lead)
+      local names = vim.deepcopy(config.theme_preset_names)
+      for k in pairs(config.options.content.custom_presets or {}) do
+        table.insert(names, k)
+      end
+      if arg_lead == "" then return names end
+      local matches = {}
+      for _, n in ipairs(names) do
+        if n:find(arg_lead, 1, true) then table.insert(matches, n) end
+      end
+      return matches
+    end,
+    desc = "Apply a theme preset",
   })
 end
 
