@@ -1072,6 +1072,7 @@ local function get_screensaver_submenu_lines()
     string.format("  [f] Effect:   %-10s ◀ %d/%d ▶", ss_effect, effect_idx, #effects),
     string.format("  [m] Display:  %-10s ◀ %d/%d ▶", display, display_idx, #display_names),
     string.format("  [d] Dismiss:  %-10s ◀ %d/%d ▶", dismiss, dismiss_idx, #dismiss_modes),
+    string.format("  [a] Audio:    %s", ss_opts.audio_reactive and "ON " or "OFF"),
     "",
     "  [Space] Test  Backspace: back",
     "",
@@ -2537,7 +2538,11 @@ local function setup_settings_keybindings(buf)
 
   -- Footer alignment cycling / Ambient cycling
   vim.keymap.set("n", "a", function()
-    if settings_state.submenu == "footer" then
+    if settings_state.submenu == "screensaver" then
+      config.options.screensaver.audio_reactive = not config.options.screensaver.audio_reactive
+      config.save()
+      update_settings_content()
+    elseif settings_state.submenu == "footer" then
       local alignments = { "left", "center", "right" }
       local current = config.options.footer.alignment or "center"
       local idx = 1

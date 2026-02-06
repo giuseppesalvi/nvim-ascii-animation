@@ -43,7 +43,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 - **Phase-based highlighting**: Customize colors for chaos, revealing, and revealed states
 - **Period-based color schemes**: Automatic warm/cool colors based on time of day
 - **Theme presets**: Apply bundled settings (retro, zen, cyberpunk, cinematic, hacker) with a single command
-- **Screensaver**: Full-screen animated ASCII art after idle timeout with 6 display modes (static, bounce, tile, marquee, zoom, random)
+- **Screensaver**: Full-screen animated ASCII art after idle timeout with 13 display modes (static, bounce, tile, marquee, zoom, pulse, waves, rain, shatter, fireworks, heartbeat, random)
 - **Holiday content**: Auto-detected holiday-themed ASCII art and messages with higher selection priority (5 built-in holidays, user-extensible)
 - **User commands**: `:AsciiPreview`, `:AsciiSettings`, `:AsciiRefresh`, `:AsciiStop`, `:AsciiRestart`, `:AsciiCharset`, `:AsciiPause`, `:AsciiResume`, `:AsciiNext`, `:AsciiEffect`, `:AsciiPreset`, `:AsciiScreensaver`
 
@@ -753,8 +753,9 @@ screensaver = {
   enabled = true,
   timeout = 1000 * 60 * 5,  -- 5 minutes
   effect = "random",
-  display = "bounce",        -- static, bounce, tile, marquee, zoom, random
+  display = "bounce",        -- static, bounce, tile, marquee, zoom, pulse, waves, rain, shatter, fireworks, heartbeat, random
   dismiss = "any",
+  audio_reactive = false,    -- pulse with sound (requires sox)
 }
 ```
 
@@ -767,7 +768,17 @@ screensaver = {
 | `tile` | Art repeats in a grid pattern filling the screen |
 | `marquee` | Art reveals once, then scrolls horizontally |
 | `zoom` | Art displayed at 2x size with looping animation |
-| `random` | Randomly picks one of the above modes |
+| `pulse` | Art scales between 1x-2x based on microphone audio level (requires sox) |
+| `waves` | Concentric ripples radiate from art edges on sound (requires sox) |
+| `rain` | Characters fall from top like rain, heavier with louder sound (requires sox) |
+| `shatter` | Art explodes on sound spikes, reassembles in silence (requires sox) |
+| `fireworks` | Burst explosions around art triggered by sound (requires sox) |
+| `heartbeat` | Glowing aura pulses around art edges on beats (requires sox) |
+| `random` | Randomly picks a mode (includes audio modes if sox available) |
+
+**Audio-Reactive Mode:**
+
+Enable `audio_reactive` to make the screensaver pulse with sound. Louder audio increases bounce/marquee movement speed and shortens loop delays for static/tile/zoom modes. Audio-driven display modes (`pulse`, `waves`, `rain`, `shatter`, `fireworks`, `heartbeat`) auto-start audio sampling and react to sound in unique ways. Requires [sox](https://sox.sourceforge.net/) (`rec` command) for microphone input — install with `brew install sox` (macOS) or `apt install sox` (Linux). Toggle via `:AsciiSettings` → `V` → `[a]`.
 
 ### `:checkhealth ascii-animation`
 
@@ -964,8 +975,9 @@ Message favorites and disabled states are managed via `:AsciiSettings` → `g` (
 | `screensaver.enabled` | boolean | `false` | Enable idle screensaver (opt-in) |
 | `screensaver.timeout` | number | `300000` | Idle timeout in ms (default: 5 minutes) |
 | `screensaver.effect` | string | `"random"` | Animation effect for reveal: any effect name or `"random"` |
-| `screensaver.display` | string | `"static"` | Display mode: `"static"`, `"bounce"`, `"tile"`, `"marquee"`, `"zoom"`, `"random"` |
+| `screensaver.display` | string | `"static"` | Display mode: `"static"`, `"bounce"`, `"tile"`, `"marquee"`, `"zoom"`, `"pulse"`, `"waves"`, `"rain"`, `"shatter"`, `"fireworks"`, `"heartbeat"`, `"random"` |
 | `screensaver.dismiss` | string | `"any"` | Dismiss trigger: `"any"` key or `"escape"` only |
+| `screensaver.audio_reactive` | boolean | `false` | Pulse animation based on microphone input (requires sox) |
 
 ### Holiday Options
 

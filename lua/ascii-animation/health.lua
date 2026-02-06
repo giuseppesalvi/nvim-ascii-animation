@@ -119,6 +119,13 @@ local function check_terminal()
     vim.health.warn(string.format("Encoding is '%s'. UTF-8 recommended for special characters", encoding))
   end
 
+  -- Check sox for audio-reactive screensaver
+  if vim.fn.executable("rec") == 1 then
+    vim.health.ok("sox (rec) available for audio-reactive screensaver")
+  else
+    vim.health.info("sox (rec) not found — audio-reactive screensaver unavailable. Install: brew install sox / apt install sox")
+  end
+
   return true
 end
 
