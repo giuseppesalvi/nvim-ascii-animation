@@ -374,6 +374,7 @@ M.defaults = {
 
     -- User additions (merged with built-in)
     custom_arts = {},            -- User-defined arts by period
+    custom_arts_dir = nil,       -- Directory path to load .txt art files from
     custom_messages = {},        -- User-defined messages by period
 
     -- Personalization placeholders
