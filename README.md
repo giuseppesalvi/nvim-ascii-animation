@@ -109,6 +109,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
       },
       -- Period-based color schemes (auto-changes phase colors by time of day)
       period_colors = false, -- Enable period-based colors (morning=warm, night=cool)
+      reduced_motion = false, -- Skip animation, show final art immediately
     },
     chaos_chars = "@#$%&*+=-:;!?/\\|[]{}()<>~`'^", -- Custom chars (overrides preset)
   },
@@ -509,6 +510,7 @@ Opens an interactive settings panel with **live preview**:
 - `o`: open effect options (for wave, glitch, scramble, spiral, fade)
 - `a`/`A`: cycle ambient effect (9 options)
 - `l`: toggle loop
+- `r`: toggle reduced motion (skip animation)
 - `s`/`S`: adjust steps (±5)
 - `c`: cycle charset preset forward (9 presets)
 - `p`: toggle phase highlights
@@ -804,6 +806,7 @@ animation = {
 | `animation.gradient.stop` | string | `nil` | Custom gradient stop color (hex, overrides preset) |
 | `animation.period_colors` | boolean | `false` | Enable period-based color schemes (auto-enables phase highlights) |
 | `animation.period_color_overrides` | table | `{}` | Override specific period colors: `{ morning = { revealed = "#ff6600" } }` |
+| `animation.reduced_motion` | boolean | `false` | Skip animation entirely and show final ASCII art immediately. Ambient effects still work. |
 | `animation.auto_fit` | boolean | `false` | Skip arts wider than terminal width |
 | `animation.min_width` | number | `60` | Minimum terminal width for animation |
 | `animation.fallback` | string | `"tagline"` | Fallback when terminal too narrow: `"tagline"`, `"none"`, or art ID |
