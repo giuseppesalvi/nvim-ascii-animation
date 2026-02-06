@@ -42,7 +42,8 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 - Respects your colorscheme and dashboard highlights
 - **Phase-based highlighting**: Customize colors for chaos, revealing, and revealed states
 - **Period-based color schemes**: Automatic warm/cool colors based on time of day
-- **User commands**: `:AsciiPreview`, `:AsciiSettings`, `:AsciiRefresh`, `:AsciiStop`, `:AsciiRestart`, `:AsciiCharset`, `:AsciiPause`, `:AsciiResume`, `:AsciiNext`, `:AsciiEffect`
+- **Theme presets**: Apply bundled settings (retro, zen, cyberpunk, cinematic, hacker) with a single command
+- **User commands**: `:AsciiPreview`, `:AsciiSettings`, `:AsciiRefresh`, `:AsciiStop`, `:AsciiRestart`, `:AsciiCharset`, `:AsciiPause`, `:AsciiResume`, `:AsciiNext`, `:AsciiEffect`, `:AsciiPreset`
 
 ## Installation
 
@@ -518,6 +519,7 @@ Opens an interactive settings panel with **live preview**:
 - `P`: open phase colors (when phase highlights enabled)
 - `C`: open color mode settings (rainbow/gradient)
 - `t`: open timing settings
+- `T`: cycle theme preset (retro, zen, cyberpunk, cinematic, hacker)
 - `m`/`M`: cycle random mode (always/daily/session)
 - `n`: toggle no-repeat
 - `w`/`W`: adjust favorites weight (±10%)
@@ -696,6 +698,42 @@ Set or view the current animation effect. Supports tab completion.
 
 **Available effects:** `chaos`, `typewriter`, `diagonal`, `lines`, `matrix`, `wave`, `fade`, `scramble`, `rain`, `spiral`, `explode`, `implode`, `glitch`, `random`
 
+### `:AsciiPreset [name]`
+
+Apply a theme preset that bundles style, effect, ambient, charset, and color theme into a single setting. Supports tab completion.
+
+```vim
+:AsciiPreset           " Show current preset
+:AsciiPreset retro     " Apply retro preset
+:AsciiPreset zen       " Apply zen preset
+```
+
+**Built-in presets:**
+
+| Preset | Style | Effect | Ambient | Charset | Color Theme |
+|--------|-------|--------|---------|---------|-------------|
+| `retro` | pixel | matrix | glitch | blocks | — |
+| `zen` | minimal | fade | none | minimal | — |
+| `cyberpunk` | braille | scramble | glitch | matrix | cyberpunk |
+| `cinematic` | gradient | wave | shimmer | default | — |
+| `hacker` | blocks | typewriter | scanlines | binary | matrix |
+
+You can also define custom presets in your config:
+
+```lua
+content = {
+  custom_presets = {
+    my_vibe = {
+      style = "isometric",
+      effect = "spiral",
+      ambient = "sparkle",
+      char_preset = "stars",
+      color_theme = "dracula",
+    },
+  },
+}
+```
+
 ### `:checkhealth ascii-animation`
 
 Run the health check to diagnose issues with the plugin:
@@ -869,6 +907,8 @@ animation = {
 | `content.favorite_weight` | number | `2` | Multiplier for favorites in selection pool |
 | `content.no_repeat` | boolean/number | `false` | Don't repeat last N arts: `false`, `true` (1), or number |
 | `content.message_no_repeat` | boolean/number | `false` | Don't repeat last N messages: `false`, `true` (1), or number |
+| `content.preset` | string/nil | `nil` | Active theme preset name (e.g. `"retro"`, `"zen"`, `"cyberpunk"`, `"cinematic"`, `"hacker"`) |
+| `content.custom_presets` | table | `{}` | User-defined presets: `{ name = { style, effect, ambient, char_preset, color_theme } }` |
 | `content.message_categories` | table/nil | `nil` | Include-list: only show messages from these theme categories (e.g. `{"zen", "witty"}`) |
 | `content.exclude_categories` | table/nil | `nil` | Exclude-list: hide messages from these theme categories (e.g. `{"cryptic"}`) |
 
@@ -949,6 +989,8 @@ ascii.pause()                            -- Pause current animation
 ascii.resume()                           -- Resume paused animation
 ascii.next_effect()                      -- Cycle to next effect (returns effect name)
 ascii.set_effect("wave")                 -- Set specific effect (returns true/false)
+ascii.apply_preset("retro")              -- Apply a theme preset (returns true/false)
+ascii.list_presets()                     -- List all preset names (built-in + custom)
 ```
 
 ### Placeholders API
