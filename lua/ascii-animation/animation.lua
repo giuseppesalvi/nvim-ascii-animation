@@ -197,6 +197,7 @@ local animation_state = {
   total_steps = nil,    -- Total steps for resume
   win = nil,            -- Window for resume
   reverse = nil,        -- Direction for resume
+  on_complete = nil,    -- Callback fired when animation finishes (non-looping)
 }
 
 -- Ease-in-out cubic function for smooth acceleration/deceleration
@@ -1510,6 +1511,9 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
       -- Not looping: animation finished, clear and start ambient effects
       vim.api.nvim_buf_clear_namespace(buf, M.ns_id, 0, -1)
       animation_state.running = false
+      local cb = animation_state.on_complete
+      animation_state.on_complete = nil
+      if cb then cb() end
       start_ambient(buf, header_end, highlight)
     end
     return
@@ -1598,6 +1602,7 @@ function M.stop()
   stop_ambient()
   animation_state.running = false
   animation_state.paused = false
+  animation_state.on_complete = nil
   if animation_state.buf and vim.api.nvim_buf_is_valid(animation_state.buf) then
     vim.api.nvim_buf_clear_namespace(animation_state.buf, M.ns_id, 0, -1)
   end
@@ -1650,7 +1655,7 @@ function M.set_effect(name)
 end
 
 -- Start animation on a buffer
-function M.start(buf, header_lines, highlight)
+function M.start(buf, header_lines, highlight, on_complete)
   if not config.options.animation.enabled then return end
 
   -- Stop any existing animation/ambient
@@ -1694,6 +1699,7 @@ function M.start(buf, header_lines, highlight)
   animation_state.header_end = header_end
   animation_state.highlight = highlight
   animation_state.effect = effect
+  animation_state.on_complete = on_complete
 
   animate(buf, win, 0, config.options.animation.steps, highlight, header_end, false)
 end

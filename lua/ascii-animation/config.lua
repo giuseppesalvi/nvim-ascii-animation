@@ -60,6 +60,9 @@ M.theme_presets = {
 -- Ordered list of theme preset names for cycling
 M.theme_preset_names = { "retro", "zen", "cyberpunk", "cinematic", "hacker" }
 
+-- Screensaver display mode names for cycling
+M.screensaver_display_names = { "static", "bounce", "tile", "marquee", "zoom", "random" }
+
 -- Period-based color schemes for phase highlights
 M.period_color_schemes = {
   morning = {
@@ -477,6 +480,15 @@ M.defaults = {
     template = "{message}",  -- Available: {message}, {date}, {time}, {version}, {plugins}, {name}, {project}
     alignment = "center",    -- "left" | "center" | "right"
   },
+
+  -- Screensaver settings
+  screensaver = {
+    enabled = false,          -- Opt-in: set to true to enable idle screensaver
+    timeout = 1000 * 60 * 5,  -- Idle timeout in ms (default: 5 minutes)
+    effect = "random",        -- Animation effect or "random"
+    dismiss = "any",          -- "any" key or "escape" only
+    display = "static",       -- Display mode: "static" | "bounce" | "tile" | "marquee" | "zoom" | "random"
+  },
 }
 
 M.options = {}
@@ -556,6 +568,13 @@ function M.save()
       template = M.options.footer.template,
       alignment = M.options.footer.alignment,
     },
+    screensaver = {
+      enabled = M.options.screensaver.enabled,
+      timeout = M.options.screensaver.timeout,
+      effect = M.options.screensaver.effect,
+      dismiss = M.options.screensaver.dismiss,
+      display = M.options.screensaver.display,
+    },
     favorites = M.favorites,
     favorites_weight = M.favorites_weight,
   }
@@ -628,6 +647,8 @@ function M.clear_saved()
   M.options.footer.enabled = M.defaults.footer.enabled
   M.options.footer.template = M.defaults.footer.template
   M.options.footer.alignment = M.defaults.footer.alignment
+  -- Reset screensaver settings
+  M.options.screensaver = vim.deepcopy(M.defaults.screensaver)
 end
 
 -- Toggle favorite status for an art ID
