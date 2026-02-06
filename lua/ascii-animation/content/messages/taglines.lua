@@ -47,12 +47,12 @@ M.messages = {
     { text = "Dawn of ideas.", theme = "motivational" },
     { text = "Wake up & code.", theme = "motivational" },
     -- Personalized (with placeholders)
-    { text = "Good {time}, {name}!", theme = "personalized" },
+    { text = "Good {time}, {name}!", theme = "personalized", condition = function() return require("ascii-animation.placeholders").resolve("name") ~= nil end },
     { text = "Welcome back to {project}.", theme = "personalized" },
     { text = "Ready to build {project}?", theme = "personalized" },
-    { text = "{greeting}, {name}!", theme = "personalized" },
+    { text = "{greeting}, {name}!", theme = "personalized", condition = function() return require("ascii-animation.placeholders").resolve("name") ~= nil end },
     { text = "Happy {day}! Let's code.", theme = "personalized" },
-    { text = "{streak} day streak! Keep going.", theme = "personalized" },
+    { text = "{streak} day streak! Keep going.", theme = "personalized", condition = function() return tonumber(require("ascii-animation.placeholders").resolve("streak")) > 0 end },
     { text = "{random_emoji} Time to code!", theme = "personalized" },
     -- Philosophical
     { text = "Today writes tomorrow's history.", theme = "philosophical" },
@@ -112,10 +112,10 @@ M.messages = {
     { text = "Stay sharp.", theme = "motivational" },
     { text = "Full steam ahead.", theme = "motivational" },
     -- Personalized (with placeholders)
-    { text = "Good {time}, {name}!", theme = "personalized" },
+    { text = "Good {time}, {name}!", theme = "personalized", condition = function() return require("ascii-animation.placeholders").resolve("name") ~= nil end },
     { text = "{project} awaits your code.", theme = "personalized" },
     { text = "Neovim {version} at your service.", theme = "personalized" },
-    { text = "Working on {git_branch}?", theme = "personalized" },
+    { text = "Working on {git_branch}?", theme = "personalized", condition = function() return require("ascii-animation.placeholders").resolve("git_branch") ~= nil end },
     { text = "You've been coding for {uptime}!", theme = "personalized" },
     { text = "It's {hour} — stay focused.", theme = "personalized" },
     -- Philosophical
@@ -178,7 +178,7 @@ M.messages = {
     { text = "Twilight coding.", theme = "motivational" },
     { text = "Calm focus.", theme = "motivational" },
     -- Personalized (with placeholders)
-    { text = "Good {time}, {name}!", theme = "personalized" },
+    { text = "Good {time}, {name}!", theme = "personalized", condition = function() return require("ascii-animation.placeholders").resolve("name") ~= nil end },
     { text = "Wrapping up {project}.", theme = "personalized" },
     { text = "{date} — Make it count.", theme = "personalized" },
     { text = "{greeting}! {uptime} of coding today.", theme = "personalized" },
@@ -240,10 +240,10 @@ M.messages = {
     { text = "3am thoughts.", theme = "motivational" },
     { text = "💤 Remember to rest.", theme = "zen" },
     -- Personalized (with placeholders)
-    { text = "Late {time}, {name}.", theme = "personalized" },
+    { text = "Late {time}, {name}.", theme = "personalized", condition = function() return require("ascii-animation.placeholders").resolve("name") ~= nil end },
     { text = "Neovim {version} • {plugin_count} plugins loaded.", theme = "personalized" },
     { text = "The night belongs to {project}.", theme = "personalized" },
-    { text = "{greeting}, {name}. It's {hour}.", theme = "personalized" },
+    { text = "{greeting}, {name}. It's {hour}.", theme = "personalized", condition = function() return require("ascii-animation.placeholders").resolve("name") ~= nil end },
     { text = "{uptime} and counting...", theme = "personalized" },
     -- Philosophical
     { text = "In darkness, we see clearly.", theme = "philosophical" },
@@ -314,11 +314,11 @@ M.messages = {
     { text = "No deadlines.", theme = "motivational" },
     { text = "Pure joy.", theme = "motivational" },
     -- Personalized (with placeholders)
-    { text = "Happy {time}, {name}!", theme = "personalized" },
+    { text = "Happy {time}, {name}!", theme = "personalized", condition = function() return require("ascii-animation.placeholders").resolve("name") ~= nil end },
     { text = "Weekend vibes in {project}.", theme = "personalized" },
     { text = "{date} — Your time to create.", theme = "personalized" },
     { text = "{random_emoji} Happy {day}!", theme = "personalized" },
-    { text = "{streak} day streak! Even on weekends.", theme = "personalized" },
+    { text = "{streak} day streak! Even on weekends.", theme = "personalized", condition = function() return tonumber(require("ascii-animation.placeholders").resolve("streak")) > 0 end },
     -- Philosophical
     { text = "Freedom is the root of creation.", theme = "philosophical" },
     { text = "Play is the highest form of research.", theme = "philosophical" },
