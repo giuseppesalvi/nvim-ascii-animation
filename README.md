@@ -43,7 +43,8 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 - **Phase-based highlighting**: Customize colors for chaos, revealing, and revealed states
 - **Period-based color schemes**: Automatic warm/cool colors based on time of day
 - **Theme presets**: Apply bundled settings (retro, zen, cyberpunk, cinematic, hacker) with a single command
-- **User commands**: `:AsciiPreview`, `:AsciiSettings`, `:AsciiRefresh`, `:AsciiStop`, `:AsciiRestart`, `:AsciiCharset`, `:AsciiPause`, `:AsciiResume`, `:AsciiNext`, `:AsciiEffect`, `:AsciiPreset`
+- **Screensaver**: Full-screen animated ASCII art after idle timeout with 6 display modes (static, bounce, tile, marquee, zoom, random)
+- **User commands**: `:AsciiPreview`, `:AsciiSettings`, `:AsciiRefresh`, `:AsciiStop`, `:AsciiRestart`, `:AsciiCharset`, `:AsciiPause`, `:AsciiResume`, `:AsciiNext`, `:AsciiEffect`, `:AsciiPreset`, `:AsciiScreensaver`
 
 ## Installation
 
@@ -734,6 +735,39 @@ content = {
 }
 ```
 
+### `:AsciiScreensaver [on|off]`
+
+Toggle the idle screensaver or trigger it manually. When enabled, a full-screen animated ASCII art appears after a configurable idle timeout.
+
+```vim
+:AsciiScreensaver         " Trigger screensaver immediately
+:AsciiScreensaver on      " Enable idle screensaver
+:AsciiScreensaver off     " Disable idle screensaver
+```
+
+Configure the screensaver in your setup or via `:AsciiSettings` → `V`:
+
+```lua
+screensaver = {
+  enabled = true,
+  timeout = 1000 * 60 * 5,  -- 5 minutes
+  effect = "random",
+  display = "bounce",        -- static, bounce, tile, marquee, zoom, random
+  dismiss = "any",
+}
+```
+
+**Display modes:**
+
+| Mode | Description |
+|------|-------------|
+| `static` | Centered art with looping animation |
+| `bounce` | Art reveals once, then bounces around like a DVD logo |
+| `tile` | Art repeats in a grid pattern filling the screen |
+| `marquee` | Art reveals once, then scrolls horizontally |
+| `zoom` | Art displayed at 2x size with looping animation |
+| `random` | Randomly picks one of the above modes |
+
 ### `:checkhealth ascii-animation`
 
 Run the health check to diagnose issues with the plugin:
@@ -921,6 +955,16 @@ Message favorites and disabled states are managed via `:AsciiSettings` → `g` (
 | `footer.enabled` | boolean | `true` | Enable/disable footer |
 | `footer.template` | string | `"{message}"` | Template with placeholders: `{message}`, `{date}`, `{time}`, `{version}`, `{plugins}`, `{name}`, `{project}` |
 | `footer.alignment` | string | `"center"` | Footer alignment: `"left"`, `"center"`, or `"right"` |
+
+### Screensaver Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `screensaver.enabled` | boolean | `false` | Enable idle screensaver (opt-in) |
+| `screensaver.timeout` | number | `300000` | Idle timeout in ms (default: 5 minutes) |
+| `screensaver.effect` | string | `"random"` | Animation effect for reveal: any effect name or `"random"` |
+| `screensaver.display` | string | `"static"` | Display mode: `"static"`, `"bounce"`, `"tile"`, `"marquee"`, `"zoom"`, `"random"` |
+| `screensaver.dismiss` | string | `"any"` | Dismiss trigger: `"any"` key or `"escape"` only |
 
 ## API
 
