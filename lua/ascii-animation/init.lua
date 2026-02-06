@@ -320,6 +320,26 @@ function M.stop()
   animation.stop()
 end
 
+-- Pause current animation
+function M.pause()
+  animation.pause()
+end
+
+-- Resume paused animation
+function M.resume()
+  animation.resume()
+end
+
+-- Cycle to the next animation effect
+function M.next_effect()
+  return animation.next_effect()
+end
+
+-- Set a specific animation effect by name
+function M.set_effect(name)
+  return animation.set_effect(name)
+end
+
 -- Expose commands module
 M.commands = commands
 
