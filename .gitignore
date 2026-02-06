@@ -11,3 +11,6 @@ tags
 
 # Local development
 .local/
+
+# Claude Code
+.claude/

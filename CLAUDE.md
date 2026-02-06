@@ -126,6 +126,7 @@ return M
 **Types:** `feat`, `fix`, `refactor`, `docs`, `test`, `chore`
 
 **Examples:**
+
 ```
 feat: add support for alpha-nvim
 fix: resolve animation timing issue
@@ -137,12 +138,14 @@ docs: update installation instructions
 **Format:** `<type>/<issue-number>-<short-description>`
 
 **Rules:**
+
 - Use lowercase and hyphens (no spaces, underscores, or special characters)
 - Match type to commit types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`
 - Include issue number when working on a tracked issue
 - Keep descriptions short (2-4 words)
 
 **Examples:**
+
 ```
 feat/4-user-commands
 fix/12-animation-flicker
@@ -152,6 +155,7 @@ chore/ci-workflow
 ```
 
 **Creating branches:**
+
 ```bash
 # For issue-based work
 git checkout -b feat/4-user-commands
@@ -168,11 +172,13 @@ git worktree add ../nvim-anim-issue-4 -b feat/4-user-commands
 **Always use issue templates** when creating issues via `gh issue create`.
 
 **Issue Types & Prefixes:**
+
 - `bug: <description>` - Bug reports (label: `bug`)
 - `feat: <description>` - Feature requests (label: `enhancement`)
 
 **Issue Body Structure:**
-```
+
+````
 ## Problem
 [What problem does this solve / what's broken]
 
@@ -182,11 +188,13 @@ git worktree add ../nvim-anim-issue-4 -b feat/4-user-commands
 ## API Design (for features)
 ```lua
 -- Code examples showing proposed config/API
-```
+````
 
 ## Implementation Notes
+
 [Technical considerations, affected files, etc.]
-```
+
+````
 
 **Labels:**
 - Type: `bug`, `enhancement`
@@ -199,7 +207,7 @@ gh issue create --title "feat: add new effect" --label "enhancement,animation" -
 
 # Bug report
 gh issue create --title "bug: animation flickers" --label "bug" --body "..."
-```
+````
 
 ### Post-Implementation Checklist
 
@@ -219,6 +227,7 @@ When adding a new user-configurable setting to `:AsciiSettings`:
 3. **README.md** - Document the new setting
 
 **Settings persistence pattern:**
+
 ```lua
 -- In config.lua
 M.my_setting = default_value  -- Add variable
@@ -242,6 +251,7 @@ end
 **Current settings in :AsciiSettings:**
 
 Animation:
+
 - `effect` - Animation effect (chaos, typewriter, diagonal, lines, matrix, wave, random)
 - `ambient` - Ambient effect (none, glitch, shimmer, cursor_trail, sparkle, scanlines, noise, shake, sound)
 - `loop` - Loop mode toggle
@@ -249,6 +259,7 @@ Animation:
 - `period_colors` - Period-based color schemes (morning=warm, night=cool)
 
 Selection:
+
 - `random_mode` - Art selection mode (always, daily, session)
 - `no_repeat` - Don't repeat last shown art
 - `favorites_weight` - Probability of picking favorite art (0-100%)
@@ -257,11 +268,11 @@ Selection:
 
 ## Quick Reference
 
-| Task                | Command                    |
-| ------------------- | -------------------------- |
-| Test in Neovim      | `:Lazy reload ascii-animation` |
-| Check for errors    | `:messages`                |
-| Inspect module      | `:lua print(vim.inspect(require('ascii-animation')))` |
+| Task             | Command                                               |
+| ---------------- | ----------------------------------------------------- |
+| Test in Neovim   | `:Lazy reload ascii-animation`                        |
+| Check for errors | `:messages`                                           |
+| Inspect module   | `:lua print(vim.inspect(require('ascii-animation')))` |
 
 ---
 
