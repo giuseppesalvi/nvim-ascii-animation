@@ -198,6 +198,7 @@ local animation_state = {
   win = nil,            -- Window for resume
   reverse = nil,        -- Direction for resume
   on_complete = nil,    -- Callback fired when animation finishes (non-looping)
+  generation = 0,       -- Incremented on stop() to invalidate pending deferred callbacks
 }
 
 local loop_count = 0
@@ -1479,7 +1480,10 @@ local function find_header_end(lines, max_lines)
 end
 
 -- Main animation function using extmarks overlay
-local function animate(buf, win, step, total_steps, highlight, header_end, reverse)
+local function animate(buf, win, step, total_steps, highlight, header_end, reverse, gen)
+  -- Bail out if this callback belongs to a stopped/replaced animation
+  if gen ~= animation_state.generation then return end
+
   if not vim.api.nvim_buf_is_valid(buf) then
     animation_state.running = false
     return
@@ -1506,6 +1510,7 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
     if opts.loop then
       -- Loop mode: keep last frame visible during delay, then restart
       vim.defer_fn(function()
+        if gen ~= animation_state.generation then return end
         if not vim.api.nvim_buf_is_valid(buf) then
           animation_state.running = false
           return
@@ -1514,7 +1519,7 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
         fire_hook("on_loop", "AsciiAnimationLoop", loop_count)
         if opts.loop_reverse and not reverse then
           -- Play reverse first (keep same effect)
-          animate(buf, win, total_steps, total_steps, highlight, header_end, true)
+          animate(buf, win, total_steps, total_steps, highlight, header_end, true, gen)
         else
           -- Restart forward: pick new random effect if in random mode
           if config.options.animation.effect == "random" then
@@ -1524,7 +1529,7 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
               create_fade_highlights(highlight)
             end
           end
-          animate(buf, win, 0, total_steps, highlight, header_end, false)
+          animate(buf, win, 0, total_steps, highlight, header_end, false, gen)
         end
       end, opts.loop_delay)
     else
@@ -1619,13 +1624,14 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
   -- Schedule next frame
   local next_step = reverse and (step - 1) or (step + 1)
   vim.defer_fn(function()
-    animate(buf, win, next_step, total_steps, highlight, header_end, reverse)
+    animate(buf, win, next_step, total_steps, highlight, header_end, reverse, gen)
   end, frame_delay)
 end
 
 -- Stop any running animation and ambient effects
 function M.stop()
   stop_ambient()
+  animation_state.generation = animation_state.generation + 1
   animation_state.running = false
   animation_state.paused = false
   animation_state.on_complete = nil
@@ -1648,7 +1654,7 @@ function M.resume()
   animation_state.paused = false
   local s = animation_state
   if s.buf and vim.api.nvim_buf_is_valid(s.buf) and s.win and vim.api.nvim_win_is_valid(s.win) then
-    animate(s.buf, s.win, s.step, s.total_steps, s.highlight, s.header_end, s.reverse)
+    animate(s.buf, s.win, s.step, s.total_steps, s.highlight, s.header_end, s.reverse, s.generation)
   end
   return true
 end
@@ -1733,7 +1739,7 @@ function M.start(buf, header_lines, highlight, on_complete)
   loop_count = 0
   fire_hook("on_animation_start", "AsciiAnimationStart", effect)
 
-  animate(buf, win, 0, config.options.animation.steps, highlight, header_end, false)
+  animate(buf, win, 0, config.options.animation.steps, highlight, header_end, false, animation_state.generation)
 end
 
 -- Register a custom animation effect
