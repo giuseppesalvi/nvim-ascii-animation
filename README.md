@@ -13,6 +13,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 <p align="center">
   <img src="assets/effects.gif" alt="Animation Effects" width="600">
 </p>
+
 - **Loop mode**: continuous animation replay with optional reverse
 - **8 ambient effects**: glitch, shimmer, cursor trail, sparkle, scanlines, noise, shake, sound
 - **Ease-in-out** timing: slow start → fast middle → slow finish
