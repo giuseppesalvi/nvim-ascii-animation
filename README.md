@@ -780,6 +780,40 @@ screensaver = {
 
 Enable `audio_reactive` to make the screensaver pulse with sound. Louder audio increases bounce/marquee movement speed and shortens loop delays for static/tile/zoom modes. Audio-driven display modes (`pulse`, `waves`, `rain`, `shatter`, `fireworks`, `heartbeat`) auto-start audio sampling and react to sound in unique ways. Requires [sox](https://sox.sourceforge.net/) (`rec` command) for microphone input — install with `brew install sox` (macOS) or `apt install sox` (Linux). Toggle via `:AsciiSettings` → `V` → `[a]`.
 
+### Event Hooks
+
+React to animation lifecycle events via Lua callbacks or Neovim autocommands:
+
+```lua
+require("ascii-animation").setup({
+  hooks = {
+    on_animation_start = function(effect)
+      print("Animation started with effect: " .. effect)
+    end,
+    on_animation_complete = function(effect)
+      print("Animation finished: " .. effect)
+    end,
+    on_loop = function(loop_count)
+      print("Loop #" .. loop_count)
+    end,
+    on_effect_change = function(old_effect, new_effect)
+      print("Effect changed: " .. old_effect .. " -> " .. new_effect)
+    end,
+  },
+})
+```
+
+**Autocommands:** You can also use Neovim's `autocmd` to listen for animation events:
+
+```vim
+autocmd User AsciiAnimationStart echo "Animation started!"
+autocmd User AsciiAnimationComplete echo "Animation complete!"
+autocmd User AsciiAnimationLoop echo "Animation looped!"
+autocmd User AsciiEffectChange echo "Effect changed!"
+```
+
+Hook errors are caught with `pcall` and reported via `vim.notify` — they won't break the animation.
+
 ### `:checkhealth ascii-animation`
 
 Run the health check to diagnose issues with the plugin:
@@ -1007,6 +1041,15 @@ content = {
 ```
 
 Toggle holidays on/off via `:AsciiSettings` → `H`.
+
+### Hooks Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `hooks.on_animation_start` | function/nil | `nil` | Called when animation begins. Args: `(effect)` |
+| `hooks.on_animation_complete` | function/nil | `nil` | Called when animation finishes. Args: `(effect)` |
+| `hooks.on_loop` | function/nil | `nil` | Called at start of each loop. Args: `(loop_count)` |
+| `hooks.on_effect_change` | function/nil | `nil` | Called when effect changes. Args: `(old_effect, new_effect)` |
 
 ## API
 

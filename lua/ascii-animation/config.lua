@@ -488,6 +488,14 @@ M.defaults = {
     alignment = "center",    -- "left" | "center" | "right"
   },
 
+  -- Event hooks (callbacks)
+  hooks = {
+    on_animation_start = nil,    -- function(effect)
+    on_animation_complete = nil, -- function(effect)
+    on_loop = nil,               -- function(loop_count)
+    on_effect_change = nil,      -- function(old_effect, new_effect)
+  },
+
   -- Screensaver settings
   screensaver = {
     enabled = false,          -- Opt-in: set to true to enable idle screensaver
