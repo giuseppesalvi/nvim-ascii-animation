@@ -6,17 +6,13 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
   <img src="assets/demo.gif" alt="Demo" width="600">
 </p>
 
-<details>
-<summary>More examples</summary>
-<p align="center">
-  <img src="assets/demo_2.gif" alt="Demo 2" width="600">
-  <img src="assets/demo_3.gif" alt="Demo 3" width="600">
-</p>
-</details>
-
 ## Features
 
 - 14 **animation effects**: chaos, typewriter, diagonal, lines, matrix, wave, fade, scramble, rain, spiral, explode, implode, glitch, and random
+
+<p align="center">
+  <img src="assets/effects.gif" alt="Animation Effects" width="600">
+</p>
 - **Loop mode**: continuous animation replay with optional reverse
 - **8 ambient effects**: glitch, shimmer, cursor trail, sparkle, scanlines, noise, shake, sound
 - **Ease-in-out** timing: slow start → fast middle → slow finish
@@ -222,6 +218,10 @@ The plugin includes a built-in content system with **140+ ASCII arts** and **200
 | Weekend | Sat & Sun | Freedom, side projects, no meetings |
 
 ### Art Styles
+
+<p align="center">
+  <img src="assets/art-styles.gif" alt="Art Styles" width="600">
+</p>
 
 - **Blocks** (`██ ╚═╝ ▓█`) - Bold, modern, eye-catching
 - **Gradient** (`░▒▓`) - Subtle, sophisticated, flowing
@@ -477,6 +477,10 @@ The plugin provides user commands for browsing and previewing ASCII arts:
 
 Opens a floating window with an animated preview of an ASCII art.
 
+<p align="center">
+  <img src="assets/preview.gif" alt="Art Preview Browser" width="600">
+</p>
+
 ```vim
 :AsciiPreview                  " Preview random art for current time period
 :AsciiPreview morning_blocks_1 " Preview specific art by ID
@@ -495,6 +499,10 @@ Interactive keybindings:
 ### `:AsciiSettings`
 
 Opens an interactive settings panel with **live preview**:
+
+<p align="center">
+  <img src="assets/settings.gif" alt="Interactive Settings" width="600">
+</p>
 
 ```vim
 :AsciiSettings
@@ -739,6 +747,10 @@ content = {
 ### `:AsciiScreensaver [on|off]`
 
 Toggle the idle screensaver or trigger it manually. When enabled, a full-screen animated ASCII art appears after a configurable idle timeout.
+
+<p align="center">
+  <img src="assets/screensaver.gif" alt="Screensaver" width="600">
+</p>
 
 ```vim
 :AsciiScreensaver         " Trigger screensaver immediately
@@ -1325,6 +1337,10 @@ With `loop_reverse`, the animation will: forward → pause → reverse → pause
 
 ### Ambient Effects
 
+<p align="center">
+  <img src="assets/ambient.gif" alt="Ambient Effects" width="600">
+</p>
+
 Ambient effects add subtle ongoing visual interest after the animation completes (only when not looping):
 
 - **`"glitch"`**: Random characters briefly flicker to chaos characters
@@ -1461,6 +1477,10 @@ Settings are automatically persisted across sessions.
 **Note:** The plugin applies custom colors from `:AsciiSettings` first. If you want to override via your colorscheme, define the highlight groups before the animation runs. When `use_phase_highlights` is disabled (default), the animation uses the dashboard's base highlight for all characters.
 
 ### Rainbow and Gradient Color Modes
+
+<p align="center">
+  <img src="assets/colors.gif" alt="Color Modes" width="600">
+</p>
 
 In addition to phase-based highlighting, you can apply line-based coloring with rainbow or gradient modes.
 
