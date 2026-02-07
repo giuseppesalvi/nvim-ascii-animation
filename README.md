@@ -814,6 +814,48 @@ autocmd User AsciiEffectChange echo "Effect changed!"
 
 Hook errors are caught with `pcall` and reported via `vim.notify` — they won't break the animation.
 
+### Custom Effects
+
+Register your own animation effects that integrate with `:AsciiEffect`, `:AsciiSettings` cycling, and tab completion:
+
+```lua
+local ascii = require("ascii-animation")
+
+ascii.register_effect("dissolve", {
+  -- Required: transform(line, reveal_ratio, line_idx, total_lines, opts)
+  -- reveal_ratio goes from 0 (hidden) to 1 (fully revealed)
+  -- opts provides helper utilities: random_char(), ease_in_out(), clamp()
+  transform = function(line, reveal_ratio, line_idx, total_lines, opts)
+    if reveal_ratio >= 1 then return line end
+    local chars = vim.fn.split(line, "\\zs")
+    local result = {}
+    for i, char in ipairs(chars) do
+      if char == " " or math.random() < reveal_ratio then
+        table.insert(result, char)
+      else
+        table.insert(result, opts.random_char())
+      end
+    end
+    return table.concat(result)
+  end,
+  -- Optional: custom timing (return delay in ms)
+  get_delay = function(step, total_steps)
+    return 30
+  end,
+})
+
+-- Now use it like any built-in effect:
+-- :AsciiEffect dissolve
+-- ascii.set_effect("dissolve")
+```
+
+**Helper utilities** available in the `opts` argument:
+- `opts.random_char()` — returns a random chaos character
+- `opts.ease_in_out(t)` — smooth easing function (0→1)
+- `opts.clamp(value, min, max)` — clamp a number to a range
+
+Custom effects are wrapped in `pcall` — errors fall back to the original line, never crashing the animation.
+
 ### `:checkhealth ascii-animation`
 
 Run the health check to diagnose issues with the plugin:
@@ -1118,6 +1160,7 @@ ascii.pause()                            -- Pause current animation
 ascii.resume()                           -- Resume paused animation
 ascii.next_effect()                      -- Cycle to next effect (returns effect name)
 ascii.set_effect("wave")                 -- Set specific effect (returns true/false)
+ascii.register_effect("name", { ... })   -- Register custom effect (returns true/false)
 ascii.apply_preset("retro")              -- Apply a theme preset (returns true/false)
 ascii.list_presets()                     -- List all preset names (built-in + custom)
 
