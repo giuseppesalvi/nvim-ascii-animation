@@ -345,6 +345,11 @@ function M.set_effect(name)
   return animation.set_effect(name)
 end
 
+-- Register a custom animation effect
+function M.register_effect(name, def)
+  return animation.register_effect(name, def)
+end
+
 -- Apply a named theme preset
 function M.apply_preset(name)
   return config.apply_preset(name)

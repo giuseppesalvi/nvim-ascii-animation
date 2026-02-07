@@ -1290,7 +1290,7 @@ local update_preview_buffer
 
 -- Cycle through effect options
 local function cycle_effect(delta)
-  local effects = { "chaos", "typewriter", "diagonal", "lines", "matrix", "wave", "fade", "scramble", "rain", "spiral", "explode", "implode", "glitch", "random" }
+  local effects = vim.list_extend(vim.deepcopy(animation.effect_names), { "random" })
   local current = config.options.animation.effect
   local idx = 1
   for i, e in ipairs(effects) do
@@ -2983,12 +2983,12 @@ function M.register_commands()
     if animation.set_effect(name) then
       vim.notify("Effect set to: " .. name, vim.log.levels.INFO)
     else
-      vim.notify("Invalid effect. Valid: chaos, typewriter, diagonal, lines, matrix, wave, fade, scramble, rain, spiral, explode, implode, glitch, random", vim.log.levels.WARN)
+      vim.notify("Invalid effect. Valid: " .. table.concat(animation.effect_names, ", ") .. ", random", vim.log.levels.WARN)
     end
   end, {
     nargs = "?",
     complete = function(arg_lead)
-      local valid_effects = { "chaos", "typewriter", "diagonal", "lines", "matrix", "wave", "fade", "scramble", "rain", "spiral", "explode", "implode", "glitch", "random" }
+      local valid_effects = vim.list_extend(vim.deepcopy(animation.effect_names), { "random" })
       local matches = {}
       for _, name in ipairs(valid_effects) do
         if name:find(arg_lead, 1, true) then

@@ -1165,6 +1165,9 @@ local effects = {
 -- List of effect names for random selection
 local effect_names = { "chaos", "typewriter", "diagonal", "lines", "matrix", "wave", "fade", "scramble", "rain", "spiral", "explode", "implode", "glitch" }
 
+-- Custom effect delay overrides
+local custom_delays = {}
+
 -- Pick a random effect
 local function get_random_effect()
   return effect_names[math.random(1, #effect_names)]
@@ -1567,9 +1570,14 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
   elseif effect == "glitch" then
     reveal_ratio = actual_step / total_steps
     frame_delay = config.options.animation.min_delay
-  else  -- chaos (default)
+  else
     reveal_ratio = ease_in_out(actual_step / total_steps)
-    frame_delay = get_frame_delay(actual_step, total_steps)
+    if custom_delays[effect] then
+      local ok, delay = pcall(custom_delays[effect], actual_step, total_steps)
+      frame_delay = ok and type(delay) == "number" and delay or get_frame_delay(actual_step, total_steps)
+    else
+      frame_delay = get_frame_delay(actual_step, total_steps)
+    end
   end
 
   current_effect_name = effect
@@ -1727,6 +1735,43 @@ function M.start(buf, header_lines, highlight, on_complete)
 
   animate(buf, win, 0, config.options.animation.steps, highlight, header_end, false)
 end
+
+-- Register a custom animation effect
+function M.register_effect(name, def)
+  if type(name) ~= "string" or name == "" then
+    vim.notify("[ascii-animation] register_effect: name must be a non-empty string", vim.log.levels.ERROR)
+    return false
+  end
+  if type(def) ~= "table" or type(def.transform) ~= "function" then
+    vim.notify("[ascii-animation] register_effect: definition must have a transform function", vim.log.levels.ERROR)
+    return false
+  end
+  effects[name] = function(line, reveal_ratio, line_idx, total_lines)
+    local ok, result = pcall(def.transform, line, reveal_ratio, line_idx, total_lines, {
+      random_char = random_chaos_char,
+      ease_in_out = ease_in_out,
+      clamp = function(v, min, max) return math.min(math.max(v, min), max) end,
+    })
+    if not ok then
+      return line
+    end
+    return result
+  end
+  local found = false
+  for _, n in ipairs(effect_names) do
+    if n == name then found = true break end
+  end
+  if not found then
+    table.insert(effect_names, name)
+  end
+  if type(def.get_delay) == "function" then
+    custom_delays[name] = def.get_delay
+  end
+  return true
+end
+
+-- Expose effect names for dynamic completion/cycling
+M.effect_names = effect_names
 
 -- Export for manual highlight setup
 M.setup_phase_highlights = setup_phase_highlights
