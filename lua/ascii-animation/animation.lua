@@ -200,6 +200,21 @@ local animation_state = {
   on_complete = nil,    -- Callback fired when animation finishes (non-looping)
 }
 
+local loop_count = 0
+
+local function fire_hook(hook_name, autocmd_pattern, ...)
+  local hooks = config.options.hooks
+  if hooks and hooks[hook_name] then
+    local ok, err = pcall(hooks[hook_name], ...)
+    if not ok then
+      vim.schedule(function()
+        vim.notify("[ascii-animation] Hook error (" .. hook_name .. "): " .. tostring(err), vim.log.levels.WARN)
+      end)
+    end
+  end
+  pcall(vim.api.nvim_exec_autocmds, "User", { pattern = autocmd_pattern })
+end
+
 -- Ease-in-out cubic function for smooth acceleration/deceleration
 local function ease_in_out(t)
   if t < 0.5 then
@@ -1492,6 +1507,8 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
           animation_state.running = false
           return
         end
+        loop_count = loop_count + 1
+        fire_hook("on_loop", "AsciiAnimationLoop", loop_count)
         if opts.loop_reverse and not reverse then
           -- Play reverse first (keep same effect)
           animate(buf, win, total_steps, total_steps, highlight, header_end, true)
@@ -1511,6 +1528,7 @@ local function animate(buf, win, step, total_steps, highlight, header_end, rever
       -- Not looping: animation finished, clear and start ambient effects
       vim.api.nvim_buf_clear_namespace(buf, M.ns_id, 0, -1)
       animation_state.running = false
+      fire_hook("on_animation_complete", "AsciiAnimationComplete", animation_state.effect)
       local cb = animation_state.on_complete
       animation_state.on_complete = nil
       if cb then cb() end
@@ -1629,14 +1647,15 @@ end
 
 -- Cycle to the next animation effect
 function M.next_effect()
-  local current = config.options.animation.effect
+  local old = config.options.animation.effect
   local idx = 1
   for i, name in ipairs(effect_names) do
-    if name == current then idx = i break end
+    if name == old then idx = i break end
   end
   idx = idx % #effect_names + 1
   config.options.animation.effect = effect_names[idx]
   config.save()
+  fire_hook("on_effect_change", "AsciiEffectChange", old, effect_names[idx])
   if animation_state.buf and vim.api.nvim_buf_is_valid(animation_state.buf) then
     M.start(animation_state.buf, animation_state.header_end, animation_state.highlight)
   end
@@ -1646,8 +1665,10 @@ end
 -- Set a specific animation effect by name
 function M.set_effect(name)
   if not effects[name] and name ~= "random" then return false end
+  local old = config.options.animation.effect
   config.options.animation.effect = name
   config.save()
+  fire_hook("on_effect_change", "AsciiEffectChange", old, name)
   if animation_state.buf and vim.api.nvim_buf_is_valid(animation_state.buf) then
     M.start(animation_state.buf, animation_state.header_end, animation_state.highlight)
   end
@@ -1700,6 +1721,9 @@ function M.start(buf, header_lines, highlight, on_complete)
   animation_state.highlight = highlight
   animation_state.effect = effect
   animation_state.on_complete = on_complete
+
+  loop_count = 0
+  fire_hook("on_animation_start", "AsciiAnimationStart", effect)
 
   animate(buf, win, 0, config.options.animation.steps, highlight, header_end, false)
 end
