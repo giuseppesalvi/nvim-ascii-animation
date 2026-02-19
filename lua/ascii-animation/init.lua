@@ -10,6 +10,17 @@ local placeholders = require("ascii-animation.placeholders")
 
 local M = {}
 
+local function get_current_width()
+  local ok, win = pcall(vim.api.nvim_get_current_win)
+  if ok and win and vim.api.nvim_win_is_valid(win) then
+    local width_ok, width = pcall(vim.api.nvim_win_get_width, win)
+    if width_ok and type(width) == "number" and width > 0 then
+      return width
+    end
+  end
+  return vim.o.columns
+end
+
 -- Setup function to configure the plugin
 function M.setup(opts)
   config.setup(opts)
@@ -117,7 +128,7 @@ function M.get_header()
   local fallback = anim_opts.fallback or "tagline"
 
   -- Check if terminal is wide enough
-  if vim.o.columns < min_width then
+  if get_current_width() < min_width then
     local period = time.get_current_period()
     local message = content.get_message()
     local footer = M.get_footer()
@@ -269,7 +280,7 @@ function M.get_footer_lines(width)
     return {}
   end
 
-  width = width or vim.o.columns
+  width = width or get_current_width()
   local alignment = footer_opts.alignment or "center"
 
   local lines = {}

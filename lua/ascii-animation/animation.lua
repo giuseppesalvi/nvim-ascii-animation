@@ -1450,24 +1450,68 @@ local function start_ambient(buf, header_end, highlight)
 end
 
 -- Detect where header ends (before menu items)
--- Menu items are detected as lines starting with multi-byte icons after a gap
+-- Menu items are detected after a gap when a line looks like:
+--   <icon> <spaces> <ascii label>
+-- This avoids cutting Unicode-heavy ASCII art that may contain internal gaps.
 local function find_header_end(lines, max_lines)
   local found_content = false
   local empty_streak = 0
   local last_content_line = 0
+  local first_content_line = nil
 
-  for i = 1, math.min(max_lines, #lines) do
+  local function is_menu_line(line)
+    local trimmed = line and (line:match("^%s*(.+)") or "")
+    if trimmed == "" or #trimmed >= 120 then
+      return false
+    end
+
+    -- First displayed character should be a multi-byte icon.
+    local first_char = vim.fn.strcharpart(trimmed, 0, 1)
+    if first_char == "" or #first_char < 2 then
+      return false
+    end
+
+    -- Remaining text should begin with an ASCII label (e.g. "Find File").
+    local rest = vim.fn.strcharpart(trimmed, 1)
+    if not rest:match("^%s*[%a]") then
+      return false
+    end
+
+    return true
+  end
+
+  for i = 1, #lines do
+    local line = lines[i]
+    if line and not line:match("^%s*$") then
+      first_content_line = i
+      break
+    end
+  end
+
+  if not first_content_line then
+    if type(max_lines) == "number" and max_lines > 0 then
+      return math.min(max_lines, #lines)
+    end
+    return #lines
+  end
+
+  local scan_end
+  if type(max_lines) == "number" and max_lines > 0 then
+    -- header_lines should count from the first visible header content,
+    -- not from buffer row 1 (which can be top padding on large/tall layouts).
+    scan_end = math.min(#lines, first_content_line + max_lines - 1)
+  else
+    scan_end = #lines
+  end
+
+  for i = first_content_line, scan_end do
     local line = lines[i]
     local is_empty = not line or line:match("^%s*$")
 
     if not is_empty then
       found_content = true
-      if empty_streak >= 1 then
-        local trimmed = line:match("^%s*(.+)") or ""
-        local first_byte = string.byte(trimmed, 1)
-        if first_byte and first_byte >= 0xC0 and #trimmed < 80 then
-          return last_content_line
-        end
+      if empty_streak >= 1 and is_menu_line(line) then
+        return last_content_line
       end
       last_content_line = i
       empty_streak = 0
@@ -1476,7 +1520,7 @@ local function find_header_end(lines, max_lines)
     end
   end
 
-  return last_content_line > 0 and last_content_line or max_lines
+  return last_content_line > 0 and last_content_line or scan_end
 end
 
 -- Main animation function using extmarks overlay

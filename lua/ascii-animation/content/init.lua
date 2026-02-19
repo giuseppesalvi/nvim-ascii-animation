@@ -13,6 +13,17 @@ local holiday_messages = require("ascii-animation.content.messages.holidays")
 
 local M = {}
 
+local function get_current_width()
+  local ok, win = pcall(vim.api.nvim_get_current_win)
+  if ok and win and vim.api.nvim_win_is_valid(win) then
+    local width_ok, width = pcall(vim.api.nvim_win_get_width, win)
+    if width_ok and type(width) == "number" and width > 0 then
+      return width
+    end
+  end
+  return vim.o.columns
+end
+
 -- Cache for arts loaded from custom_arts_dir
 local loaded_dir_arts = nil -- { by_period = { morning = {}, ... }, all = {} }
 
@@ -151,7 +162,7 @@ local function fits_terminal(art)
     return true
   end
 
-  local terminal_width = vim.o.columns
+  local terminal_width = get_current_width()
   local art_width = arts.get_art_width(art)
   return art_width <= terminal_width
 end
