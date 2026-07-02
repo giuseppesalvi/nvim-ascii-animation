@@ -39,7 +39,7 @@ local function get_arts_list(filter)
   if filter == "favorites" then
     -- Return only favorited arts
     for _, id in ipairs(config.favorites) do
-      local art = content.get_art_by_id(id)
+      local art = content.get_art_by_id(id, true)
       if art then
         table.insert(arts, art)
       end

@@ -214,6 +214,28 @@ local function get_style_filter()
   return opts.styles
 end
 
+local function style_filter_allows(style, style_filter)
+  if style_filter == nil then
+    return true
+  end
+  for _, enabled_style in ipairs(style_filter) do
+    if enabled_style == style then
+      return true
+    end
+  end
+  return false
+end
+
+local function art_matches_style_filter(art, style_filter)
+  if style_filter == nil then
+    return true
+  end
+  if not art or not art.style then
+    return true
+  end
+  return style_filter_allows(art.style, style_filter)
+end
+
 -- Get a random art for the current time period
 -- Considers favorites weight setting
 function M.get_art()
@@ -221,7 +243,14 @@ function M.get_art()
 
   -- Check if we should pick from favorites
   if should_pick_favorite() then
-    local fav_art = arts.get_art_by_id(config.favorites[math.random(#config.favorites)])
+    local eligible_favorites = {}
+    for _, id in ipairs(config.favorites) do
+      local fav_art = M.get_art_by_id(id, true)
+      if fav_art then
+        table.insert(eligible_favorites, fav_art)
+      end
+    end
+    local fav_art = #eligible_favorites > 0 and eligible_favorites[math.random(#eligible_favorites)] or nil
     if fav_art then
       return fav_art
     end
@@ -251,7 +280,9 @@ function M.get_art_for_period(period)
   -- Add custom arts if configured
   if opts.custom_arts and opts.custom_arts[period] then
     for _, a in ipairs(opts.custom_arts[period]) do
-      table.insert(all_arts, a)
+      if art_matches_style_filter(a, style_filter) then
+        table.insert(all_arts, a)
+      end
     end
   end
 
@@ -259,12 +290,14 @@ function M.get_art_for_period(period)
   local dir_arts = load_arts_from_dir()
   if dir_arts.by_period[period] then
     for _, a in ipairs(dir_arts.by_period[period]) do
-      table.insert(all_arts, a)
+      if art_matches_style_filter(a, style_filter) then
+        table.insert(all_arts, a)
+      end
     end
   end
   -- Add period-less dir arts (available for all periods)
   for _, a in ipairs(dir_arts.all) do
-    if not a.period then
+    if not a.period and art_matches_style_filter(a, style_filter) then
       table.insert(all_arts, a)
     end
   end
@@ -277,8 +310,10 @@ function M.get_art_for_period(period)
     for _, h in ipairs(active) do
       local h_arts = holiday_arts.get_arts_for_holiday(h.name)
       for _, a in ipairs(h_arts) do
-        for _ = 1, priority do
-          table.insert(all_arts, a)
+        if art_matches_style_filter(a, style_filter) then
+          for _ = 1, priority do
+            table.insert(all_arts, a)
+          end
         end
       end
     end
@@ -582,7 +617,7 @@ function M.list_arts()
   local seen = {}
 
   if style_filter == nil then
-    for _, id in ipairs(arts.list_art_ids()) do
+    for _, id in ipairs(arts.list_art_ids(style_filter)) do
       if not seen[id] then
         seen[id] = true
         table.insert(all_ids, id)
@@ -604,7 +639,7 @@ function M.list_arts()
 
   -- Add holiday art IDs
   for _, art in ipairs(holiday_arts.get_all_arts()) do
-    if not seen[art.id] then
+    if art_matches_style_filter(art, style_filter) and not seen[art.id] then
       seen[art.id] = true
       table.insert(all_ids, art.id)
     end
@@ -613,7 +648,7 @@ function M.list_arts()
   -- Add custom dir art IDs
   local dir_arts = load_arts_from_dir()
   for _, art in ipairs(dir_arts.all) do
-    if not seen[art.id] then
+    if art_matches_style_filter(art, style_filter) and not seen[art.id] then
       seen[art.id] = true
       table.insert(all_ids, art.id)
     end
@@ -630,12 +665,14 @@ function M.list_arts_for_period(period)
   local dir_arts = load_arts_from_dir()
   if dir_arts.by_period[period] then
     for _, art in ipairs(dir_arts.by_period[period]) do
-      table.insert(ids, art.id)
+      if art_matches_style_filter(art, style_filter) then
+        table.insert(ids, art.id)
+      end
     end
   end
   -- Add period-less arts
   for _, art in ipairs(dir_arts.all) do
-    if not art.period then
+    if not art.period and art_matches_style_filter(art, style_filter) then
       table.insert(ids, art.id)
     end
   end
@@ -643,16 +680,17 @@ function M.list_arts_for_period(period)
 end
 
 -- Get a specific art by ID
-function M.get_art_by_id(id)
-  local result = arts.get_art_by_id(id)
+function M.get_art_by_id(id, respect_style_filter)
+  local style_filter = respect_style_filter and get_style_filter() or nil
+  local result = arts.get_art_by_id(id, style_filter)
   if result then return result end
   -- Search holiday arts
   local h_art = holiday_arts.get_art_by_id(id)
-  if h_art then return h_art end
+  if h_art and art_matches_style_filter(h_art, style_filter) then return h_art end
   -- Search custom dir arts
   local dir_arts = load_arts_from_dir()
   for _, art in ipairs(dir_arts.all) do
-    if art.id == id then return art end
+    if art.id == id and art_matches_style_filter(art, style_filter) then return art end
   end
   return nil
 end

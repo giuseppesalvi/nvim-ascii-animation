@@ -12,6 +12,12 @@ local holiday = require("ascii-animation.content.arts.holiday")
 
 local M = {}
 
+local DEFAULT_STYLES = { "blocks", "gradient", "isometric", "box", "minimal", "pixel", "braille" }
+
+local function get_styles_to_use(style_filter)
+  return style_filter or DEFAULT_STYLES
+end
+
 -- Style mappings
 M.styles = {
   blocks = blocks.arts,
@@ -28,7 +34,7 @@ M.styles = {
 function M.get_arts_for_period(period, style_filter)
   local arts = {}
 
-  local styles_to_use = style_filter or { "blocks", "gradient", "isometric", "box", "minimal", "pixel", "braille" }
+  local styles_to_use = get_styles_to_use(style_filter)
 
   for _, style in ipairs(styles_to_use) do
     local style_arts = M.styles[style]
@@ -52,12 +58,15 @@ function M.get_random_art(period, style_filter)
 end
 
 -- Get art by ID
-function M.get_art_by_id(id)
-  for _, style_arts in pairs(M.styles) do
-    for _, period_arts in pairs(style_arts) do
-      for _, art in ipairs(period_arts) do
-        if art.id == id then
-          return art
+function M.get_art_by_id(id, style_filter)
+  for _, style in ipairs(get_styles_to_use(style_filter)) do
+    local style_arts = M.styles[style]
+    if style_arts then
+      for _, period_arts in pairs(style_arts) do
+        for _, art in ipairs(period_arts) do
+          if art.id == id then
+            return art
+          end
         end
       end
     end
@@ -66,12 +75,15 @@ function M.get_art_by_id(id)
 end
 
 -- List all art IDs
-function M.list_art_ids()
+function M.list_art_ids(style_filter)
   local ids = {}
-  for _, style_arts in pairs(M.styles) do
-    for _, period_arts in pairs(style_arts) do
-      for _, art in ipairs(period_arts) do
-        table.insert(ids, art.id)
+  for _, style in ipairs(get_styles_to_use(style_filter)) do
+    local style_arts = M.styles[style]
+    if style_arts then
+      for _, period_arts in pairs(style_arts) do
+        for _, art in ipairs(period_arts) do
+          table.insert(ids, art.id)
+        end
       end
     end
   end
