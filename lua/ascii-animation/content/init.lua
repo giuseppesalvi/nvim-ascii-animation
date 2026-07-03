@@ -64,6 +64,9 @@ local function parse_art_file(filepath)
     period = metadata.period,
     style = metadata.style or "custom",
     tags = metadata.tags,
+    source = metadata.source,
+    artist = metadata.artist,
+    license = metadata.license,
   }
 end
 
@@ -112,6 +115,12 @@ local function load_arts_from_dir()
   end
 
   return loaded_dir_arts
+end
+
+-- Clear cached custom directory arts after imports or external file changes.
+function M.reload_custom_arts()
+  loaded_dir_arts = nil
+  return load_arts_from_dir()
 end
 
 -- Track if seed was set this session (for 'session' mode)

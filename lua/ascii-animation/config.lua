@@ -573,6 +573,7 @@ function M.save()
     },
     content = {
       styles = M.options.content.styles,
+      custom_arts_dir = M.options.content.custom_arts_dir,
       message_no_repeat = M.options.content.message_no_repeat,
       preset = M.options.content.preset,
       holidays_enabled = M.options.content.holidays and M.options.content.holidays.enabled,
@@ -641,6 +642,7 @@ function M.clear_saved()
   M.options.animation.reduced_motion = M.defaults.animation.reduced_motion
   -- Reset content settings
   M.options.content.styles = M.defaults.content.styles
+  M.options.content.custom_arts_dir = M.defaults.content.custom_arts_dir
   M.options.content.message_no_repeat = M.defaults.content.message_no_repeat
   M.options.content.preset = nil
   -- Reset holidays

@@ -6,6 +6,7 @@ local config = require("ascii-animation.config")
 local animation = require("ascii-animation.animation")
 local content = require("ascii-animation.content")
 local time = require("ascii-animation.time")
+local importer = require("ascii-animation.importer")
 
 local M = {}
 
@@ -2894,6 +2895,21 @@ function M.register_commands()
     M.stats()
   end, {
     desc = "Open ASCII animation settings panel",
+  })
+
+  vim.api.nvim_create_user_command("AsciiImport", function(opts)
+    importer.import_url(opts.args)
+  end, {
+    nargs = 1,
+    desc = "Import ASCII art candidates from a web page",
+  })
+
+  vim.api.nvim_create_user_command("AsciiImportFile", function(opts)
+    importer.import_file(opts.args)
+  end, {
+    nargs = 1,
+    complete = "file",
+    desc = "Import ASCII art from a local text file",
   })
 
   vim.api.nvim_create_user_command("AsciiRefresh", function()
