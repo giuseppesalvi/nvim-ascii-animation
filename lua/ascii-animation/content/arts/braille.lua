@@ -52,6 +52,30 @@ M.arts = {
         "⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤",
       },
     },
+    {
+      id = "morning_braille_5",
+      name = "Braille Coffee",
+      lines = {
+        "         ⠋⠉⠂ ⠋⠉⠂",
+        "       ⣶⣶⣶⣶⣶⣶⣶⣶⡄",
+        "       ⣿⣿⣿⣿⣿⣿⣿⣿⢠⣤",
+        "       ⣿⣿⣿⣿⣿⣿⣿⣿⢸⣿",
+        "       ⢿⣿⣿⣿⣿⣿⣿⡿⠘⠛",
+        "        ⠛⠛⠛⠛⠛⠛⠛",
+        "      C O F F E E   F I R S T",
+      },
+    },
+    {
+      id = "morning_braille_6",
+      name = "Braille First Light",
+      lines = {
+        "           ⢀⣠⣤⣶⣶⣤⣄⡀",
+        "          ⣴⣿⣿⣿⣿⣿⣿⣿⣦",
+        "      ⣀⣀⣀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣀⣀⣀",
+        "      ⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉",
+        "       F I R S T   L I G H T",
+      },
+    },
   },
 
   afternoon = {
@@ -99,6 +123,27 @@ M.arts = {
         "⠈⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠁",
       },
     },
+    {
+      id = "afternoon_braille_5",
+      name = "Braille Summit",
+      lines = {
+        "             ⢀⡀",
+        "            ⣠⣿⣷⣄",
+        "           ⣰⣿⣿⣿⣷⡀   ⢀⣀",
+        "          ⣴⣿⣿⣿⣿⣿⣷⣠⣾⣿⣷⣄",
+        "         ⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧",
+        "       P E A K   F O C U S",
+      },
+    },
+    {
+      id = "afternoon_braille_6",
+      name = "Braille Forward",
+      lines = {
+        "       ⠻⣷⣄  ⠻⣷⣄  ⠻⣷⣄",
+        "        ⣠⣾⠟  ⣠⣾⠟  ⣠⣾⠟",
+        "       K E E P   M O V I N G",
+      },
+    },
   },
 
   evening = {
@@ -144,6 +189,30 @@ M.arts = {
         "⣿⣿⠀  T W I L I G H T  ⠀⣿⣿",
         "⣿⣿⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣿⣿",
         "⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿",
+      },
+    },
+    {
+      id = "evening_braille_5",
+      name = "Braille Calm Sea",
+      lines = {
+        "         ⢀⣠⣤⣤⣤⣄⡀",
+        "        ⢠⣿⣿⣿⣿⣿⣿⣿⡄",
+        "      ⠴⠶⠾⠿⠿⠿⠿⠿⠿⠿⠷⠶⠦",
+        "       ⠶⠲⠶⠖⠶⠶⠲⠶⠖⠶⠲",
+        "       D A Y   I S   D O N E",
+      },
+    },
+    {
+      id = "evening_braille_6",
+      name = "Braille Lantern",
+      lines = {
+        "          ⢀⣀⣀⡀",
+        "         ⣰⣿⣿⣿⣆",
+        "         ⣿⣿⣿⣿⣿",
+        "         ⢿⣿⣿⣿⡿",
+        "          ⠈⢹⡏⠁",
+        "         ⣀⣀⣸⣇⣀⣀",
+        "       S L O W   D O W N",
       },
     },
   },
@@ -194,6 +263,31 @@ M.arts = {
         "⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀",
       },
     },
+    {
+      id = "night_braille_5",
+      name = "Braille Crescent",
+      lines = {
+        "          ⣠⣶⡿⠿⠛",
+        "         ⣼⣿⡏",
+        "         ⣿⣿⡇    ⠐   ⠂",
+        "         ⢿⣿⣇",
+        "          ⠙⢿⣷⣶⣤",
+        "       N I G H T   S H I F T",
+      },
+    },
+    {
+      id = "night_braille_6",
+      name = "Braille Shooting Star",
+      lines = {
+        "       ⠑⢄⡀",
+        "        ⠈⠑⢄⡀       ⠁   ⠄",
+        "           ⠙⠷⣦⡀",
+        "             ⠈⠻⣷⣄    ⠂",
+        "                ⠙⣿⣆",
+        "                 ⠈⠛⠿",
+        "       M A K E   A   W I S H",
+      },
+    },
   },
 
   weekend = {
@@ -239,6 +333,33 @@ M.arts = {
         "⢸⣿⣿⣿⣿⣿  P L A Y  ⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇",
         "⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇",
         "⠈⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠁",
+      },
+    },
+    {
+      id = "weekend_braille_5",
+      name = "Braille Rocket",
+      lines = {
+        "           ⢀⣴⣦⡀",
+        "           ⣾⣿⣿⣷",
+        "           ⣿⣿⣿⣿",
+        "           ⣿⣿⣿⣿",
+        "          ⢠⣿⣿⣿⣿⡄",
+        "         ⢀⣾⣿⣿⣿⣿⣷⡀",
+        "         ⠘⠛⢻⣿⣿⡟⠛⠃",
+        "            ⠈⠻⠟⠁",
+        "       L I F T   O F F",
+      },
+    },
+    {
+      id = "weekend_braille_6",
+      name = "Braille Parasol",
+      lines = {
+        "        ⢀⣠⣴⣾⣿⣿⣿⣷⣦⣄⡀",
+        "       ⠚⠛⠛⠛⢛⣿⣿⣿⡟⠛⠛⠛⠓",
+        "            ⢠⣿⠟⠁",
+        "           ⢠⣿⠃",
+        "          ⠐⠛⠁",
+        "       O F F   D U T Y",
       },
     },
   },

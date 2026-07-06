@@ -91,6 +91,11 @@ M.messages = {
     { text = "git commit -m 'new day'", theme = "witty" },
     { text = "Debugging life, one sunrise at a time.", theme = "witty" },
     { text = "404: Sleep not found.", theme = "witty" },
+    { text = "Ship something before lunch.", theme = "motivational" },
+    { text = "sudo make coffee", theme = "witty" },
+    { text = "Breathe in. git pull.", theme = "zen" },
+    { text = "Sunlight parsing through the blinds.", theme = "poetic" },
+    { text = "Daemon of dawn: running.", theme = "cryptic" },
   },
 
   afternoon = {
@@ -157,6 +162,11 @@ M.messages = {
     { text = "Friday vibes! Almost there.", theme = "motivational", condition = function() return os.date("%A") == "Friday" end },
     -- Conditional: Monday motivation
     { text = "💪 Monday: New week, fresh start!", theme = "motivational", condition = function() return os.date("%A") == "Monday" end },
+    { text = "Halfway there. Keep shipping.", theme = "motivational" },
+    { text = "It compiles. Ship it before it changes its mind.", theme = "witty" },
+    { text = "One function at a time.", theme = "zen" },
+    { text = "Deep work is a place, not a time.", theme = "philosophical" },
+    { text = "The zone has no clock.", theme = "cryptic" },
   },
 
   evening = {
@@ -218,6 +228,11 @@ M.messages = {
     { text = "The code can wait, you can't.", theme = "witty" },
     { text = "Tomorrow's problem for tomorrow's you.", theme = "witty" },
     { text = "End of sprint energy.", theme = "witty" },
+    { text = "One more commit, then dinner.", theme = "motivational" },
+    { text = "git commit -m 'tomorrow me will fix this'", theme = "witty" },
+    { text = "The day folds into amber light.", theme = "poetic" },
+    { text = "Let the diff settle.", theme = "zen" },
+    { text = "Rest is part of the build.", theme = "philosophical" },
   },
 
   night = {
@@ -289,6 +304,11 @@ M.messages = {
     { text = "Past midnight... the code calls.", theme = "cryptic", condition = function() return tonumber(os.date("%H")) < 4 end },
     -- Conditional: Early morning (before 5am)
     { text = "🌅 Early riser! The world is still sleeping.", theme = "motivational", condition = function() return tonumber(os.date("%H")) < 5 end },
+    { text = "Night shift: engaged.", theme = "motivational" },
+    { text = "Nothing good happens after 2am. Except code.", theme = "witty" },
+    { text = "Moonlight looks good on a dark theme.", theme = "poetic" },
+    { text = "The quiet hours compile clean.", theme = "zen" },
+    { text = "The world sleeps. The terminal glows.", theme = "cryptic" },
   },
 
   weekend = {
@@ -358,6 +378,11 @@ M.messages = {
     { text = "Main branch? Never heard of her.", theme = "witty" },
     { text = "TODO: Nothing. Absolutely nothing.", theme = "witty" },
     { text = "Work-life balance: achieved.", theme = "witty" },
+    { text = "Your time. Your projects.", theme = "motivational" },
+    { text = "No standups. No syncs. Just vibes.", theme = "witty" },
+    { text = "Play is practice in disguise.", theme = "zen" },
+    { text = "Two days of open sky.", theme = "poetic" },
+    { text = "The best ideas clock out with you.", theme = "philosophical" },
   },
 }
 

@@ -52,6 +52,27 @@ M.arts = {
         "     ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░",
       },
     },
+    {
+      id = "morning_pixel_5",
+      name = "Pixel Boot",
+      lines = {
+        "       ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄",
+        "       █ BOOTING NEW DAY...  █",
+        "       █ ██████████████░░░░░ █",
+        "       ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀",
+      },
+    },
+    {
+      id = "morning_pixel_6",
+      name = "Pixel Rising Sun",
+      lines = {
+        "           ·   ▄███▄   ·",
+        "             ▄███████▄",
+        "         ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀",
+        "          ~   ~   ~   ~   ~",
+        "          H E L L O   S U N",
+      },
+    },
   },
 
   afternoon = {
@@ -101,6 +122,31 @@ M.arts = {
         "        ████▀    ▀████",
       },
     },
+    {
+      id = "afternoon_pixel_5",
+      name = "Pixel Power",
+      lines = {
+        "            ▄██▀",
+        "           ▄██▀",
+        "          ▄█████▀",
+        "             ▄██▀",
+        "            ▄█▀",
+        "           ▀▀",
+        "        F U L L   P O W E R",
+      },
+    },
+    {
+      id = "afternoon_pixel_6",
+      name = "Pixel Target",
+      lines = {
+        "          ▄▄█████▄▄",
+        "         ██▀     ▀██",
+        "        ██    ◉    ██",
+        "         ██▄     ▄██",
+        "          ▀▀█████▀▀",
+        "       O N   T A R G E T",
+      },
+    },
   },
 
   evening = {
@@ -146,6 +192,32 @@ M.arts = {
         "          ██ ◐ MOON ██",
         "          ▀██▄    ▄██▀",
         "            ▀▀████▀▀",
+      },
+    },
+    {
+      id = "evening_pixel_5",
+      name = "Pixel Save",
+      lines = {
+        "        ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄",
+        "        █  ▀▀▀▀▀▀▀▀▀  █",
+        "        █             █",
+        "        █  █▀▀▀▀▀▀▀█  █",
+        "        █  █▄▄▄▄▄▄▄█  █",
+        "        ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀",
+        "       S A V E  &  Q U I T",
+      },
+    },
+    {
+      id = "evening_pixel_6",
+      name = "Pixel Fireside",
+      lines = {
+        "             ▄ ▄",
+        "            ▄███▄",
+        "           ▄█████▄",
+        "            █████",
+        "          ▄▄▀███▀▄▄",
+        "         ▀▀▀▀▀▀▀▀▀▀▀",
+        "        F I R E S I D E",
       },
     },
   },
@@ -199,6 +271,29 @@ M.arts = {
         "         ·    ★    ·",
       },
     },
+    {
+      id = "night_pixel_5",
+      name = "Pixel Terminal",
+      lines = {
+        "        ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄",
+        "        █ > nvim .      █",
+        "        █ > code_       █",
+        "        ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀",
+        "        ★  3 A M  M O D E  ·",
+      },
+    },
+    {
+      id = "night_pixel_6",
+      name = "Pixel Crescent",
+      lines = {
+        "        ·      ▄███     ★",
+        "              ███▀",
+        "       ★      ███          ·",
+        "              ███▄",
+        "        ·      ▀███    ★",
+        "        S L E E P   L A T E R",
+      },
+    },
   },
 
   weekend = {
@@ -246,6 +341,30 @@ M.arts = {
         "        █  JUST CODE  █",
         "        █▄▄▄██████▄▄▄█",
         "        ████▀      ▀████",
+      },
+    },
+    {
+      id = "weekend_pixel_5",
+      name = "Pixel Invader",
+      lines = {
+        "          ▀▄   ▄▀",
+        "         ▄█▀███▀█▄",
+        "        █▀███████▀█",
+        "        █ █▀▀▀▀▀█ █",
+        "           ▀▀ ▀▀",
+        "       I N S E R T   C O I N",
+      },
+    },
+    {
+      id = "weekend_pixel_6",
+      name = "Pixel Heart",
+      lines = {
+        "        ▄███▄ ▄███▄",
+        "        ███████████",
+        "         ▀███████▀",
+        "           ▀███▀",
+        "             ▀",
+        "       R E S T  &  P L A Y",
       },
     },
   },

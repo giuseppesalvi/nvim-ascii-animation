@@ -17,7 +17,7 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 - **Loop mode**: continuous animation replay with optional reverse
 - **8 ambient effects**: glitch, shimmer, cursor trail, sparkle, scanlines, noise, shake, sound
 - **Ease-in-out** timing: slow start → fast middle → slow finish
-- **140+ built-in ASCII arts** in 7 styles: blocks, gradient, isometric, box, minimal, pixel, braille
+- **170+ built-in ASCII arts** in 7 styles: blocks, gradient, isometric, box, minimal, pixel, braille
 - **Time-aware content**: morning, afternoon, evening, night, weekend themes
 - **330+ motivational taglines** that match the time of day (including emoji variants)
 - **Message browser**: browse, preview, favorite, and disable individual messages or entire themes
