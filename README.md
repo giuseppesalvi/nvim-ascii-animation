@@ -42,7 +42,8 @@ Cinematic text animation for Neovim dashboards. Watch your ASCII art materialize
 - **Theme presets**: Apply bundled settings (retro, zen, cyberpunk, cinematic, hacker) with a single command
 - **Screensaver**: Full-screen animated ASCII art after idle timeout with 13 display modes (static, bounce, tile, marquee, zoom, pulse, waves, rain, shatter, fireworks, heartbeat, random)
 - **Holiday content**: Auto-detected holiday-themed ASCII art and messages with higher selection priority (5 built-in holidays, user-extensible)
-- **User commands**: `:AsciiPreview`, `:AsciiSettings`, `:AsciiRefresh`, `:AsciiStop`, `:AsciiRestart`, `:AsciiCharset`, `:AsciiPause`, `:AsciiResume`, `:AsciiNext`, `:AsciiEffect`, `:AsciiPreset`, `:AsciiScreensaver`
+- **Web/local art importer**: Preview large ASCII portrait candidates from pages or `.txt` files and save them into your custom art directory
+- **User commands**: `:AsciiPreview`, `:AsciiImport`, `:AsciiImportFile`, `:AsciiSettings`, `:AsciiRefresh`, `:AsciiStop`, `:AsciiRestart`, `:AsciiCharset`, `:AsciiPause`, `:AsciiResume`, `:AsciiNext`, `:AsciiEffect`, `:AsciiPreset`, `:AsciiScreensaver`
 
 ## Installation
 
@@ -370,6 +371,7 @@ require("ascii-animation").setup({
         { id = "my_art", name = "Custom", lines = { "Line 1", "Line 2" } },
       },
     },
+    custom_arts_dir = "~/.config/nvim/ascii-art", -- Optional .txt import/custom art directory
     custom_messages = {
       morning = { "My custom message!", "Another one" },
     },
@@ -390,6 +392,37 @@ require("ascii-animation").setup({
   },
 })
 ```
+
+### Importing Large ASCII Art
+
+You can import portrait-style ASCII art from a web page or local `.txt` file. Imported art is saved as normal custom art with metadata headers, then appears in `:AsciiPreview` and dashboard selection.
+
+```vim
+:AsciiImport https://ascii.co.uk/art/anime
+:AsciiImportFile ~/Downloads/portrait.txt
+```
+
+The importer extracts likely ASCII blocks, opens a preview browser, and lets you choose what to save.
+
+Interactive keybindings:
+- `n`/`p` or `j`/`k`: next/previous candidate
+- `s`: save current candidate
+- `q`: close
+
+Imported files use this format:
+
+```text
+# id: imported_rei_ayanami
+# name: Rei Ayanami
+# style: imported
+# tags: imported, portrait
+# source: https://ascii.co.uk/art/anime
+# license: unknown
+
+...ASCII art...
+```
+
+Only import and redistribute artwork you have the right to use. Keep artist signatures and source attribution intact; signatures are credits, not licenses.
 
 ### Message Enhancements
 

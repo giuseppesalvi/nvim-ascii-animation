@@ -267,6 +267,8 @@ local function check_commands()
 
   local commands = {
     "AsciiPreview",
+    "AsciiImport",
+    "AsciiImportFile",
     "AsciiSettings",
     "AsciiRefresh",
     "AsciiStop",
